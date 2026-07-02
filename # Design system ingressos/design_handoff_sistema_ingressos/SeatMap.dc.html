@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .kick{font:600 10px/1 'Hanken Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;}
+  .sec{font:600 11px/1.4 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b6058;margin-bottom:12px;}
+  .seat{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:8px;font:600 13px/1 'Hanken Grotesk',sans-serif;flex:none;}
+  .seat-sm{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:5px;font:600 9px/1 'Hanken Grotesk',sans-serif;flex:none;}
+  .row-lbl{width:20px;text-align:center;font:600 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 50);flex:none;}
+  .frame{background:oklch(0.205 0.015 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:26px;}
+  .chk{display:inline-block;}
+</style>
+</helmet>
+
+<!-- CABEÇALHO -->
+<div style="position:absolute;left:0;top:0;width:1360px;">
+  <div data-drags-parent="1" style="font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Mapa de Assentos · SeatMap</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:22px 36px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.14);">
+    <div class="disp" style="font-weight:600;font-size:32px;color:oklch(0.95 0.012 80);">Mapa de Assentos</div>
+    <div style="font:400 13px/1.8 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Verde outline → disponível · Verde sólido → selecionado · Âmbar → em reserva · Cinza → indisponível</div>
+  </div>
+</div>
+
+<!-- ── LEGENDA ─────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:0;top:160px;width:400px;">
+  <div data-drags-parent="1" class="sec">Legenda de estados</div>
+  <div class="frame" style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- disponível -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">A</div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Disponível</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Verde outline · letra da fileira · clicável</div>
+      </div>
+    </div>
+
+    <!-- hover -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);box-shadow:0 0 0 3px oklch(0.52 0.14 155 / .28);transform:scale(1.08);">A</div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Hover / Foco</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Glow verde · scale 1.08 · outline teclado</div>
+      </div>
+    </div>
+
+    <!-- selecionado — verde sólido -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="background:oklch(0.52 0.14 155);color:#fff;">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 7.5l3.5 3.5 6.5-6.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Selecionado por você</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Verde sólido · mesmo verde, preenchido · check</div>
+      </div>
+    </div>
+
+    <!-- em reserva -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="9.5" r=".7" fill="currentColor"/></svg>
+      </div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Em reserva (outro)</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Âmbar tracejado · atenção · pode liberar</div>
+      </div>
+    </div>
+
+    <!-- esgotado -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Esgotado</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Cinza neutro · X · sem interação</div>
+      </div>
+    </div>
+
+    <!-- bloqueado -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="background:repeating-linear-gradient(45deg,oklch(0.245 0.016 48),oklch(0.245 0.016 48) 3px,oklch(0.20 0.013 48) 3px,oklch(0.20 0.013 48) 6px);color:oklch(0.40 0.01 50);">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="2" y="5.5" width="9" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4.2 5.5V4a2.3 2.3 0 014.6 0v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Bloqueado</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Hachura · cadeado · reservado pelo org.</div>
+      </div>
+    </div>
+
+    <!-- PCD -->
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="seat" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.55 0.14 230);position:relative;">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="3" r="1.4" fill="currentColor" stroke="none"/>
+          <path d="M9 4.4v4l2.5 1.5"/><path d="M6.5 7h4"/>
+          <circle cx="6.5" cy="13.5" r="2.5"/>
+          <path d="M12 10.5l1 3h-1.5"/><path d="M9 8.4l-2.5 2.6"/>
+        </svg>
+        <div style="position:absolute;bottom:-3px;right:-3px;width:11px;height:11px;background:oklch(0.55 0.14 230);border-radius:50%;border:1.5px solid oklch(0.205 0.015 48);"></div>
+      </div>
+      <div>
+        <div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 70);">Acessível (PCD)</div>
+        <div style="font:400 11px/1.5 'Hanken Grotesk';color:oklch(0.58 0.012 60);margin-top:2px;">Verde + ícone SVG + ponto azul info</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MAPA ─────────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:468px;top:160px;width:530px;">
+  <div data-drags-parent="1" class="sec">Mapa simulado · Plateia</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:28px 22px;box-shadow:0 4px 24px rgba(0,0,0,.18);">
+
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="background:oklch(0.245 0.016 48);border:1px solid oklch(0.31 0.018 48);border-radius:8px;padding:9px 52px;display:inline-block;">
+        <span class="kick" style="color:oklch(0.52 0.012 50);">Palco</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+
+      <!-- A: livre livre SELECIONADO SELECIONADO hover livre esgotado esgotado livre livre -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div class="row-lbl">A</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+        <div class="seat-sm" style="background:oklch(0.52 0.14 155);color:#fff;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="seat-sm" style="background:oklch(0.52 0.14 155);color:#fff;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);box-shadow:0 0 0 2px oklch(0.52 0.14 155/.28);">5</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+        <div class="row-lbl">A</div>
+      </div>
+
+      <!-- B: esgotado livre livre âmbar âmbar livre livre livre esgotado livre -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div class="row-lbl">B</div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">3</div>
+        <div class="seat-sm" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3" stroke="currentColor" stroke-width="1.1"/><path d="M4 2.5v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="4" cy="5.8" r=".4" fill="currentColor"/></svg></div>
+        <div class="seat-sm" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3" stroke="currentColor" stroke-width="1.1"/><path d="M4 2.5v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="4" cy="5.8" r=".4" fill="currentColor"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+        <div class="row-lbl">B</div>
+      </div>
+
+      <!-- C: livre livre bloqueado bloqueado livre livre livre PCD livre livre -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div class="row-lbl">C</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+        <div class="seat-sm" style="background:repeating-linear-gradient(45deg,oklch(0.245 0.016 48),oklch(0.245 0.016 48) 2px,oklch(0.20 0.013 48) 2px,oklch(0.20 0.013 48) 4px);color:oklch(0.40 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><rect x="1" y="3.2" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 3.2V2.5a1.5 1.5 0 013 0v.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="background:repeating-linear-gradient(45deg,oklch(0.245 0.016 48),oklch(0.245 0.016 48) 2px,oklch(0.20 0.013 48) 2px,oklch(0.20 0.013 48) 4px);color:oklch(0.40 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><rect x="1" y="3.2" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 3.2V2.5a1.5 1.5 0 013 0v.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">5</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.55 0.14 230);position:relative;">
+          <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="3" r="1.4" fill="currentColor" stroke="none"/><path d="M9 4.4v4l2.5 1.5"/><path d="M6.5 7h4"/><circle cx="6.5" cy="13.5" r="2.5"/><path d="M12 10.5l1 3h-1.5"/><path d="M9 8.4l-2.5 2.6"/></svg>
+          <div style="position:absolute;bottom:-2px;right:-2px;width:7px;height:7px;background:oklch(0.55 0.14 230);border-radius:50%;border:1px solid oklch(0.16 0.013 48);"></div>
+        </div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+        <div class="row-lbl">C</div>
+      </div>
+
+      <!-- D: livre esgotado esgotado livre livre âmbar livre livre livre livre -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div class="row-lbl">D</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">4</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">5</div>
+        <div class="seat-sm" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3" stroke="currentColor" stroke-width="1.1"/><path d="M4 2.5v2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="4" cy="5.8" r=".4" fill="currentColor"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+        <div class="row-lbl">D</div>
+      </div>
+
+      <!-- E: 3 livres · 3 esgotados · 4 livres -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <div class="row-lbl">E</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">3</div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 2l5 5M7 2L2 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+        <div class="seat-sm" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+        <div class="row-lbl">E</div>
+      </div>
+
+    </div>
+
+    <!-- legenda compacta -->
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid oklch(0.27 0.015 48);">
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;border:1.5px solid oklch(0.52 0.14 155);border-radius:3px;"></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Livre</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;background:oklch(0.52 0.14 155);border-radius:3px;"></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Seu</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;border:1.5px dashed oklch(0.58 0.14 72);border-radius:3px;"></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Em reserva</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;background:oklch(0.245 0.016 48);border-radius:3px;"></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Esgotado</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;background:repeating-linear-gradient(45deg,oklch(0.245 0.016 48),oklch(0.245 0.016 48) 2px,oklch(0.20 0.013 48) 2px,oklch(0.20 0.013 48) 4px);border-radius:3px;"></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Bloqueado</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:13px;height:13px;border:1.5px solid oklch(0.52 0.14 155);border-radius:3px;position:relative;"><div style="position:absolute;bottom:-2px;right:-2px;width:6px;height:6px;background:oklch(0.55 0.14 230);border-radius:50%;"></div></div><span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">PCD</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOLTIP ──────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:1066px;top:160px;width:274px;">
+  <div data-drags-parent="1" class="sec">Tooltip · assento em hover</div>
+  <div style="display:flex;justify-content:center;margin-bottom:10px;">
+    <div class="seat" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);box-shadow:0 0 0 3px oklch(0.52 0.14 155/.26);transform:scale(1.1);">A</div>
+  </div>
+  <div style="background:oklch(0.255 0.016 48);border:1px solid oklch(0.35 0.018 48);border-radius:10px;padding:16px 18px;box-shadow:0 8px 24px rgba(0,0,0,.30);">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+      <div class="disp" style="font-weight:600;font-size:20px;color:oklch(0.95 0.012 80);">Fila A · 5</div>
+      <div class="disp" style="font-weight:500;font-size:18px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 180</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;justify-content:space-between;"><span style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Setor</span><span style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.84 0.012 70);">Plateia Central</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Tipo</span><span style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.84 0.012 70);">Inteira</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Visibilidade</span><span style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.84 0.012 70);">Ótima</span></div>
+    </div>
+    <div style="background:oklch(0.52 0.14 155);color:#fff;font:600 13px/1 'Hanken Grotesk';padding:12px;border-radius:8px;text-align:center;margin-top:14px;">Selecionar assento</div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

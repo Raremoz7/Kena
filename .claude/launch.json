@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kena-artisan-serve",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["bash", "-lc", "cd ~/Projetos/Ingresso && php artisan serve --port=8000"],
+      "port": 8000
+    }
+  ]
+}

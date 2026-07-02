@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .hk{font-family:'Hanken Grotesk',sans-serif;}
+  .kick{font:600 10px/1 'Hanken Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;}
+  .sec-lbl{font:600 11px/1.4 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b6058;margin-bottom:10px;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .frame{background:oklch(0.155 0.012 48);border:1px solid oklch(0.26 0.015 48);border-radius:14px;overflow:hidden;}
+  .code-header{background:oklch(0.135 0.012 48);border-bottom:1px solid oklch(0.24 0.014 48);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;}
+  .code-body{padding:20px 18px;overflow-x:auto;}
+  pre{margin:0;font:400 12px/1.8 'JetBrains Mono',monospace;color:oklch(0.82 0.012 70);}
+  .c-comment{color:oklch(0.52 0.012 52);}
+  .c-key{color:oklch(0.72 0.10 230);}
+  .c-val{color:oklch(0.72 0.14 155);}
+  .c-str{color:oklch(0.75 0.10 78);}
+  .c-punc{color:oklch(0.60 0.012 60);}
+  .swatch-row{display:flex;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid oklch(0.22 0.014 48);}
+  .swatch-row:last-child{border-bottom:none;}
+  .sw{width:36px;height:36px;border-radius:8px;flex:none;}
+</style>
+</helmet>
+
+<!-- CABEÇALHO -->
+<div style="position:absolute;left:0;top:0;width:1700px;">
+  <div data-drags-parent="1" style="font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Design Tokens · CSS Variables + Tailwind Config</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:20px 36px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.14);">
+    <div class="disp" style="font-weight:600;font-size:28px;color:oklch(0.95 0.012 80);">Tokens prontos pra colar</div>
+    <div class="hk" style="font:400 13px/1.7 'Hanken Grotesk';color:oklch(0.60 0.012 60);">CSS custom properties · tailwind.config.js · typography · spacing</div>
+  </div>
+</div>
+
+<!-- ── COL 1: PALETA VISUAL ─────────────────────────────────── -->
+<div style="position:absolute;left:0;top:150px;width:340px;">
+  <div data-drags-parent="1" class="sec-lbl">Paleta semântica</div>
+  <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:20px;">
+    <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:12px;">Fundo &amp; superfície</div>
+    <div style="margin-bottom:18px;">
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.28 0.016 48);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-bg</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.16 0.013 48)</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.205 0.015 48);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-surface</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.205 0.015 48)</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.245 0.016 48);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-surface-2</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.245 0.016 48)</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.31 0.018 48);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-border</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.31 0.018 48)</div></div></div>
+    </div>
+    <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:12px;">Texto</div>
+    <div style="margin-bottom:18px;">
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.95 0.012 80);border-radius:8px;"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-text</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.95 0.012 80)</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.70 0.015 70);border-radius:8px;"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-muted</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.70 0.015 70)</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.52 0.012 60);border-radius:8px;"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-faint</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">oklch(0.52 0.012 60)</div></div></div>
+    </div>
+    <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:12px;">Acento &amp; Status</div>
+    <div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.55 0.16 20);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-accent</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">vinho · ações primárias</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.52 0.14 155);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-success</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">verde · livre / pago</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.58 0.14 72);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-warning</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">âmbar · em reserva</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.52 0.19 27);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-danger</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">vermelho · erro / cancelado</div></div></div>
+      <div class="swatch-row"><div class="sw" style="background:oklch(0.52 0.14 230);"></div><div><div class="mono" style="font:500 11px/1 'JetBrains Mono';color:oklch(0.88 0.012 70);">--color-info</div><div class="mono" style="font:400 10px/1.4 'JetBrains Mono';color:oklch(0.52 0.012 52);margin-top:3px;">azul · PCD / avisos</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── COL 2: CSS VARIABLES ─────────────────────────────────── -->
+<div style="position:absolute;left:360px;top:150px;width:620px;">
+  <div data-drags-parent="1" class="sec-lbl">CSS Custom Properties · resources/css/tokens.css</div>
+  <div class="frame">
+    <div class="code-header">
+      <span class="mono" style="font:500 12px/1 'JetBrains Mono';color:oklch(0.68 0.012 62);">tokens.css</span>
+      <span class="kick" style="color:oklch(0.52 0.14 155);">colar em resources/css/</span>
+    </div>
+    <div class="code-body">
+      <pre><span class="c-comment">/* ── Veludo Design System ─────────────────────────── */</span>
+<span class="c-key">:root</span> <span class="c-punc">{</span>
+  <span class="c-comment">/* fundo e superfícies */</span>
+  <span class="c-key">--color-bg</span><span class="c-punc">:</span>        <span class="c-val">oklch(0.16 0.013 48)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-surface</span><span class="c-punc">:</span>   <span class="c-val">oklch(0.205 0.015 48)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-surface-2</span><span class="c-punc">:</span> <span class="c-val">oklch(0.245 0.016 48)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-border</span><span class="c-punc">:</span>    <span class="c-val">oklch(0.31 0.018 48)</span><span class="c-punc">;</span>
+
+  <span class="c-comment">/* texto */</span>
+  <span class="c-key">--color-text</span><span class="c-punc">:</span>      <span class="c-val">oklch(0.95 0.012 80)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-muted</span><span class="c-punc">:</span>     <span class="c-val">oklch(0.70 0.015 70)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-faint</span><span class="c-punc">:</span>     <span class="c-val">oklch(0.52 0.012 60)</span><span class="c-punc">;</span>
+
+  <span class="c-comment">/* acento — ações primárias */</span>
+  <span class="c-key">--color-accent</span><span class="c-punc">:</span>     <span class="c-val">oklch(0.55 0.16 20)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-accent-hover</span><span class="c-punc">:</span> <span class="c-val">oklch(0.61 0.16 20)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-accent-fg</span><span class="c-punc">:</span>  <span class="c-val">oklch(0.97 0.01 40)</span><span class="c-punc">;</span>
+
+  <span class="c-comment">/* status semânticos */</span>
+  <span class="c-key">--color-success</span><span class="c-punc">:</span>   <span class="c-val">oklch(0.52 0.14 155)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-warning</span><span class="c-punc">:</span>   <span class="c-val">oklch(0.58 0.14 72)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-danger</span><span class="c-punc">:</span>    <span class="c-val">oklch(0.52 0.19 27)</span><span class="c-punc">;</span>
+  <span class="c-key">--color-info</span><span class="c-punc">:</span>      <span class="c-val">oklch(0.52 0.14 230)</span><span class="c-punc">;</span>
+
+  <span class="c-comment">/* assentos (tokens específicos do domínio) */</span>
+  <span class="c-key">--seat-available</span><span class="c-punc">:</span>  <span class="c-val">oklch(0.52 0.14 155)</span><span class="c-punc">;</span>
+  <span class="c-key">--seat-selected</span><span class="c-punc">:</span>   <span class="c-val">oklch(0.52 0.14 155)</span><span class="c-punc">;</span>  <span class="c-comment">/* filled */</span>
+  <span class="c-key">--seat-held</span><span class="c-punc">:</span>       <span class="c-val">oklch(0.58 0.14 72)</span><span class="c-punc">;</span>   <span class="c-comment">/* âmbar */</span>
+  <span class="c-key">--seat-sold</span><span class="c-punc">:</span>       <span class="c-val">oklch(0.245 0.016 48)</span><span class="c-punc">;</span>
+  <span class="c-key">--seat-blocked</span><span class="c-punc">:</span>    <span class="c-val">oklch(0.245 0.016 48)</span><span class="c-punc">;</span>
+  <span class="c-key">--seat-pcd</span><span class="c-punc">:</span>        <span class="c-val">oklch(0.52 0.14 230)</span><span class="c-punc">;</span>
+
+  <span class="c-comment">/* tipografia */</span>
+  <span class="c-key">--font-display</span><span class="c-punc">:</span>   <span class="c-str">'Oswald'</span><span class="c-punc">,</span> sans-serif<span class="c-punc">;</span>
+  <span class="c-key">--font-body</span><span class="c-punc">:</span>      <span class="c-str">'Hanken Grotesk'</span><span class="c-punc">,</span> sans-serif<span class="c-punc">;</span>
+
+  <span class="c-comment">/* raios por função */</span>
+  <span class="c-key">--radius-badge</span><span class="c-punc">:</span>   <span class="c-val">6px</span><span class="c-punc">;</span>
+  <span class="c-key">--radius-btn</span><span class="c-punc">:</span>     <span class="c-val">8px</span><span class="c-punc">;</span>
+  <span class="c-key">--radius-input</span><span class="c-punc">:</span>   <span class="c-val">8px</span><span class="c-punc">;</span>
+  <span class="c-key">--radius-card</span><span class="c-punc">:</span>    <span class="c-val">12px</span><span class="c-punc">;</span>
+  <span class="c-key">--radius-seat</span><span class="c-punc">:</span>    <span class="c-val">8px</span><span class="c-punc">;</span>
+  <span class="c-key">--radius-full</span><span class="c-punc">:</span>    <span class="c-val">9999px</span><span class="c-punc">;</span>
+<span class="c-punc">}</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ── COL 3: TAILWIND CONFIG ───────────────────────────────── -->
+<div style="position:absolute;left:1000px;top:150px;width:700px;">
+  <div data-drags-parent="1" class="sec-lbl">Tailwind Config · tailwind.config.js</div>
+  <div class="frame">
+    <div class="code-header">
+      <span class="mono" style="font:500 12px/1 'JetBrains Mono';color:oklch(0.68 0.012 62);">tailwind.config.js</span>
+      <span class="kick" style="color:oklch(0.52 0.14 155);">colar no extend{}</span>
+    </div>
+    <div class="code-body">
+      <pre><span class="c-comment">/** @type {import('tailwindcss').Config} */</span>
+<span class="c-key">export default</span> <span class="c-punc">{</span>
+  content<span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'./resources/**/*.{js,ts,jsx,tsx,blade.php}'</span><span class="c-punc">],</span>
+  theme<span class="c-punc">:</span> <span class="c-punc">{</span>
+    extend<span class="c-punc">:</span> <span class="c-punc">{</span>
+      fontFamily<span class="c-punc">:</span> <span class="c-punc">{</span>
+        display<span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'Oswald'</span><span class="c-punc">,</span> <span class="c-str">'sans-serif'</span><span class="c-punc">],</span>
+        body<span class="c-punc">:</span>    <span class="c-punc">[</span><span class="c-str">'Hanken Grotesk'</span><span class="c-punc">,</span> <span class="c-str">'sans-serif'</span><span class="c-punc">],</span>
+      <span class="c-punc">},</span>
+      colors<span class="c-punc">:</span> <span class="c-punc">{</span>
+        bg<span class="c-punc">:</span>         <span class="c-str">'oklch(0.16 0.013 48)'</span><span class="c-punc">,</span>
+        surface<span class="c-punc">:</span>    <span class="c-str">'oklch(0.205 0.015 48)'</span><span class="c-punc">,</span>
+        <span class="c-str">'surface-2'</span><span class="c-punc">:</span> <span class="c-str">'oklch(0.245 0.016 48)'</span><span class="c-punc">,</span>
+        border<span class="c-punc">:</span>     <span class="c-str">'oklch(0.31 0.018 48)'</span><span class="c-punc">,</span>
+        text<span class="c-punc">:</span>       <span class="c-str">'oklch(0.95 0.012 80)'</span><span class="c-punc">,</span>
+        muted<span class="c-punc">:</span>      <span class="c-str">'oklch(0.70 0.015 70)'</span><span class="c-punc">,</span>
+        faint<span class="c-punc">:</span>      <span class="c-str">'oklch(0.52 0.012 60)'</span><span class="c-punc">,</span>
+        accent<span class="c-punc">:</span> <span class="c-punc">{</span>
+          DEFAULT<span class="c-punc">:</span> <span class="c-str">'oklch(0.55 0.16 20)'</span><span class="c-punc">,</span>
+          hover<span class="c-punc">:</span>   <span class="c-str">'oklch(0.61 0.16 20)'</span><span class="c-punc">,</span>
+          fg<span class="c-punc">:</span>      <span class="c-str">'oklch(0.97 0.01 40)'</span><span class="c-punc">,</span>
+        <span class="c-punc">},</span>
+        success<span class="c-punc">:</span>  <span class="c-str">'oklch(0.52 0.14 155)'</span><span class="c-punc">,</span>
+        warning<span class="c-punc">:</span>  <span class="c-str">'oklch(0.58 0.14 72)'</span><span class="c-punc">,</span>
+        danger<span class="c-punc">:</span>   <span class="c-str">'oklch(0.52 0.19 27)'</span><span class="c-punc">,</span>
+        info<span class="c-punc">:</span>     <span class="c-str">'oklch(0.52 0.14 230)'</span><span class="c-punc">,</span>
+        seat<span class="c-punc">:</span> <span class="c-punc">{</span>
+          available<span class="c-punc">:</span> <span class="c-str">'oklch(0.52 0.14 155)'</span><span class="c-punc">,</span>
+          selected<span class="c-punc">:</span>  <span class="c-str">'oklch(0.52 0.14 155)'</span><span class="c-punc">,</span>
+          held<span class="c-punc">:</span>      <span class="c-str">'oklch(0.58 0.14 72)'</span><span class="c-punc">,</span>
+          sold<span class="c-punc">:</span>      <span class="c-str">'oklch(0.245 0.016 48)'</span><span class="c-punc">,</span>
+          pcd<span class="c-punc">:</span>       <span class="c-str">'oklch(0.52 0.14 230)'</span><span class="c-punc">,</span>
+        <span class="c-punc">},</span>
+      <span class="c-punc">},</span>
+      borderRadius<span class="c-punc">:</span> <span class="c-punc">{</span>
+        badge<span class="c-punc">:</span> <span class="c-str">'6px'</span><span class="c-punc">,</span>
+        btn<span class="c-punc">:</span>   <span class="c-str">'8px'</span><span class="c-punc">,</span>
+        input<span class="c-punc">:</span> <span class="c-str">'8px'</span><span class="c-punc">,</span>
+        card<span class="c-punc">:</span>  <span class="c-str">'12px'</span><span class="c-punc">,</span>
+        seat<span class="c-punc">:</span>  <span class="c-str">'8px'</span><span class="c-punc">,</span>
+      <span class="c-punc">},</span>
+      fontSize<span class="c-punc">:</span> <span class="c-punc">{</span>
+        <span class="c-comment">/* display — Oswald uppercase */</span>
+        <span class="c-str">'display-xl'</span><span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'56px'</span><span class="c-punc">,</span> <span class="c-punc">{</span> lineHeight<span class="c-punc">:</span> <span class="c-str">'0.96'</span><span class="c-punc">,</span> fontWeight<span class="c-punc">:</span> <span class="c-str">'700'</span> <span class="c-punc">}],</span>
+        <span class="c-str">'display-lg'</span><span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'36px'</span><span class="c-punc">,</span> <span class="c-punc">{</span> lineHeight<span class="c-punc">:</span> <span class="c-str">'1.0'</span><span class="c-punc">,</span>  fontWeight<span class="c-punc">:</span> <span class="c-str">'600'</span> <span class="c-punc">}],</span>
+        <span class="c-str">'display-md'</span><span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'28px'</span><span class="c-punc">,</span> <span class="c-punc">{</span> lineHeight<span class="c-punc">:</span> <span class="c-str">'1.1'</span><span class="c-punc">,</span>  fontWeight<span class="c-punc">:</span> <span class="c-str">'500'</span> <span class="c-punc">}],</span>
+        <span class="c-str">'display-sm'</span><span class="c-punc">:</span> <span class="c-punc">[</span><span class="c-str">'22px'</span><span class="c-punc">,</span> <span class="c-punc">{</span> lineHeight<span class="c-punc">:</span> <span class="c-str">'1.2'</span><span class="c-punc">,</span>  fontWeight<span class="c-punc">:</span> <span class="c-str">'500'</span> <span class="c-punc">}],</span>
+        <span class="c-comment">/* kicker */</span>
+        <span class="c-str">'kicker'</span><span class="c-punc">:</span>     <span class="c-punc">[</span><span class="c-str">'11px'</span><span class="c-punc">,</span> <span class="c-punc">{</span> letterSpacing<span class="c-punc">:</span> <span class="c-str">'0.22em'</span><span class="c-punc">,</span> fontWeight<span class="c-punc">:</span> <span class="c-str">'600'</span> <span class="c-punc">}],</span>
+      <span class="c-punc">},</span>
+    <span class="c-punc">},</span>
+  <span class="c-punc">},</span>
+<span class="c-punc">};</span></pre>
+    </div>
+  </div>
+
+  <!-- nota de integração -->
+  <div style="margin-top:16px;background:oklch(0.205 0.015 48);border:1px solid oklch(0.295 0.018 48);border-radius:12px;padding:18px 20px;">
+    <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:12px;">Como integrar no projeto Laravel</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="disp" style="font-weight:600;font-size:14px;color:oklch(0.55 0.16 20);flex:none;">1</span>
+        <span class="hk" style="font:400 13px/1.5 'Hanken Grotesk';color:oklch(0.72 0.012 65);">Adicione as fontes no <span class="mono" style="color:oklch(0.75 0.10 78);font-size:12px;">app.blade.php</span> via Google Fonts</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="disp" style="font-weight:600;font-size:14px;color:oklch(0.55 0.16 20);flex:none;">2</span>
+        <span class="hk" style="font:400 13px/1.5 'Hanken Grotesk';color:oklch(0.72 0.012 65);">Crie <span class="mono" style="color:oklch(0.75 0.10 78);font-size:12px;">resources/css/tokens.css</span> e importe no <span class="mono" style="color:oklch(0.75 0.10 78);font-size:12px;">app.css</span></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="disp" style="font-weight:600;font-size:14px;color:oklch(0.55 0.16 20);flex:none;">3</span>
+        <span class="hk" style="font:400 13px/1.5 'Hanken Grotesk';color:oklch(0.72 0.012 65);">Cole o <span class="mono" style="color:oklch(0.75 0.10 78);font-size:12px;">extend{}</span> no seu <span class="mono" style="color:oklch(0.75 0.10 78);font-size:12px;">tailwind.config.js</span></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="disp" style="font-weight:600;font-size:14px;color:oklch(0.55 0.16 20);flex:none;">4</span>
+        <span class="hk" style="font:400 13px/1.5 'Hanken Grotesk';color:oklch(0.72 0.012 65);">Use classes como <span class="mono" style="color:oklch(0.72 0.14 155);font-size:12px;">bg-surface text-muted rounded-card font-display</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

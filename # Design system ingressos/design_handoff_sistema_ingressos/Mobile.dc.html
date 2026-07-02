@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .hk{font-family:'Hanken Grotesk',sans-serif;}
+  .kick{font:600 9px/1 'Hanken Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;}
+  .sec-lbl{font:600 11px/1.4 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b6058;margin-bottom:10px;}
+  .badge{font:600 9px/1 'Hanken Grotesk';padding:3px 8px;border-radius:5px;letter-spacing:.04em;}
+  .seat-xs{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;font:600 8px/1 'Hanken Grotesk';flex:none;}
+  .row-lbl{width:14px;text-align:center;font:600 9px/1 'Hanken Grotesk';color:oklch(0.50 0.012 50);flex:none;}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;padding:8px 4px 4px;}
+</style>
+</helmet>
+
+<!-- CABEÇALHO -->
+<div style="position:absolute;left:0;top:0;width:1820px;">
+  <div data-drags-parent="1" style="font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Versão Mobile · iOS</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:20px 36px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.14);">
+    <div class="disp" style="font-weight:600;font-size:28px;color:oklch(0.95 0.012 80);">Evento &nbsp;·&nbsp; Mapa &nbsp;·&nbsp; Checkout &nbsp;·&nbsp; Meus ingressos</div>
+    <div class="hk" style="font:400 13px/1.7 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Sistema Veludo · iOS · tema escuro</div>
+  </div>
+</div>
+
+<!-- ══ TELA 1: EVENTO ══════════════════════════════════════════ -->
+<div style="position:absolute;left:0;top:150px;">
+  <div data-drags-parent="1" class="sec-lbl">1 · Evento</div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="true" hint-size="390px,844px">
+    <!-- conteúdo da tela -->
+    <div style="height:100%;background:oklch(0.16 0.013 48);display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- hero -->
+      <div style="height:260px;background:linear-gradient(160deg,oklch(0.28 0.055 22),oklch(0.17 0.022 40) 55%,oklch(0.14 0.012 48) 100%);flex:none;position:relative;display:flex;align-items:flex-end;padding:20px 20px 16px;">
+        <!-- back -->
+        <div style="position:absolute;top:12px;left:16px;display:flex;align-items:center;gap:6px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="oklch(0.88 0.012 70)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="hk" style="font:500 14px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);">Eventos</span>
+        </div>
+        <div>
+          <div class="kick" style="color:oklch(0.80 0.10 40);margin-bottom:8px;">Bailado · Temporada 2026</div>
+          <div class="disp" style="font-weight:700;font-size:36px;line-height:.96;color:oklch(0.97 0.010 80);">O Lago dos<br>Cisnes</div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+            <span class="badge" style="background:oklch(0.50 0.14 155);color:#fff;">em venda</span>
+            <span class="kick" style="color:oklch(0.72 0.08 40);">Theatro Municipal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- conteúdo scrollável -->
+      <div style="flex:1;overflow-y:auto;padding:20px;">
+
+        <!-- info chips -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+          <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:8px 12px;">
+            <div class="kick" style="color:oklch(0.55 0.012 55);">Data</div>
+            <div class="disp" style="font-weight:600;font-size:14px;color:oklch(0.92 0.012 75);margin-top:4px;">Sáb 14 Jun · 20h</div>
+          </div>
+          <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:8px 12px;">
+            <div class="kick" style="color:oklch(0.55 0.012 55);">Duração</div>
+            <div class="disp" style="font-weight:600;font-size:14px;color:oklch(0.92 0.012 75);margin-top:4px;">2h · Intervalo</div>
+          </div>
+        </div>
+
+        <!-- setores -->
+        <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:10px;">Ingressos disponíveis</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+          <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="hk" style="font:600 14px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 72);">Plateia</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.55 0.012 55);margin-top:4px;">Fileiras A–J · 150 livres</div></div>
+            <div class="disp" style="font-weight:700;font-size:20px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 180</div>
+          </div>
+          <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="hk" style="font:600 14px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 72);">Balcão</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.55 0.012 55);margin-top:4px;">Fileiras A–E · 42 livres</div></div>
+            <div class="disp" style="font-weight:700;font-size:20px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 240</div>
+          </div>
+          <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.28 0.014 48);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;opacity:.45;">
+            <div><div class="hk" style="font:600 14px/1.2 'Hanken Grotesk';color:oklch(0.92 0.012 72);">Camarote</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.55 0.012 55);margin-top:4px;">4 camarotes</div></div>
+            <span class="badge" style="background:oklch(0.40 0.012 50);color:#fff;">esgotado</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA fixo no rodapé -->
+      <div style="padding:12px 20px 6px;background:oklch(0.16 0.013 48);border-top:1px solid oklch(0.26 0.015 48);flex:none;">
+        <div style="background:oklch(0.55 0.16 20);color:#fff;font:600 15px/1 'Hanken Grotesk';padding:15px;border-radius:10px;text-align:center;">Escolher assentos</div>
+      </div>
+
+      <!-- tab bar -->
+      <div style="display:flex;background:oklch(0.135 0.012 48);border-top:1px solid oklch(0.24 0.014 48);padding:0 0 4px;flex:none;">
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.55 0.16 20)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="8" width="7" height="12" rx="1"/><rect x="13" y="2" width="7" height="18" rx="1"/></svg>
+          <span style="font:600 10px/1 'Hanken Grotesk';color:oklch(0.55 0.16 20);">Eventos</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="5" width="16" height="14" rx="2"/><path d="M3 9h16"/><path d="M8 3v2M14 3v2"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Agenda</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><path d="M3 5h14l-1.5 9H4.5L3 5z"/><circle cx="8" cy="19" r="1.5"/><circle cx="14" cy="19" r="1.5"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Ingressos</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="8" r="4"/><path d="M3 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Perfil</span>
+        </div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ══ TELA 2: MAPA ════════════════════════════════════════════ -->
+<div style="position:absolute;left:430px;top:150px;">
+  <div data-drags-parent="1" class="sec-lbl">2 · Mapa de Assentos</div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="true" hint-size="390px,844px">
+    <div style="height:100%;background:oklch(0.16 0.013 48);display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- nav -->
+      <div style="padding:10px 16px 8px;border-bottom:1px solid oklch(0.26 0.015 48);flex:none;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="oklch(0.88 0.012 70)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="disp" style="font-weight:600;font-size:14px;color:oklch(0.95 0.012 80);">Plateia</div>
+            <div class="hk" style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.55 0.012 55);margin-top:2px;">Lago dos Cisnes · A–J</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:6px 10px;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="oklch(0.80 0.12 78)" stroke-width="1.2"/><path d="M6 3.5v2.5" stroke="oklch(0.80 0.12 78)" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="8" r=".5" fill="oklch(0.80 0.12 78)"/></svg>
+          <span class="hk" style="font:600 12px/1 'Hanken Grotesk';color:oklch(0.80 0.12 78);font-variant-numeric:tabular-nums;">07:42</span>
+        </div>
+      </div>
+
+      <!-- legenda compacta -->
+      <div style="display:flex;gap:10px;padding:8px 16px;border-bottom:1px solid oklch(0.235 0.014 48);flex:none;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border:1.5px solid oklch(0.52 0.14 155);border-radius:2px;"></div><span style="font:400 9px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Livre</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;background:oklch(0.52 0.14 155);border-radius:2px;"></div><span style="font:400 9px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Seu</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;border:1.5px dashed oklch(0.58 0.14 72);border-radius:2px;"></div><span style="font:400 9px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Reservado</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:10px;height:10px;background:oklch(0.245 0.016 48);border-radius:2px;"></div><span style="font:400 9px/1 'Hanken Grotesk';color:oklch(0.58 0.012 60);">Esgotado</span></div>
+      </div>
+
+      <!-- mapa -->
+      <div style="flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:6px;padding:6px 32px;margin-bottom:4px;">
+          <span class="kick" style="color:oklch(0.50 0.012 50);">Palco</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:center;">
+          <!-- A -->
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div class="row-lbl">A</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+            <div class="seat-xs" style="background:oklch(0.52 0.14 155);color:#fff;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="seat-xs" style="background:oklch(0.52 0.14 155);color:#fff;"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);box-shadow:0 0 0 2px oklch(0.52 0.14 155/.28);">5</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+            <div class="row-lbl">A</div>
+          </div>
+          <!-- B -->
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div class="row-lbl">B</div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">3</div>
+            <div class="seat-xs" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="7" height="7" viewBox="0 0 7 7" fill="none"><circle cx="3.5" cy="3.5" r="2.8" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 2.2v1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="3.5" cy="5" r=".35" fill="currentColor"/></svg></div>
+            <div class="seat-xs" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="7" height="7" viewBox="0 0 7 7" fill="none"><circle cx="3.5" cy="3.5" r="2.8" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 2.2v1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="3.5" cy="5" r=".35" fill="currentColor"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+            <div class="row-lbl">B</div>
+          </div>
+          <!-- C–E -->
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div class="row-lbl">C</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">3</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">4</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">5</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">6</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.52 0.14 230);position:relative;">
+              <svg width="11" height="11" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="3" r="1.4" fill="currentColor" stroke="none"/><path d="M9 4.4v4l2.5 1.5"/><path d="M6.5 7h4"/><circle cx="6.5" cy="13.5" r="2.5"/><path d="M12 10.5l1 3h-1.5"/><path d="M9 8.4l-2.5 2.6"/></svg>
+              <div style="position:absolute;bottom:-2px;right:-2px;width:6px;height:6px;background:oklch(0.52 0.14 230);border-radius:50%;border:1px solid oklch(0.16 0.013 48);"></div>
+            </div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+            <div class="row-lbl">C</div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div class="row-lbl">D</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">4</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">5</div>
+            <div class="seat-xs" style="border:1.5px dashed oklch(0.58 0.14 72);color:oklch(0.72 0.14 72);"><svg width="7" height="7" viewBox="0 0 7 7" fill="none"><circle cx="3.5" cy="3.5" r="2.8" stroke="currentColor" stroke-width="1.1"/><path d="M3.5 2.2v1.8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="3.5" cy="5" r=".35" fill="currentColor"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+            <div class="row-lbl">D</div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div class="row-lbl">E</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">1</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">2</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">3</div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="background:oklch(0.245 0.016 48);color:oklch(0.44 0.01 50);"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 4M6 2L2 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">7</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">8</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">9</div>
+            <div class="seat-xs" style="border:1.5px solid oklch(0.52 0.14 155);color:oklch(0.66 0.13 155);">10</div>
+            <div class="row-lbl">E</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bottom sheet de seleção -->
+      <div style="padding:14px 16px 6px;background:oklch(0.185 0.014 48);border-top:1px solid oklch(0.28 0.016 48);flex:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div><div class="kick" style="color:oklch(0.55 0.012 55);">Selecionados</div><div class="disp" style="font-weight:600;font-size:18px;color:oklch(0.95 0.012 80);margin-top:4px;">Fila A · 3 e 4</div></div>
+          <div class="disp" style="font-weight:700;font-size:24px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 360</div>
+        </div>
+        <div style="background:oklch(0.52 0.14 155);color:#fff;font:600 15px/1 'Hanken Grotesk';padding:14px;border-radius:10px;text-align:center;">Ir para o checkout</div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ══ TELA 3: CHECKOUT ════════════════════════════════════════ -->
+<div style="position:absolute;left:860px;top:150px;">
+  <div data-drags-parent="1" class="sec-lbl">3 · Checkout</div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="true" hint-size="390px,844px">
+    <div style="height:100%;background:oklch(0.16 0.013 48);display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- nav -->
+      <div style="padding:10px 16px 8px;border-bottom:1px solid oklch(0.26 0.015 48);flex:none;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="oklch(0.88 0.012 70)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="disp" style="font-weight:600;font-size:16px;color:oklch(0.95 0.012 80);">Checkout</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:6px 10px;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="oklch(0.80 0.12 78)" stroke-width="1.2"/><path d="M6 3.5v2.5" stroke="oklch(0.80 0.12 78)" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="8" r=".5" fill="oklch(0.80 0.12 78)"/></svg>
+          <span class="hk" style="font:600 12px/1 'Hanken Grotesk';color:oklch(0.80 0.12 78);font-variant-numeric:tabular-nums;">07:18</span>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:16px;">
+
+        <!-- resumo ingresso -->
+        <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+          <div style="height:3px;background:oklch(0.55 0.16 20);"></div>
+          <div style="padding:14px 16px;">
+            <div class="kick" style="color:oklch(0.70 0.13 22);">Plateia</div>
+            <div class="disp" style="font-weight:600;font-size:20px;color:oklch(0.95 0.012 80);margin-top:4px;">Fila A · 3 e 4</div>
+            <div class="hk" style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-top:5px;">O Lago dos Cisnes · 14 jun · 20h</div>
+          </div>
+        </div>
+
+        <!-- cupom -->
+        <div style="margin-bottom:16px;">
+          <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:8px;">Cupom</div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;background:oklch(0.145 0.013 48);border:1.5px solid oklch(0.52 0.14 155);border-radius:8px;padding:11px 13px;font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);">ESTREIA20</div>
+            <div style="background:oklch(0.52 0.14 155);color:#fff;font:600 13px/1 'Hanken Grotesk';padding:11px 14px;border-radius:8px;white-space:nowrap;">Aplicado ✓</div>
+          </div>
+          <div style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.50 0.14 155);margin-top:6px;">20% de desconto aplicado</div>
+        </div>
+
+        <!-- pagamento tabs -->
+        <div style="margin-bottom:14px;">
+          <div class="kick" style="color:oklch(0.55 0.012 55);margin-bottom:8px;">Pagamento</div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <div style="flex:1;background:oklch(0.55 0.16 20);border-radius:8px;padding:9px;text-align:center;font:600 13px/1 'Hanken Grotesk';color:#fff;">Cartão</div>
+            <div style="flex:1;background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:9px;text-align:center;font:500 13px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">Pix</div>
+          </div>
+          <div style="background:oklch(0.185 0.014 48);border:1px solid oklch(0.30 0.016 48);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
+            <div><div class="hk" style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-bottom:5px;">Número</div><div style="background:oklch(0.145 0.013 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:10px 12px;font:400 13px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);">•••• •••• •••• 4242</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div><div class="hk" style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-bottom:5px;">Validade</div><div style="background:oklch(0.145 0.013 48);border:1px solid oklch(0.30 0.016 48);border-radius:8px;padding:10px 12px;font:400 13px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);">12/28</div></div>
+              <div><div class="hk" style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-bottom:5px;">CVV</div><div style="background:oklch(0.145 0.013 48);border:1.5px solid oklch(0.55 0.16 20);border-radius:8px;padding:10px 12px;font:400 13px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);box-shadow:0 0 0 2px oklch(0.55 0.16 20/.18);">•••</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- total -->
+        <div style="background:oklch(0.22 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:10px;padding:14px;margin-bottom:4px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;"><span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">2× Plateia</span><span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.82 0.012 70);font-variant-numeric:tabular-nums;">R$ 360</span></div>
+            <div style="display:flex;justify-content:space-between;"><span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Desconto ESTREIA20</span><span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.50 0.14 155);font-variant-numeric:tabular-nums;">− R$ 72</span></div>
+            <div style="border-top:1px solid oklch(0.28 0.016 48);padding-top:8px;display:flex;justify-content:space-between;align-items:baseline;">
+              <span class="disp" style="font-weight:500;font-size:16px;color:oklch(0.95 0.012 80);">Total</span>
+              <span class="disp" style="font-weight:700;font-size:24px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 288</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA fixo -->
+      <div style="padding:12px 16px 6px;background:oklch(0.16 0.013 48);border-top:1px solid oklch(0.26 0.015 48);flex:none;">
+        <div style="background:oklch(0.55 0.16 20);color:#fff;font:600 15px/1 'Hanken Grotesk';padding:15px;border-radius:10px;text-align:center;">Confirmar pagamento · R$ 288</div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+<!-- ══ TELA 4: MEUS INGRESSOS ══════════════════════════════════ -->
+<div style="position:absolute;left:1290px;top:150px;">
+  <div data-drags-parent="1" class="sec-lbl">4 · Meus Ingressos</div>
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="true" hint-size="390px,844px">
+    <div style="height:100%;background:oklch(0.16 0.013 48);display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- header -->
+      <div style="padding:12px 20px 10px;border-bottom:1px solid oklch(0.26 0.015 48);flex:none;">
+        <div class="disp" style="font-weight:600;font-size:24px;color:oklch(0.95 0.012 80);">Meus Ingressos</div>
+        <div class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.58 0.012 58);margin-top:4px;">2 ingressos ativos</div>
+      </div>
+
+      <!-- lista de ingressos -->
+      <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+
+        <!-- ingresso 1 — próximo -->
+        <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:14px;overflow:hidden;">
+          <div style="height:4px;background:oklch(0.55 0.16 20);"></div>
+          <div style="padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div class="kick" style="color:oklch(0.70 0.13 22);">Plateia · Fila A</div>
+                <div class="disp" style="font-weight:600;font-size:22px;color:oklch(0.95 0.012 80);margin-top:4px;">Assento 3</div>
+                <div class="hk" style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-top:6px;">O Lago dos Cisnes<br>Sáb, 14 jun · 20h00</div>
+              </div>
+              <!-- QR mini -->
+              <div style="width:60px;height:60px;background:oklch(0.245 0.016 48);border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;margin-left:12px;">
+                <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect x="2" y="2" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="4" y="4" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="6" y="6" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="27" y="2" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="29" y="4" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="31" y="6" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="2" y="27" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="4" y="29" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="6" y="31" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="18" y="2" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="24" y="2" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="18" y="8" width="8" height="4" fill="oklch(0.95 0.012 80)"/><rect x="27" y="18" width="4" height="8" fill="oklch(0.95 0.012 80)"/><rect x="33" y="18" width="9" height="4" fill="oklch(0.95 0.012 80)"/><rect x="2" y="18" width="16" height="4" fill="oklch(0.95 0.012 80)"/><rect x="27" y="27" width="4" height="15" fill="oklch(0.95 0.012 80)"/><rect x="33" y="27" width="9" height="4" fill="oklch(0.95 0.012 80)"/><rect x="33" y="35" width="9" height="7" fill="oklch(0.95 0.012 80)"/><rect x="18" y="24" width="8" height="4" fill="oklch(0.95 0.012 80)"/><rect x="18" y="32" width="4" height="10" fill="oklch(0.95 0.012 80)"/></svg>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid oklch(0.28 0.016 48);">
+              <span class="badge" style="background:oklch(0.50 0.14 155);color:#fff;">válido</span>
+              <div style="flex:1;display:flex;gap:6px;justify-content:flex-end;">
+                <div style="border:1px solid oklch(0.30 0.016 48);color:oklch(0.72 0.012 65);font:500 11px/1 'Hanken Grotesk';padding:6px 12px;border-radius:6px;">Transferir</div>
+                <div style="border:1px solid oklch(0.30 0.016 48);color:oklch(0.72 0.012 65);font:500 11px/1 'Hanken Grotesk';padding:6px 12px;border-radius:6px;">Ver QR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ingresso 2 -->
+        <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.30 0.016 48);border-radius:14px;overflow:hidden;">
+          <div style="height:4px;background:oklch(0.55 0.16 20);"></div>
+          <div style="padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div class="kick" style="color:oklch(0.70 0.13 22);">Plateia · Fila A</div>
+                <div class="disp" style="font-weight:600;font-size:22px;color:oklch(0.95 0.012 80);margin-top:4px;">Assento 4</div>
+                <div class="hk" style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-top:6px;">O Lago dos Cisnes<br>Sáb, 14 jun · 20h00</div>
+              </div>
+              <div style="width:60px;height:60px;background:oklch(0.245 0.016 48);border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;margin-left:12px;">
+                <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><rect x="2" y="2" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="4" y="4" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="6" y="6" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="27" y="2" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="29" y="4" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="31" y="6" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="2" y="27" width="13" height="13" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="4" y="29" width="9" height="9" fill="oklch(0.245 0.016 48)"/><rect x="6" y="31" width="5" height="5" fill="oklch(0.95 0.012 80)"/><rect x="18" y="4" width="4" height="7" fill="oklch(0.95 0.012 80)"/><rect x="24" y="2" width="4" height="9" fill="oklch(0.95 0.012 80)"/><rect x="27" y="18" width="15" height="4" fill="oklch(0.95 0.012 80)"/><rect x="2" y="18" width="14" height="4" fill="oklch(0.95 0.012 80)"/><rect x="18" y="18" width="4" height="12" fill="oklch(0.95 0.012 80)"/><rect x="27" y="29" width="4" height="13" fill="oklch(0.95 0.012 80)"/><rect x="33" y="27" width="9" height="4" fill="oklch(0.95 0.012 80)"/><rect x="33" y="35" width="9" height="7" fill="oklch(0.95 0.012 80)"/><rect x="18" y="32" width="4" height="10" fill="oklch(0.95 0.012 80)"/><rect x="23" y="28" width="4" height="4" fill="oklch(0.95 0.012 80)"/></svg>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid oklch(0.28 0.016 48);">
+              <span class="badge" style="background:oklch(0.50 0.14 155);color:#fff;">válido</span>
+              <div style="flex:1;display:flex;gap:6px;justify-content:flex-end;">
+                <div style="border:1px solid oklch(0.30 0.016 48);color:oklch(0.72 0.012 65);font:500 11px/1 'Hanken Grotesk';padding:6px 12px;border-radius:6px;">Transferir</div>
+                <div style="border:1px solid oklch(0.30 0.016 48);color:oklch(0.72 0.012 65);font:500 11px/1 'Hanken Grotesk';padding:6px 12px;border-radius:6px;">Ver QR</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- tab bar -->
+      <div style="display:flex;background:oklch(0.135 0.012 48);border-top:1px solid oklch(0.24 0.014 48);padding:0 0 4px;flex:none;">
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="8" width="7" height="12" rx="1"/><rect x="13" y="2" width="7" height="18" rx="1"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Eventos</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="5" width="16" height="14" rx="2"/><path d="M3 9h16"/><path d="M8 3v2M14 3v2"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Agenda</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.55 0.16 20)" stroke-width="1.5" stroke-linecap="round"><path d="M3 5h14l-1.5 9H4.5L3 5z"/><circle cx="8" cy="19" r="1.5"/><circle cx="14" cy="19" r="1.5"/></svg>
+          <span style="font:600 10px/1 'Hanken Grotesk';color:oklch(0.55 0.16 20);">Ingressos</span>
+        </div>
+        <div class="tab">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="oklch(0.48 0.012 52)" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="8" r="4"/><path d="M3 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span style="font:400 10px/1 'Hanken Grotesk';color:oklch(0.48 0.012 52);">Perfil</span>
+        </div>
+      </div>
+    </div>
+  </x-import>
+</div>
+
+</x-dc>
+</body>
+</html>

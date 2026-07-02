@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .hk{font-family:'Hanken Grotesk',sans-serif;}
+  .kick{font:600 10px/1 'Hanken Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;}
+  .sec-lbl{font:600 11px/1.4 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b6058;margin-bottom:10px;}
+  .screen{background:oklch(0.16 0.013 48);border:1px solid oklch(0.28 0.016 48);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.28);display:flex;}
+  .sidebar{width:220px;background:oklch(0.135 0.012 48);border-right:1px solid oklch(0.24 0.014 48);display:flex;flex-direction:column;flex:none;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:11px 18px;font:500 13px/1 'Hanken Grotesk';color:oklch(0.62 0.012 60);cursor:pointer;border-radius:0;}
+  .nav-item.active{background:oklch(0.22 0.015 48);color:oklch(0.95 0.012 80);border-left:2px solid oklch(0.55 0.16 20);}
+  .nav-item.active svg{color:oklch(0.70 0.13 22);}
+  .badge-sm{font:600 10px/1 'Hanken Grotesk';padding:3px 7px;border-radius:5px;letter-spacing:.03em;}
+  .kpi{background:oklch(0.205 0.015 48);border:1px solid oklch(0.28 0.016 48);border-radius:12px;padding:20px 22px;}
+  .tr{display:grid;padding:11px 16px;align-items:center;border-bottom:1px solid oklch(0.235 0.014 48);}
+  .tr:last-child{border-bottom:none;}
+</style>
+</helmet>
+
+<!-- CABEÇALHO -->
+<div style="position:absolute;left:0;top:0;width:2800px;">
+  <div data-drags-parent="1" style="font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Painel do Organizador</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:20px 36px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.14);">
+    <div class="disp" style="font-weight:600;font-size:30px;color:oklch(0.95 0.012 80);">1 · Dashboard &nbsp;&nbsp; 2 · Check-in Scanner</div>
+    <div class="hk" style="font:400 13px/1.7 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Sidebar fixa · KPIs com hierarquia · DataTable · Scanner com 3 estados</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TELA 1 — DASHBOARD DE VENDAS
+     ══════════════════════════════════════════════════════════════ -->
+<div style="position:absolute;left:0;top:150px;width:1380px;">
+  <div data-drags-parent="1" class="sec-lbl">1 · Dashboard de Vendas</div>
+  <div class="screen" style="height:760px;">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div style="padding:20px 18px 16px;border-bottom:1px solid oklch(0.22 0.014 48);">
+        <div class="disp" style="font-weight:700;font-size:17px;color:oklch(0.95 0.012 80);letter-spacing:.06em;">INGRESSO<span style="color:oklch(0.55 0.16 20);">.</span></div>
+        <div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.50 0.012 52);margin-top:5px;">Theatro Municipal SP</div>
+      </div>
+
+      <div style="padding:12px 0;flex:1;overflow-y:auto;">
+        <div class="kick" style="color:oklch(0.42 0.012 50);padding:8px 18px 4px;">Principal</div>
+
+        <div class="nav-item active">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="1" y="1" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="1" width="5.5" height="5.5" rx="1"/><rect x="1" y="8.5" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="1" y="3" width="13" height="10" rx="1.5"/><path d="M1 6h13"/><path d="M5 1v2M10 1v2"/></svg>
+          Eventos
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7.5 1L2 5v9h4V9h3v5h4V5L7.5 1z"/></svg>
+          Locais
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7.5" cy="7.5" r="6"/><path d="M5 7.5l1.5 1.5 3.5-3"/></svg>
+          Cupons
+        </div>
+
+        <div class="kick" style="color:oklch(0.42 0.012 50);padding:16px 18px 4px;">Operação</div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 4h11M2 7.5h7M2 11h5"/></svg>
+          Pedidos
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 4l6.5 6.5L14 4"/><path d="M1 4h13"/></svg>
+          Ingressos
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="1" width="9" height="13" rx="1.5"/><path d="M6 5h3M6 8h3M6 11h1.5"/></svg>
+          Relatórios
+        </div>
+        <div class="nav-item">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="1" y="3.5" width="9" height="9" rx="1.5"/><path d="M5 1h9v9"/><path d="M5.5 7.5h2M5.5 10h2"/></svg>
+          Check-in
+        </div>
+      </div>
+
+      <div style="padding:14px 16px;border-top:1px solid oklch(0.22 0.014 48);display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:999px;background:oklch(0.30 0.04 22);display:flex;align-items:center;justify-content:center;flex:none;">
+          <span style="font:600 13px/1 'Hanken Grotesk';color:oklch(0.85 0.08 30);">A</span>
+        </div>
+        <div><div class="hk" style="font:600 12px/1.2 'Hanken Grotesk';color:oklch(0.88 0.012 70);">Ana Oliveira</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">admin</div></div>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div style="flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:22px;">
+
+      <!-- cabeçalho página -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="disp" style="font-weight:600;font-size:26px;color:oklch(0.95 0.012 80);">Dashboard</div>
+          <div class="hk" style="font:400 13px/1 'Hanken Grotesk';color:oklch(0.58 0.012 58);margin-top:5px;">O Lago dos Cisnes · Sáb, 14 jun 2026 · 20h00</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.28 0.016 48);border-radius:8px;padding:9px 14px;font:500 13px/1 'Hanken Grotesk';color:oklch(0.78 0.012 68);">Última atualização: agora</div>
+          <div style="background:oklch(0.55 0.16 20);color:#fff;font:600 13px/1 'Hanken Grotesk';padding:9px 16px;border-radius:8px;">Emitir cortesia</div>
+        </div>
+      </div>
+
+      <!-- KPIs — métrica primária top-left -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:12px;">
+
+        <!-- PRIMÁRIA: receita -->
+        <div class="kpi" style="border-color:oklch(0.34 0.04 22);">
+          <div class="kick" style="color:oklch(0.58 0.012 55);">Receita total</div>
+          <div class="disp" style="font-weight:700;font-size:36px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:8px;line-height:1;">R$ 48.600</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+            <span style="font:600 12px/1 'Hanken Grotesk';color:oklch(0.50 0.14 155);">↑ +12%</span>
+            <span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">vs semana passada</span>
+          </div>
+        </div>
+
+        <!-- ingressos vendidos -->
+        <div class="kpi">
+          <div class="kick" style="color:oklch(0.58 0.012 55);">Ingressos</div>
+          <div class="disp" style="font-weight:700;font-size:32px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:8px;line-height:1;">270</div>
+          <div style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:8px;">de 420 disponíveis</div>
+          <!-- mini barra de ocupação -->
+          <div style="background:oklch(0.26 0.014 48);border-radius:4px;height:4px;margin-top:10px;overflow:hidden;">
+            <div style="width:64%;height:100%;background:oklch(0.52 0.14 155);border-radius:4px;"></div>
+          </div>
+        </div>
+
+        <!-- ocupação -->
+        <div class="kpi">
+          <div class="kick" style="color:oklch(0.58 0.012 55);">Ocupação</div>
+          <div class="disp" style="font-weight:700;font-size:32px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:8px;line-height:1;">64%</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+            <span style="font:600 12px/1 'Hanken Grotesk';color:oklch(0.50 0.14 155);">↑ +8pp</span>
+            <span style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">vs ontem</span>
+          </div>
+        </div>
+
+        <!-- pedidos hoje -->
+        <div class="kpi">
+          <div class="kick" style="color:oklch(0.58 0.012 55);">Pedidos hoje</div>
+          <div class="disp" style="font-weight:700;font-size:32px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:8px;line-height:1;">34</div>
+          <div style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:8px;">últimas 24h</div>
+        </div>
+
+        <!-- reembolsos -->
+        <div class="kpi">
+          <div class="kick" style="color:oklch(0.58 0.012 55);">Reembolsos</div>
+          <div class="disp" style="font-weight:700;font-size:32px;color:oklch(0.80 0.12 78);font-variant-numeric:tabular-nums;margin-top:8px;line-height:1;">3</div>
+          <div style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:8px;">pendentes</div>
+        </div>
+
+      </div>
+
+      <!-- gráfico simplificado + tabela -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;">
+
+        <!-- mini gráfico de barras -->
+        <div class="kpi">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">
+            <div class="kick" style="color:oklch(0.58 0.012 55);">Vendas por dia</div>
+            <div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.50 0.012 52);">últimos 7 dias</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:100px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .35);border-radius:3px 3px 0 0;height:30px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">seg</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .35);border-radius:3px 3px 0 0;height:48px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">ter</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .35);border-radius:3px 3px 0 0;height:38px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">qua</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .35);border-radius:3px 3px 0 0;height:60px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">qui</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .35);border-radius:3px 3px 0 0;height:75px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">sex</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155);border-radius:3px 3px 0 0;height:96px;"></div>
+              <span class="kick" style="color:oklch(0.52 0.14 155);font-size:8px;">sáb</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;">
+              <div style="width:100%;background:oklch(0.52 0.14 155 / .25);border-radius:3px 3px 0 0;height:20px;"></div>
+              <span class="kick" style="color:oklch(0.46 0.012 50);font-size:8px;">dom</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- tabela de pedidos recentes -->
+        <div class="kpi" style="padding:0;overflow:hidden;">
+          <div style="padding:16px 18px;border-bottom:1px solid oklch(0.26 0.015 48);display:flex;justify-content:space-between;align-items:center;">
+            <div class="kick" style="color:oklch(0.58 0.012 55);">Pedidos recentes</div>
+            <span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.70 0.13 22);cursor:pointer;">Ver todos →</span>
+          </div>
+          <!-- header tabela -->
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;background:oklch(0.185 0.014 48);border-bottom:1px solid oklch(0.26 0.015 48);">
+            <span class="kick" style="color:oklch(0.48 0.012 52);">Comprador</span>
+            <span class="kick" style="color:oklch(0.48 0.012 52);">Assentos</span>
+            <span class="kick" style="color:oklch(0.48 0.012 52);">Total</span>
+            <span class="kick" style="color:oklch(0.48 0.012 52);">Status</span>
+          </div>
+          <!-- rows -->
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;">
+            <div><div class="hk" style="font:500 13px/1.2 'Hanken Grotesk';color:oklch(0.90 0.012 72);">Marina Alves</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">há 3 min</div></div>
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">A3, A4</span>
+            <span class="hk" style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);font-variant-numeric:tabular-nums;">R$ 288</span>
+            <span class="badge-sm" style="background:oklch(0.50 0.14 155);color:#fff;width:fit-content;">pago</span>
+          </div>
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;">
+            <div><div class="hk" style="font:500 13px/1.2 'Hanken Grotesk';color:oklch(0.90 0.012 72);">Carlos Melo</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">há 11 min</div></div>
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">B6</span>
+            <span class="hk" style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);font-variant-numeric:tabular-nums;">R$ 180</span>
+            <span class="badge-sm" style="background:oklch(0.50 0.14 155);color:#fff;width:fit-content;">pago</span>
+          </div>
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;">
+            <div><div class="hk" style="font:500 13px/1.2 'Hanken Grotesk';color:oklch(0.90 0.012 72);">Fernanda Luz</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">há 24 min</div></div>
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">C2, C3</span>
+            <span class="hk" style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);font-variant-numeric:tabular-nums;">R$ 360</span>
+            <span class="badge-sm" style="background:oklch(0.58 0.14 72);color:#fff;width:fit-content;">pendente</span>
+          </div>
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;">
+            <div><div class="hk" style="font:500 13px/1.2 'Hanken Grotesk';color:oklch(0.90 0.012 72);">Paulo Ramos</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">há 38 min</div></div>
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">D7, D8</span>
+            <span class="hk" style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);font-variant-numeric:tabular-nums;">R$ 360</span>
+            <span class="badge-sm" style="background:oklch(0.50 0.14 155);color:#fff;width:fit-content;">pago</span>
+          </div>
+          <div class="tr" style="grid-template-columns:1fr 100px 80px 80px;">
+            <div><div class="hk" style="font:500 13px/1.2 'Hanken Grotesk';color:oklch(0.90 0.012 72);">Lúcia Brant</div><div class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);margin-top:3px;">há 52 min</div></div>
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">E1</span>
+            <span class="hk" style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.90 0.012 72);font-variant-numeric:tabular-nums;">R$ 0</span>
+            <span class="badge-sm" style="background:oklch(0.40 0.012 50);color:#fff;width:fit-content;">cortesia</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TELA 2 — CHECK-IN SCANNER (3 estados)
+     ══════════════════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1460px;top:150px;width:1280px;">
+  <div data-drags-parent="1" class="sec-lbl">2 · Check-in Scanner · 3 estados</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+
+    <!-- ESTADO 1: aguardando leitura -->
+    <div>
+      <div class="kick" style="color:oklch(0.50 0.012 52);margin-bottom:8px;">Aguardando</div>
+      <div class="screen" style="flex-direction:column;height:680px;">
+        <div style="background:oklch(0.135 0.012 48);border-bottom:1px solid oklch(0.24 0.014 48);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <div class="disp" style="font-weight:600;font-size:16px;color:oklch(0.95 0.012 80);">Check-in</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;background:oklch(0.52 0.14 155);border-radius:50%;"></div>
+            <span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">Ao vivo</span>
+          </div>
+        </div>
+        <!-- câmera placeholder -->
+        <div style="flex:1;background:oklch(0.11 0.010 48);display:flex;align-items:center;justify-content:center;position:relative;">
+          <!-- scan frame -->
+          <div style="width:200px;height:200px;position:relative;">
+            <div style="position:absolute;top:0;left:0;width:28px;height:28px;border-top:2.5px solid oklch(0.72 0.012 65);border-left:2.5px solid oklch(0.72 0.012 65);border-radius:2px 0 0 0;"></div>
+            <div style="position:absolute;top:0;right:0;width:28px;height:28px;border-top:2.5px solid oklch(0.72 0.012 65);border-right:2.5px solid oklch(0.72 0.012 65);border-radius:0 2px 0 0;"></div>
+            <div style="position:absolute;bottom:0;left:0;width:28px;height:28px;border-bottom:2.5px solid oklch(0.72 0.012 65);border-left:2.5px solid oklch(0.72 0.012 65);border-radius:0 0 0 2px;"></div>
+            <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-bottom:2.5px solid oklch(0.72 0.012 65);border-right:2.5px solid oklch(0.72 0.012 65);border-radius:0 0 2px 0;"></div>
+            <!-- linha de scan animada como estática -->
+            <div style="position:absolute;top:48%;left:8px;right:8px;height:1.5px;background:linear-gradient(90deg,transparent,oklch(0.72 0.012 65),transparent);"></div>
+          </div>
+          <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;">
+            <span class="hk" style="font:400 13px/1 'Hanken Grotesk';color:oklch(0.55 0.012 55);">Aponte para o QR do ingresso</span>
+          </div>
+        </div>
+        <!-- rodapé info -->
+        <div style="padding:16px 20px;background:oklch(0.185 0.014 48);border-top:1px solid oklch(0.26 0.015 48);">
+          <div class="hk" style="font:500 12px/1.2 'Hanken Grotesk';color:oklch(0.68 0.012 62);">O Lago dos Cisnes · 14 jun · 20h</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">Check-ins realizados</span>
+            <span class="disp" style="font-weight:500;font-size:16px;color:oklch(0.92 0.012 75);font-variant-numeric:tabular-nums;">138 / 270</span>
+          </div>
+          <div style="background:oklch(0.26 0.014 48);border-radius:4px;height:4px;margin-top:8px;overflow:hidden;">
+            <div style="width:51%;height:100%;background:oklch(0.52 0.14 155);border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADO 2: válido / ok -->
+    <div>
+      <div class="kick" style="color:oklch(0.50 0.14 155);margin-bottom:8px;">✓ Válido</div>
+      <div class="screen" style="flex-direction:column;height:680px;">
+        <div style="background:oklch(0.135 0.012 48);border-bottom:1px solid oklch(0.24 0.014 48);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <div class="disp" style="font-weight:600;font-size:16px;color:oklch(0.95 0.012 80);">Check-in</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;background:oklch(0.52 0.14 155);border-radius:50%;"></div>
+            <span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">Ao vivo</span>
+          </div>
+        </div>
+        <!-- feedback OK -->
+        <div style="flex:1;background:oklch(0.16 0.04 155);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;">
+          <div style="width:80px;height:80px;border-radius:50%;background:oklch(0.52 0.14 155);display:flex;align-items:center;justify-content:center;">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M8 20l8 8 16-16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="disp" style="font-weight:700;font-size:28px;color:oklch(0.95 0.012 80);text-align:center;">Entrada liberada</div>
+          <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.30 0.018 48);border-radius:12px;padding:18px 22px;width:100%;">
+            <div class="kick" style="color:oklch(0.52 0.14 155);margin-bottom:8px;">Ingresso válido</div>
+            <div class="disp" style="font-weight:600;font-size:22px;color:oklch(0.95 0.012 80);">Plateia · A3</div>
+            <div class="hk" style="font:400 13px/1.6 'Hanken Grotesk';color:oklch(0.68 0.012 62);margin-top:6px;">Marina Alves Costa<br>Inteira · R$ 288</div>
+            <div style="border-top:1px solid oklch(0.28 0.016 48);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;">
+              <span class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">Código</span>
+              <span class="hk" style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);font-variant-numeric:tabular-nums;">01JXMK2P…</span>
+            </div>
+          </div>
+          <div style="background:oklch(0.52 0.14 155);color:#fff;font:600 14px/1 'Hanken Grotesk';padding:13px;border-radius:8px;text-align:center;width:100%;">Próxima leitura</div>
+        </div>
+        <div style="padding:16px 20px;background:oklch(0.185 0.014 48);border-top:1px solid oklch(0.26 0.015 48);">
+          <div class="hk" style="font:500 12px/1.2 'Hanken Grotesk';color:oklch(0.68 0.012 62);">O Lago dos Cisnes · 14 jun · 20h</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">Check-ins realizados</span>
+            <span class="disp" style="font-weight:500;font-size:16px;color:oklch(0.92 0.012 75);font-variant-numeric:tabular-nums;">139 / 270</span>
+          </div>
+          <div style="background:oklch(0.26 0.014 48);border-radius:4px;height:4px;margin-top:8px;overflow:hidden;">
+            <div style="width:51.5%;height:100%;background:oklch(0.52 0.14 155);border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADO 3: inválido / já usado -->
+    <div>
+      <div class="kick" style="color:oklch(0.62 0.20 27);margin-bottom:8px;">✕ Recusado</div>
+      <div class="screen" style="flex-direction:column;height:680px;">
+        <div style="background:oklch(0.135 0.012 48);border-bottom:1px solid oklch(0.24 0.014 48);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <div class="disp" style="font-weight:600;font-size:16px;color:oklch(0.95 0.012 80);">Check-in</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:8px;height:8px;background:oklch(0.52 0.14 155);border-radius:50%;"></div>
+            <span class="hk" style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);">Ao vivo</span>
+          </div>
+        </div>
+        <!-- feedback INVÁLIDO -->
+        <div style="flex:1;background:oklch(0.17 0.025 27);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;">
+          <div style="width:80px;height:80px;border-radius:50%;background:oklch(0.52 0.19 27);display:flex;align-items:center;justify-content:center;">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M12 12l16 16M28 12L12 28" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="disp" style="font-weight:700;font-size:28px;color:oklch(0.95 0.012 80);text-align:center;">Acesso negado</div>
+          <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.34 0.04 27);border-radius:12px;padding:18px 22px;width:100%;">
+            <div class="kick" style="color:oklch(0.62 0.20 27);margin-bottom:8px;">Ingresso já utilizado</div>
+            <div class="disp" style="font-weight:600;font-size:22px;color:oklch(0.95 0.012 80);">Plateia · B6</div>
+            <div class="hk" style="font:400 13px/1.6 'Hanken Grotesk';color:oklch(0.68 0.012 62);margin-top:6px;">Carlos Melo<br>Check-in realizado às 19h42</div>
+            <div style="border-top:1px solid oklch(0.28 0.016 48);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;">
+              <span class="hk" style="font:400 11px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">Código</span>
+              <span class="hk" style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.68 0.012 62);font-variant-numeric:tabular-nums;">02JXMK4R…</span>
+            </div>
+          </div>
+          <div style="border:1px solid oklch(0.34 0.04 27);color:oklch(0.68 0.16 27);font:600 14px/1 'Hanken Grotesk';padding:13px;border-radius:8px;text-align:center;width:100%;">Registrar ocorrência</div>
+          <div style="background:oklch(0.205 0.015 48);border:1px solid oklch(0.30 0.016 48);color:oklch(0.78 0.012 68);font:500 14px/1 'Hanken Grotesk';padding:12px;border-radius:8px;text-align:center;width:100%;">Próxima leitura</div>
+        </div>
+        <div style="padding:16px 20px;background:oklch(0.185 0.014 48);border-top:1px solid oklch(0.26 0.015 48);">
+          <div class="hk" style="font:500 12px/1.2 'Hanken Grotesk';color:oklch(0.68 0.012 62);">O Lago dos Cisnes · 14 jun · 20h</div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;">
+            <span class="hk" style="font:400 12px/1 'Hanken Grotesk';color:oklch(0.52 0.012 52);">Check-ins realizados</span>
+            <span class="disp" style="font-weight:500;font-size:16px;color:oklch(0.92 0.012 75);font-variant-numeric:tabular-nums;">138 / 270</span>
+          </div>
+          <div style="background:oklch(0.26 0.014 48);border-radius:4px;height:4px;margin-top:8px;overflow:hidden;">
+            <div style="width:51%;height:100%;background:oklch(0.52 0.14 155);border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

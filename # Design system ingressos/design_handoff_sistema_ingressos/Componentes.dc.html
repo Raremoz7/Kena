@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .hk{font-family:'Hanken Grotesk',sans-serif;}
+  .kick{font:600 10px/1 'Hanken Grotesk',sans-serif;letter-spacing:.22em;text-transform:uppercase;}
+  .sec{font:600 11px/1.4 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b6058;margin-bottom:14px;}
+  .frame{background:oklch(0.205 0.015 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:28px;}
+  .divider{border:none;border-top:1px solid oklch(0.27 0.015 48);margin:20px 0;}
+  .inp{background:oklch(0.16 0.013 48);border:1px solid oklch(0.31 0.018 48);border-radius:8px;padding:12px 14px;font:400 14px/1 'Hanken Grotesk',sans-serif;color:oklch(0.95 0.012 80);width:100%;}
+</style>
+</helmet>
+
+<!-- ──────────────────────────────────────────────────────────────────
+     CABEÇALHO
+     ────────────────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:0;top:0;width:1280px;">
+  <div data-drags-parent="1" style="font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#555;margin-bottom:10px;">Biblioteca de Componentes · Veludo</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;padding:24px 36px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.14);">
+    <div class="disp" style="font-weight:600;font-size:34px;color:oklch(0.95 0.012 80);">Atoms &amp; Molecules</div>
+    <div class="hk" style="font:400 13px/1.7 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Oswald · Hanken Grotesk · vinho · cantos 6 / 8 / 12px<br>Sem fundo tintado — bordas e texto carregam o estado</div>
+  </div>
+</div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     COL 1 — BOTÕES + INPUTS
+     ────────────────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:0;top:190px;width:390px;">
+
+  <!-- BOTÕES -->
+  <div data-drags-parent="1" class="sec">Botões</div>
+  <div class="frame">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <!-- primário -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 14px/1 'Hanken Grotesk';padding:14px 22px;border-radius:8px;flex:1;text-align:center;">Comprar ingresso</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">primário</div>
+      </div>
+      <!-- hover -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="background:oklch(0.61 0.16 20);color:oklch(0.97 0.01 40);font:600 14px/1 'Hanken Grotesk';padding:14px 22px;border-radius:8px;flex:1;text-align:center;box-shadow:0 0 0 3px oklch(0.55 0.16 20 / .22);">Comprar ingresso</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">hover</div>
+      </div>
+      <!-- secundário -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="border:1px solid oklch(0.40 0.02 48);color:oklch(0.88 0.012 70);font:500 14px/1 'Hanken Grotesk';padding:13px 22px;border-radius:8px;flex:1;text-align:center;">Ver mapa</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">secundário</div>
+      </div>
+      <!-- ghost texto -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="color:oklch(0.70 0.13 22);font:600 14px/1 'Hanken Grotesk';padding:14px 22px;flex:1;">Cancelar reserva</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">texto</div>
+      </div>
+      <!-- destructive -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="border:1px solid oklch(0.62 0.20 27);color:oklch(0.68 0.20 27);font:600 14px/1 'Hanken Grotesk';padding:13px 22px;border-radius:8px;flex:1;text-align:center;">Cancelar pedido</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">danger</div>
+      </div>
+      <!-- desativado -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="background:oklch(0.27 0.012 48);color:oklch(0.48 0.01 50);font:600 14px/1 'Hanken Grotesk';padding:14px 22px;border-radius:8px;flex:1;text-align:center;cursor:not-allowed;">Esgotado</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);">disabled</div>
+      </div>
+      <!-- sm -->
+      <div style="display:flex;gap:9px;align-items:center;">
+        <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 12px/1 'Hanken Grotesk';padding:9px 16px;border-radius:6px;">Transferir</div>
+        <div style="border:1px solid oklch(0.40 0.02 48);color:oklch(0.88 0.012 70);font:500 12px/1 'Hanken Grotesk';padding:8px 14px;border-radius:6px;">Reembolso</div>
+        <div class="kick" style="color:oklch(0.55 0.012 50);margin-left:auto;">sm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADGES / STATUS -->
+  <div data-drags-parent="1" class="sec" style="margin-top:24px;">Badges · Status (sem fundo tintado)</div>
+  <div class="frame">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+      <span style="background:oklch(0.50 0.14 155);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">pago</span>
+      <span style="background:oklch(0.58 0.14 72);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">pendente</span>
+      <span style="background:oklch(0.52 0.19 27);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">cancelado</span>
+      <span style="background:oklch(0.55 0.16 20);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">em venda</span>
+      <span style="background:oklch(0.40 0.012 50);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">rascunho</span>
+      <span style="background:oklch(0.48 0.12 230);color:#fff;font:600 11px/1 'Hanken Grotesk';padding:5px 11px;border-radius:6px;letter-spacing:.04em;">transferido</span>
+    </div>
+    <hr class="divider">
+    <!-- tags de categoria — apenas texto, sem box -->
+    <div class="kick" style="color:oklch(0.55 0.012 50);margin-bottom:10px;">Tags de categoria · só texto</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;">
+      <span class="kick" style="color:oklch(0.70 0.13 22);">Bailado</span>
+      <span class="kick" style="color:oklch(0.70 0.13 22);">Teatro</span>
+      <span class="kick" style="color:oklch(0.70 0.13 22);">Ópera</span>
+      <span class="kick" style="color:oklch(0.70 0.13 22);">Infantil</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     COL 2 — INPUTS + FORM + TOAST
+     ────────────────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:450px;top:190px;width:390px;">
+
+  <!-- INPUTS -->
+  <div data-drags-parent="1" class="sec">Inputs</div>
+  <div class="frame">
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <!-- default -->
+      <div>
+        <div style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.80 0.012 70);margin-bottom:7px;">E-mail</div>
+        <input class="inp" style="outline:none;" placeholder="nome@email.com" readonly>
+      </div>
+      <!-- foco -->
+      <div>
+        <div style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.80 0.012 70);margin-bottom:7px;">CPF</div>
+        <div style="background:oklch(0.16 0.013 48);border:1.5px solid oklch(0.55 0.16 20);border-radius:8px;padding:12px 14px;font:400 14px/1 'Hanken Grotesk';color:oklch(0.95 0.012 80);box-shadow:0 0 0 3px oklch(0.55 0.16 20 / .18);">000.000.000-00</div>
+        <div style="font:400 12px/1.4 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-top:6px;">Necessário para a nota fiscal.</div>
+      </div>
+      <!-- erro -->
+      <div>
+        <div style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.80 0.012 70);margin-bottom:7px;">Código do cupom</div>
+        <div style="background:oklch(0.16 0.013 48);border:1.5px solid oklch(0.62 0.20 27);border-radius:8px;padding:12px 14px;font:400 14px/1 'Hanken Grotesk';color:oklch(0.95 0.012 80);">PROMO2024</div>
+        <div style="font:500 12px/1.4 'Hanken Grotesk';color:oklch(0.62 0.20 27);margin-top:6px;">Este cupom expirou em 31 dez 2024.</div>
+      </div>
+      <!-- desativado -->
+      <div>
+        <div style="font:500 13px/1 'Hanken Grotesk';color:oklch(0.55 0.01 50);margin-bottom:7px;">Sessão</div>
+        <div style="background:oklch(0.18 0.01 48);border:1px solid oklch(0.27 0.012 48);border-radius:8px;padding:12px 14px;font:400 14px/1 'Hanken Grotesk';color:oklch(0.48 0.01 50);cursor:not-allowed;">14 jun 2026 · 20h00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div data-drags-parent="1" class="sec" style="margin-top:24px;">Toasts · Notificações</div>
+  <div class="frame">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="border:1px solid oklch(0.70 0.13 155);border-left:3px solid oklch(0.70 0.13 155);border-radius:8px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:1px;"><circle cx="8" cy="8" r="7" stroke="oklch(0.70 0.13 155)" stroke-width="1.4"/><path d="M5.5 8l1.8 1.8L10.5 6" stroke="oklch(0.70 0.13 155)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.88 0.012 70);">Pagamento confirmado</div><div style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.68 0.012 60);margin-top:4px;">Seus ingressos chegam no e-mail em instantes.</div></div>
+      </div>
+      <div style="border:1px solid oklch(0.80 0.12 78);border-left:3px solid oklch(0.80 0.12 78);border-radius:8px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:1px;"><circle cx="8" cy="8" r="7" stroke="oklch(0.80 0.12 78)" stroke-width="1.4"/><path d="M8 5v3.5" stroke="oklch(0.80 0.12 78)" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r=".8" fill="oklch(0.80 0.12 78)"/></svg>
+        <div><div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.88 0.012 70);">Reserva expira em 04:32</div><div style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.68 0.012 60);margin-top:4px;">Finalize o pagamento antes que os assentos sejam liberados.</div></div>
+      </div>
+      <div style="border:1px solid oklch(0.62 0.20 27);border-left:3px solid oklch(0.62 0.20 27);border-radius:8px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex:none;margin-top:1px;"><circle cx="8" cy="8" r="7" stroke="oklch(0.62 0.20 27)" stroke-width="1.4"/><path d="M6 6l4 4M10 6l-4 4" stroke="oklch(0.62 0.20 27)" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <div><div style="font:600 13px/1.2 'Hanken Grotesk';color:oklch(0.88 0.012 70);">Assento já foi reservado</div><div style="font:400 12px/1.5 'Hanken Grotesk';color:oklch(0.68 0.012 60);margin-top:4px;">Fila A · 12 foi reservado por outra pessoa. Escolha outro assento.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     COL 3 — TICKET STUB + EMPTY STATE + PRICE SUMMARY
+     ────────────────────────────────────────────────────────────────── -->
+<div style="position:absolute;left:900px;top:190px;width:380px;">
+
+  <!-- TICKET STUB -->
+  <div data-drags-parent="1" class="sec">Ingresso (stub)</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.295 0.018 48);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.16);">
+    <div style="height:5px;background:oklch(0.55 0.16 20);"></div>
+    <div style="padding:22px 24px;display:flex;gap:20px;align-items:stretch;">
+      <div style="flex:1;">
+        <div class="kick" style="color:oklch(0.70 0.13 22);">Plateia · Fila A</div>
+        <div class="disp" style="font-weight:600;font-size:36px;line-height:1;color:oklch(0.95 0.012 80);margin-top:6px;">Assento 12</div>
+        <div style="font:400 13px/1.5 'Hanken Grotesk';color:oklch(0.68 0.015 70);margin-top:10px;">O Lago dos Cisnes<br>Sáb, 14 jun 2026 · 20h00<br>Theatro Municipal</div>
+        <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+          <span style="background:oklch(0.50 0.14 155);color:#fff;font:600 10px/1 'Hanken Grotesk';padding:4px 9px;border-radius:6px;letter-spacing:.04em;">válido</span>
+          <span style="font:500 12px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">Inteira · R$ 180</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding-left:18px;border-left:1px dashed oklch(0.31 0.018 48);">
+        <div style="width:72px;height:72px;background:oklch(0.245 0.016 48);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+          <svg width="50" height="50" viewBox="0 0 50 50" fill="none"><rect x="2" y="2" width="16" height="16" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="5" y="5" width="10" height="10" fill="oklch(0.16 0.013 48)"/><rect x="8" y="8" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="32" y="2" width="16" height="16" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="35" y="5" width="10" height="10" fill="oklch(0.16 0.013 48)"/><rect x="38" y="8" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="2" y="32" width="16" height="16" rx="1" fill="oklch(0.95 0.012 80)"/><rect x="5" y="35" width="10" height="10" fill="oklch(0.16 0.013 48)"/><rect x="8" y="38" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="22" y="2" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="28" y="2" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="22" y="8" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="22" y="14" width="8" height="4" fill="oklch(0.95 0.012 80)"/><rect x="32" y="22" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="38" y="22" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="44" y="22" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="2" y="22" width="18" height="4" fill="oklch(0.95 0.012 80)"/><rect x="32" y="32" width="4" height="12" fill="oklch(0.95 0.012 80)"/><rect x="38" y="28" width="4" height="4" fill="oklch(0.95 0.012 80)"/><rect x="44" y="32" width="4" height="12" fill="oklch(0.95 0.012 80)"/><rect x="38" y="38" width="4" height="6" fill="oklch(0.95 0.012 80)"/><rect x="22" y="28" width="8" height="4" fill="oklch(0.95 0.012 80)"/><rect x="22" y="36" width="4" height="8" fill="oklch(0.95 0.012 80)"/><rect x="28" y="40" width="4" height="4" fill="oklch(0.95 0.012 80)"/></svg>
+        </div>
+        <span style="font:500 10px/1 'Hanken Grotesk';color:oklch(0.55 0.012 50);">QR único · opaco</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div data-drags-parent="1" class="sec" style="margin-top:24px;">Empty State · voz do domínio</div>
+  <div class="frame" style="text-align:center;padding:36px 28px;">
+    <div style="width:56px;height:56px;border:1px solid oklch(0.31 0.018 48);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.60 0.012 60)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v-7a1 1 0 00-1-1H5a1 1 0 00-1 1v7"/><path d="M2 12h20"/><path d="M12 12v9"/><path d="M8 17l4-5 4 5"/></svg>
+    </div>
+    <div class="disp" style="font-weight:500;font-size:20px;color:oklch(0.88 0.012 70);">Nenhum ingresso ainda</div>
+    <div style="font:400 13px/1.6 'Hanken Grotesk';color:oklch(0.60 0.012 60);margin-top:8px;max-width:240px;margin-left:auto;margin-right:auto;">Quando você comprar um ingresso, ele aparece aqui — com o QR e todas as informações do evento.</div>
+    <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 13px/1 'Hanken Grotesk';padding:12px 22px;border-radius:8px;display:inline-block;margin-top:20px;">Explorar eventos</div>
+  </div>
+
+  <!-- PRICE SUMMARY -->
+  <div data-drags-parent="1" class="sec" style="margin-top:24px;">Resumo de preço</div>
+  <div class="frame" style="padding:22px 24px;">
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font:400 14px/1 'Hanken Grotesk';color:oklch(0.70 0.015 70);">2× Inteira · Plateia A12, A13</span><span style="font:500 14px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);font-variant-numeric:tabular-nums;">R$ 360</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font:400 14px/1 'Hanken Grotesk';color:oklch(0.70 0.15 70);">Cupom ESTREIA20</span><span style="font:500 14px/1 'Hanken Grotesk';color:oklch(0.70 0.13 155);font-variant-numeric:tabular-nums;">− R$ 72</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font:400 14px/1 'Hanken Grotesk';color:oklch(0.70 0.015 70);">Taxa de serviço</span><span style="font:500 14px/1 'Hanken Grotesk';color:oklch(0.88 0.012 70);font-variant-numeric:tabular-nums;">R$ 28,80</span></div>
+      <hr class="divider" style="margin:6px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <span class="disp" style="font-weight:500;font-size:20px;color:oklch(0.95 0.012 80);">Total</span>
+        <span class="disp" style="font-weight:600;font-size:26px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;">R$ 316,80</span>
+      </div>
+      <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 15px/1 'Hanken Grotesk';padding:15px;border-radius:8px;text-align:center;margin-top:4px;">Pagar agora</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

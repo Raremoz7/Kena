@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .kick{font:600 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.24em;text-transform:uppercase;}
+  .disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.01em;}
+  .body{font-family:'Hanken Grotesk',sans-serif;}
+  .seat{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font:600 15px/1 'Hanken Grotesk',sans-serif;border-radius:8px;}
+  .frame{background:oklch(0.205 0.015 48);border:1px solid oklch(0.31 0.018 48);border-radius:14px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.18);}
+  .tok{font:500 11px/1.4 'Hanken Grotesk',sans-serif;color:oklch(0.70 0.015 70);}
+  .tokname{font:600 12px/1.4 'Hanken Grotesk',sans-serif;color:oklch(0.95 0.012 80);}
+</style>
+</helmet>
+
+<!-- INTRO -->
+<div style="position:absolute;left:0;top:0;width:1240px;">
+  <div data-drags-parent="1" style="font:600 12px/1.4 'Hanken Grotesk',sans-serif;color:#3a3a3a;letter-spacing:.04em;margin-bottom:10px;">ESTILO DA CASA · VELUDO REFINADO</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.31 0.018 48);border-radius:14px;padding:34px 40px;display:flex;justify-content:space-between;align-items:center;gap:40px;box-shadow:0 1px 3px rgba(0,0,0,.12);">
+    <div>
+      <div class="disp" style="font-weight:600;font-size:44px;line-height:1.0;color:oklch(0.95 0.012 80);">Veludo</div>
+      <div class="body" style="font:400 15px/1.6 'Hanken Grotesk',sans-serif;color:oklch(0.70 0.015 70);margin-top:10px;max-width:640px;">Base quente (vinho · cortina) da direção A · cantos suaves da C · títulos de evento em Oswald caixa alta da B. Body em Hanken Grotesk. Estes tokens viram a fonte de verdade de todo o sistema.</div>
+    </div>
+    <div class="body" style="text-align:right;font:500 12px/1.8 'Hanken Grotesk',sans-serif;color:oklch(0.60 0.012 60);white-space:nowrap;">Oswald · títulos<br>Hanken Grotesk · corpo<br>Acento vinho · cantos suaves</div>
+  </div>
+</div>
+
+<!-- HERO APLICADO -->
+<div style="position:absolute;left:0;top:215px;width:600px;">
+  <div data-drags-parent="1" style="font:600 13px/1.4 'Hanken Grotesk',sans-serif;color:#2c2c2c;margin-bottom:10px;">Aplicado · página do evento</div>
+  <div style="background:oklch(0.16 0.013 48);border:1px solid oklch(0.31 0.018 48);border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);">
+    <div style="height:150px;background:linear-gradient(135deg,oklch(0.30 0.06 24),oklch(0.20 0.03 40));display:flex;align-items:flex-end;padding:20px;">
+      <span class="kick" style="color:oklch(0.82 0.10 40);background:oklch(0.18 0.02 30 / .6);padding:7px 11px;border-radius:6px;">Temporada 2026 · Bailado</span>
+    </div>
+    <div style="padding:30px;">
+      <div class="disp" style="font-weight:600;font-size:52px;line-height:0.98;color:oklch(0.95 0.012 80);">O Lago dos<br>Cisnes</div>
+      <div class="body" style="font:400 14px/1.6 'Hanken Grotesk',sans-serif;color:oklch(0.70 0.015 70);margin-top:14px;">Theatro Municipal · Sáb, 14 jun · 20h00. Uma noite de veludo vermelho — escolha seu lugar na sala.</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:24px;">
+        <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 14px/1 'Hanken Grotesk',sans-serif;padding:15px 24px;border-radius:8px;">Escolher assentos</div>
+        <div style="border:1px solid oklch(0.40 0.02 48);color:oklch(0.92 0.012 70);font:500 14px/1 'Hanken Grotesk',sans-serif;padding:14px 20px;border-radius:8px;">Detalhes</div>
+        <div class="body" style="margin-left:auto;text-align:right;"><div style="font:500 11px/1 'Hanken Grotesk';color:oklch(0.60 0.012 60);">a partir de</div><div class="disp" style="font-weight:500;font-size:26px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:3px;">R$ 90</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESCALA TIPOGRÁFICA -->
+<div style="position:absolute;left:680px;top:215px;width:560px;">
+  <div data-drags-parent="1" style="font:600 13px/1.4 'Hanken Grotesk',sans-serif;color:#2c2c2c;margin-bottom:10px;">Escala tipográfica</div>
+  <div class="frame">
+    <div style="border-bottom:1px solid oklch(0.27 0.015 48);padding-bottom:16px;margin-bottom:16px;">
+      <div class="tok">Display · Oswald 600 · nome do evento</div>
+      <div class="disp" style="font-weight:600;font-size:48px;line-height:1;color:oklch(0.95 0.012 80);margin-top:6px;">O Lago dos Cisnes</div>
+    </div>
+    <div style="border-bottom:1px solid oklch(0.27 0.015 48);padding-bottom:14px;margin-bottom:14px;">
+      <div class="tok">Título seção · Oswald 500 · 28px</div>
+      <div class="disp" style="font-weight:500;font-size:28px;color:oklch(0.95 0.012 80);margin-top:6px;">Meus ingressos</div>
+    </div>
+    <div style="border-bottom:1px solid oklch(0.27 0.015 48);padding-bottom:14px;margin-bottom:14px;">
+      <div class="tok">Kicker · Hanken 600 · 11px · tracking</div>
+      <div class="kick" style="color:oklch(0.70 0.13 22);margin-top:8px;">Plateia · Fila A</div>
+    </div>
+    <div style="border-bottom:1px solid oklch(0.27 0.015 48);padding-bottom:14px;margin-bottom:14px;">
+      <div class="tok">Corpo · Hanken 400 · 15px</div>
+      <div class="body" style="font:400 15px/1.6 'Hanken Grotesk';color:oklch(0.88 0.012 70);margin-top:6px;">Escolha seu lugar na sala e finalize em poucos passos. A reserva fica guardada por alguns minutos.</div>
+    </div>
+    <div>
+      <div class="tok">Numeral tabular · preços e contadores</div>
+      <div class="disp" style="font-weight:500;font-size:30px;color:oklch(0.95 0.012 80);font-variant-numeric:tabular-nums;margin-top:6px;">R$ 180,00 · 04:59</div>
+    </div>
+  </div>
+</div>
+
+<!-- PALETA / TOKENS -->
+<div style="position:absolute;left:0;top:640px;width:600px;">
+  <div data-drags-parent="1" style="font:600 13px/1.4 'Hanken Grotesk',sans-serif;color:#2c2c2c;margin-bottom:10px;">Paleta semântica (tokens)</div>
+  <div class="frame">
+    <div class="kick" style="color:oklch(0.60 0.012 60);margin-bottom:14px;">Neutros quentes</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.16 0.013 48);border:1px solid oklch(0.31 0.018 48);flex:none;"></div><div><div class="tokname">bg</div><div class="tok">0.16 · canvas</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.205 0.015 48);flex:none;"></div><div><div class="tokname">surface</div><div class="tok">0.205 · cards</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.245 0.016 48);flex:none;"></div><div><div class="tokname">surface-2</div><div class="tok">0.245 · elevado</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.31 0.018 48);flex:none;"></div><div><div class="tokname">border</div><div class="tok">0.31 · linhas</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.95 0.012 80);flex:none;"></div><div><div class="tokname">text</div><div class="tok">0.95 · primário</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.70 0.015 70);flex:none;"></div><div><div class="tokname">muted</div><div class="tok">0.70 · secundário</div></div></div>
+    </div>
+    <div class="kick" style="color:oklch(0.60 0.012 60);margin-bottom:14px;">Acento &amp; status</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.55 0.16 20);flex:none;"></div><div><div class="tokname">accent · vinho</div><div class="tok">ações primárias</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.61 0.16 20);flex:none;"></div><div><div class="tokname">accent-hover</div><div class="tok">estado hover</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.70 0.13 155);flex:none;"></div><div><div class="tokname">success</div><div class="tok">pago · confirmado</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.80 0.12 78);flex:none;"></div><div><div class="tokname">warning</div><div class="tok">reserva expirando</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.62 0.20 27);flex:none;"></div><div><div class="tokname">danger</div><div class="tok">erro · cancelado</div></div></div>
+      <div style="display:flex;align-items:center;gap:11px;"><div style="width:46px;height:46px;border-radius:8px;background:oklch(0.62 0.10 230);flex:none;"></div><div><div class="tokname">info</div><div class="tok">avisos neutros</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPONENTES + RAIOS + ASSENTOS -->
+<div style="position:absolute;left:680px;top:640px;width:560px;">
+  <div data-drags-parent="1" style="font:600 13px/1.4 'Hanken Grotesk',sans-serif;color:#2c2c2c;margin-bottom:10px;">Botões · raios por função · estados de assento</div>
+  <div class="frame">
+    <!-- buttons -->
+    <div class="kick" style="color:oklch(0.60 0.012 60);margin-bottom:12px;">Botões</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:24px;">
+      <div style="background:oklch(0.55 0.16 20);color:oklch(0.97 0.01 40);font:600 14px/1 'Hanken Grotesk';padding:13px 20px;border-radius:8px;">Primário</div>
+      <div style="background:oklch(0.61 0.16 20);color:oklch(0.97 0.01 40);font:600 14px/1 'Hanken Grotesk';padding:13px 20px;border-radius:8px;">Hover</div>
+      <div style="border:1px solid oklch(0.40 0.02 48);color:oklch(0.92 0.012 70);font:500 14px/1 'Hanken Grotesk';padding:12px 18px;border-radius:8px;">Secundário</div>
+      <div style="color:oklch(0.70 0.13 22);font:600 14px/1 'Hanken Grotesk';padding:12px 8px;">Texto</div>
+      <div style="background:oklch(0.30 0.012 48);color:oklch(0.50 0.01 50);font:600 14px/1 'Hanken Grotesk';padding:13px 20px;border-radius:8px;">Desativado</div>
+    </div>
+    <!-- radii -->
+    <div class="kick" style="color:oklch(0.60 0.012 60);margin-bottom:12px;">Raios por função</div>
+    <div style="display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap;">
+      <div style="text-align:center;"><div style="width:60px;height:40px;background:oklch(0.245 0.016 48);border:1px solid oklch(0.34 0.018 48);border-radius:6px;"></div><div class="tok" style="margin-top:6px;">6 · badge</div></div>
+      <div style="text-align:center;"><div style="width:60px;height:40px;background:oklch(0.245 0.016 48);border:1px solid oklch(0.34 0.018 48);border-radius:8px;"></div><div class="tok" style="margin-top:6px;">8 · botão/input</div></div>
+      <div style="text-align:center;"><div style="width:60px;height:40px;background:oklch(0.245 0.016 48);border:1px solid oklch(0.34 0.018 48);border-radius:12px;"></div><div class="tok" style="margin-top:6px;">12 · card</div></div>
+      <div style="text-align:center;"><div style="width:60px;height:40px;background:oklch(0.245 0.016 48);border:1px solid oklch(0.34 0.018 48);border-radius:999px;"></div><div class="tok" style="margin-top:6px;">full · avatar/tag</div></div>
+    </div>
+    <!-- seats -->
+    <div class="kick" style="color:oklch(0.60 0.012 60);margin-bottom:12px;">Estados de assento (cor + forma)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+      <div style="display:flex;align-items:center;gap:8px;"><div class="seat" style="border:1.5px solid oklch(0.55 0.16 20);color:oklch(0.72 0.13 22);">A</div><span class="tok">Livre</span></div>
+      <div style="display:flex;align-items:center;gap:8px;"><div class="seat" style="background:oklch(0.55 0.16 20);color:#fff;">✓</div><span class="tok">Escolhido</span></div>
+      <div style="display:flex;align-items:center;gap:8px;"><div class="seat" style="background:oklch(0.27 0.012 48);color:oklch(0.50 0.01 50);">✕</div><span class="tok">Esgotado</span></div>
+      <div style="display:flex;align-items:center;gap:8px;"><div class="seat" style="background:oklch(0.245 0.016 48);border:1.5px dashed oklch(0.45 0.06 78);color:oklch(0.80 0.12 78);">⏱</div><span class="tok">Em reserva</span></div>
+      <div style="display:flex;align-items:center;gap:8px;"><div class="seat" style="background:repeating-linear-gradient(45deg,oklch(0.27 0.012 48),oklch(0.27 0.012 48) 4px,oklch(0.22 0.01 48) 4px,oklch(0.22 0.01 48) 8px);color:oklch(0.55 0.01 50);">—</div><span class="tok">Bloqueado</span></div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
