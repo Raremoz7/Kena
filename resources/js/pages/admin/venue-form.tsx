@@ -20,9 +20,6 @@ interface VenueData {
     generateUrl: string;
 }
 
-const fieldCls =
-    'w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20';
-
 export default function VenueForm({ venue }: { venue: VenueData | null }) {
     const editing = !!venue;
     const form = useForm({

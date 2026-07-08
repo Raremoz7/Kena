@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/atoms/Input';
 
 type Props = Omit<ComponentProps<typeof Input>, 'onInput'> & {
     mask: (value: string) => string;

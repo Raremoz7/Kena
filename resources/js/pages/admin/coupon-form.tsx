@@ -3,6 +3,7 @@ import type {FormEvent} from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
 import { FormField } from '@/components/molecules/FormField';
 
 interface EventOption {
@@ -19,9 +20,6 @@ interface CouponData {
     active: boolean;
     event_id: number | null;
 }
-
-const fieldCls =
-    'w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20';
 
 export default function CouponForm({ coupon, events }: { coupon: CouponData | null; events: EventOption[] }) {
     const editing = !!coupon;
@@ -75,15 +73,14 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <FormField label="Tipo" htmlFor="type">
-                                <select
+                                <Select
                                     id="type"
-                                    className={fieldCls}
                                     value={form.data.type}
                                     onChange={(e) => form.setData('type', e.target.value)}
                                 >
                                     <option value="percent">Percentual (%)</option>
                                     <option value="fixed">Valor fixo (R$)</option>
-                                </select>
+                                </Select>
                             </FormField>
                             <FormField
                                 label={isPercent ? 'Desconto (%)' : 'Desconto (R$)'}
@@ -129,9 +126,8 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
                         </div>
 
                         <FormField label="Evento" htmlFor="event_id" helper="Restringe o cupom a um evento.">
-                            <select
+                            <Select
                                 id="event_id"
-                                className={fieldCls}
                                 value={form.data.event_id === '' ? '' : String(form.data.event_id)}
                                 onChange={(e) => form.setData('event_id', e.target.value ? Number(e.target.value) : '')}
                             >
@@ -141,7 +137,7 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
                                         {ev.title}
                                     </option>
                                 ))}
-                            </select>
+                            </Select>
                         </FormField>
 
                         <label className="flex items-center gap-2 font-body text-sm text-foreground">

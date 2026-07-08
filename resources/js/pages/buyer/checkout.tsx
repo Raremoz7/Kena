@@ -7,6 +7,7 @@ import type { CouponFeedback } from '@/components/molecules/CouponInput';
 import { CheckoutPanel } from '@/components/organisms/CheckoutPanel';
 import { PaymentBrick } from '@/components/organisms/PaymentBrick';
 import type {
+    CardErrors,
     CardFields,
     PaymentMethod,
     PixData,
@@ -42,6 +43,42 @@ const brl = new Intl.NumberFormat('pt-BR', {
     currency: 'BRL',
 });
 
+/** Validação client-side dos campos de cartão antes de tokenizar no MP. */
+function validateCard(card: CardFields): CardErrors {
+    const errors: CardErrors = {};
+
+    const number = card.number.replace(/\D/g, '');
+
+    if (!number) {
+        errors.number = 'Informe o número do cartão.';
+    } else if (number.length < 13 || number.length > 19) {
+        errors.number = 'Número de cartão inválido.';
+    }
+
+    const exp = card.exp.trim();
+    const match = exp.match(/^(\d{2})\/(\d{2})$/);
+
+    if (!exp) {
+        errors.exp = 'Informe a validade.';
+    } else if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) {
+        errors.exp = 'Validade inválida (MM/AA).';
+    }
+
+    const cvv = card.cvv.replace(/\D/g, '');
+
+    if (!cvv) {
+        errors.cvv = 'Informe o CVV.';
+    } else if (cvv.length < 3 || cvv.length > 4) {
+        errors.cvv = 'CVV inválido.';
+    }
+
+    if (!card.name.trim()) {
+        errors.name = 'Informe o nome impresso no cartão.';
+    }
+
+    return errors;
+}
+
 export default function CheckoutPage({
     reservation,
     priceSummary,
@@ -66,6 +103,7 @@ export default function CheckoutPage({
         installments: 1,
     });
     const [pix, setPix] = useState<PixData | null>(null);
+    const [cardErrors, setCardErrors] = useState<CardErrors>({});
     const [submitting, setSubmitting] = useState(false);
     const [awaitingPix, setAwaitingPix] = useState(false);
 
@@ -156,6 +194,15 @@ export default function CheckoutPage({
                     coupon_code: appliedCoupon ?? undefined,
                 });
                 handlePay(res);
+
+                return;
+            }
+
+            const fieldErrors = validateCard(card);
+
+            if (Object.keys(fieldErrors).length > 0) {
+                setCardErrors(fieldErrors);
+                setSubmitting(false);
 
                 return;
             }
@@ -285,14 +332,27 @@ export default function CheckoutPage({
                                     method={method}
                                     onMethodChange={setMethod}
                                     card={card}
-                                    onCardChange={(patch) =>
+                                    onCardChange={(patch) => {
                                         setCard((prev) => ({
                                             ...prev,
                                             ...patch,
-                                        }))
-                                    }
+                                        }));
+                                        // Limpa o erro dos campos que estão sendo editados.
+                                        setCardErrors((prev) => {
+                                            const next = { ...prev };
+
+                                            for (const key of Object.keys(
+                                                patch,
+                                            ) as (keyof CardErrors)[]) {
+                                                delete next[key];
+                                            }
+
+                                            return next;
+                                        });
+                                    }}
                                     installmentOptions={installmentOptions}
                                     pix={pix}
+                                    errors={cardErrors}
                                 />
                             </div>
                         </div>
