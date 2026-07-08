@@ -24,6 +24,8 @@ interface InstallmentOption {
     label: string;
 }
 
+export type CardErrors = Partial<Record<'number' | 'exp' | 'cvv' | 'name', string>>;
+
 interface PaymentBrickProps {
     method: PaymentMethod;
     onMethodChange: (method: PaymentMethod) => void;
@@ -31,6 +33,7 @@ interface PaymentBrickProps {
     onCardChange: (patch: Partial<CardFields>) => void;
     installmentOptions: InstallmentOption[];
     pix: PixData | null;
+    errors?: CardErrors;
 }
 
 function TabBtn({
@@ -77,6 +80,7 @@ export function PaymentBrick({
     onCardChange,
     installmentOptions,
     pix,
+    errors,
 }: PaymentBrickProps) {
     return (
         <div>
@@ -99,11 +103,16 @@ export function PaymentBrick({
 
             {method === 'card' ? (
                 <div className="mt-5 flex flex-col gap-4">
-                    <FormField label="Número do cartão" htmlFor="cc-number">
+                    <FormField
+                        label="Número do cartão"
+                        htmlFor="cc-number"
+                        error={errors?.number}
+                    >
                         <div className="relative">
                             <Input
                                 id="cc-number"
                                 inputMode="numeric"
+                                autoComplete="cc-number"
                                 placeholder="0000 0000 0000 0000"
                                 value={card.number}
                                 onChange={(e) =>
@@ -118,22 +127,32 @@ export function PaymentBrick({
                         </div>
                     </FormField>
                     <div className="grid grid-cols-2 gap-4">
-                        <FormField label="Validade" htmlFor="cc-exp">
+                        <FormField
+                            label="Validade"
+                            htmlFor="cc-exp"
+                            error={errors?.exp}
+                        >
                             <Input
                                 id="cc-exp"
                                 placeholder="MM/AA"
                                 inputMode="numeric"
+                                autoComplete="cc-exp"
                                 value={card.exp}
                                 onChange={(e) =>
                                     onCardChange({ exp: e.target.value })
                                 }
                             />
                         </FormField>
-                        <FormField label="CVV" htmlFor="cc-cvv">
+                        <FormField
+                            label="CVV"
+                            htmlFor="cc-cvv"
+                            error={errors?.cvv}
+                        >
                             <Input
                                 id="cc-cvv"
                                 placeholder="123"
                                 inputMode="numeric"
+                                autoComplete="cc-csc"
                                 value={card.cvv}
                                 onChange={(e) =>
                                     onCardChange({ cvv: e.target.value })
@@ -144,10 +163,12 @@ export function PaymentBrick({
                     <FormField
                         label="Nome impresso no cartão"
                         htmlFor="cc-name"
+                        error={errors?.name}
                     >
                         <Input
                             id="cc-name"
                             placeholder="Como está no cartão"
+                            autoComplete="cc-name"
                             value={card.name}
                             onChange={(e) =>
                                 onCardChange({ name: e.target.value })

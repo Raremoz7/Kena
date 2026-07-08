@@ -3,6 +3,8 @@ import type {FormEvent} from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
+import { Textarea } from '@/components/atoms/Textarea';
 import { FormField } from '@/components/molecules/FormField';
 
 interface Venue {
@@ -38,9 +40,6 @@ const presets = [
     { label: 'Azul', from: 'oklch(0.26 0.05 250)', to: 'oklch(0.14 0.012 48)' },
     { label: 'Verde', from: 'oklch(0.27 0.06 160)', to: 'oklch(0.14 0.012 48)' },
 ];
-
-const fieldCls =
-    'w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20';
 
 export default function EventForm({ venues, event }: { venues: Venue[]; event: EventData | null }) {
     const editing = !!event;
@@ -108,9 +107,8 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                 <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
                     <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
                         <FormField label="Local" htmlFor="venue">
-                            <select
+                            <Select
                                 id="venue"
-                                className={fieldCls}
                                 value={form.data.venue_id}
                                 onChange={(e) => form.setData('venue_id', Number(e.target.value))}
                             >
@@ -119,7 +117,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                         {v.name} · {v.city} ({v.seats} lugares)
                                     </option>
                                 ))}
-                            </select>
+                            </Select>
                         </FormField>
                         {venue && venue.seats === 0 && (
                             <p className="font-body text-xs text-warning">
@@ -144,10 +142,9 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                             />
                         </FormField>
                         <FormField label="Descrição" htmlFor="description" error={form.errors.description}>
-                            <textarea
+                            <Textarea
                                 id="description"
                                 rows={4}
-                                className={fieldCls}
                                 value={form.data.description}
                                 onChange={(e) => form.setData('description', e.target.value)}
                                 placeholder="Sobre o espetáculo…"
@@ -164,15 +161,14 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 />
                             </FormField>
                             <FormField label="Status" htmlFor="status">
-                                <select
+                                <Select
                                     id="status"
-                                    className={fieldCls}
                                     value={form.data.status}
                                     onChange={(e) => form.setData('status', e.target.value)}
                                 >
                                     <option value="draft">Rascunho (oculto)</option>
                                     <option value="on_sale">À venda (público)</option>
-                                </select>
+                                </Select>
                             </FormField>
                         </div>
 

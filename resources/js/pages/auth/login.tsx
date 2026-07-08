@@ -1,14 +1,14 @@
 import { Form, Head } from '@inertiajs/react';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
-import InputError from '@/components/input-error';
+import { FormField } from '@/components/molecules/FormField';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -36,8 +36,11 @@ export default function Login({ status, canResetPassword }: Props) {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-6">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email">E-mail</Label>
+                                <FormField
+                                    label="E-mail"
+                                    htmlFor="email"
+                                    error={errors.email}
+                                >
                                     <Input
                                         id="email"
                                         type="email"
@@ -48,22 +51,24 @@ export default function Login({ status, canResetPassword }: Props) {
                                         autoComplete="email"
                                         placeholder="voce@email.com"
                                     />
-                                    <InputError message={errors.email} />
-                                </div>
+                                </FormField>
 
-                                <div className="grid gap-2">
-                                    <div className="flex items-center">
-                                        <Label htmlFor="password">Senha</Label>
-                                        {canResetPassword && (
+                                <FormField
+                                    label="Senha"
+                                    htmlFor="password"
+                                    error={errors.password}
+                                    action={
+                                        canResetPassword ? (
                                             <TextLink
                                                 href={request()}
-                                                className="ml-auto text-sm"
+                                                className="text-sm"
                                                 tabIndex={5}
                                             >
                                                 Esqueci a senha?
                                             </TextLink>
-                                        )}
-                                    </div>
+                                        ) : undefined
+                                    }
+                                >
                                     <PasswordInput
                                         id="password"
                                         name="password"
@@ -72,8 +77,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                         autoComplete="current-password"
                                         placeholder="Sua senha"
                                     />
-                                    <InputError message={errors.password} />
-                                </div>
+                                </FormField>
 
                                 <div className="flex items-center space-x-3">
                                     <Checkbox
@@ -88,7 +92,8 @@ export default function Login({ status, canResetPassword }: Props) {
 
                                 <Button
                                     type="submit"
-                                    className="mt-2 w-full"
+                                    block
+                                    className="mt-2"
                                     tabIndex={4}
                                     disabled={processing}
                                     data-test="login-button"

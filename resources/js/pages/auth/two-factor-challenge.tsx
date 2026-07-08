@@ -1,9 +1,8 @@
 import { Form, Head, setLayoutProps } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
 import {
     InputOTP,
     InputOTPGroup,
@@ -70,10 +69,13 @@ export default function TwoFactorChallenge() {
                                         placeholder="Digite o código de recuperação"
                                         autoFocus={showRecoveryInput}
                                         required
+                                        invalid={!!errors.recovery_code}
                                     />
-                                    <InputError
-                                        message={errors.recovery_code}
-                                    />
+                                    {errors.recovery_code && (
+                                        <p className="font-body text-xs text-danger">
+                                            {errors.recovery_code}
+                                        </p>
+                                    )}
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center justify-center space-y-3 text-center">
@@ -100,13 +102,17 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    <InputError message={errors.code} />
+                                    {errors.code && (
+                                        <p className="font-body text-xs text-danger">
+                                            {errors.code}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
                             <Button
                                 type="submit"
-                                className="w-full"
+                                block
                                 disabled={processing}
                             >
                                 Continuar
