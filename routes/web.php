@@ -33,7 +33,9 @@ Route::get('/api/sessoes/{session}/disponibilidade', [AvailabilityController::cl
     ->name('api.sessions.availability');
 
 // Webhook do Mercado Pago (público, idempotente, isento de CSRF)
-Route::post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago'])->name('webhooks.mercadopago');
+Route::post('/webhooks/mercadopago', [WebhookController::class, 'mercadopago'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.mercadopago');
 
 // Style guide (referência de DS)
 Route::get('/style-guide', [BuyerController::class, 'styleGuide'])->name('style-guide');
@@ -44,6 +46,7 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 
 // Reserva (hold) — pública: aceita convidado (cria conta leve) ou usuário logado
 Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::class, 'reserve'])
+    ->middleware('throttle:20,1')
     ->name('sessions.reserve');
 
 // Magic-link (login sem senha por e-mail, assinado)

@@ -92,7 +92,15 @@ setOpen(false);
                             </div>
 
                             <div className="mt-3 flex flex-col gap-2">
-                                <Button variant="success" block onClick={onCheckout} disabled={submitting}>
+                                <Button
+                                    variant="success"
+                                    block
+                                    onClick={() => {
+                                        setOpen(false);
+                                        onCheckout();
+                                    }}
+                                    disabled={submitting}
+                                >
                                     {submitting ? (
                                         <Spinner />
                                     ) : (

@@ -1,13 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
-import InputError from '@/components/input-error';
 import MaskedInput from '@/components/masked-input';
+import { FormField } from '@/components/molecules/FormField';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { maskCpf, maskPhone } from '@/lib/masks';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
@@ -33,8 +32,11 @@ export default function Register({ passwordRules }: Props) {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-6">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Nome completo</Label>
+                                <FormField
+                                    label="Nome completo"
+                                    htmlFor="name"
+                                    error={errors.name}
+                                >
                                     <Input
                                         id="name"
                                         type="text"
@@ -45,11 +47,13 @@ export default function Register({ passwordRules }: Props) {
                                         autoComplete="name"
                                         placeholder="Seu nome"
                                     />
-                                    <InputError message={errors.name} />
-                                </div>
+                                </FormField>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email">E-mail</Label>
+                                <FormField
+                                    label="E-mail"
+                                    htmlFor="email"
+                                    error={errors.email}
+                                >
                                     <Input
                                         id="email"
                                         type="email"
@@ -59,13 +63,13 @@ export default function Register({ passwordRules }: Props) {
                                         autoComplete="email"
                                         placeholder="voce@email.com"
                                     />
-                                    <InputError message={errors.email} />
-                                </div>
+                                </FormField>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="phone">
-                                        Telefone / WhatsApp
-                                    </Label>
+                                <FormField
+                                    label="Telefone / WhatsApp"
+                                    htmlFor="phone"
+                                    error={errors.phone}
+                                >
                                     <MaskedInput
                                         id="phone"
                                         name="phone"
@@ -76,11 +80,13 @@ export default function Register({ passwordRules }: Props) {
                                         mask={maskPhone}
                                         placeholder="(61) 99999-9999"
                                     />
-                                    <InputError message={errors.phone} />
-                                </div>
+                                </FormField>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="cpf">CPF</Label>
+                                <FormField
+                                    label="CPF"
+                                    htmlFor="cpf"
+                                    error={errors.cpf}
+                                >
                                     <MaskedInput
                                         id="cpf"
                                         name="cpf"
@@ -89,11 +95,13 @@ export default function Register({ passwordRules }: Props) {
                                         mask={maskCpf}
                                         placeholder="000.000.000-00"
                                     />
-                                    <InputError message={errors.cpf} />
-                                </div>
+                                </FormField>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="password">Senha</Label>
+                                <FormField
+                                    label="Senha"
+                                    htmlFor="password"
+                                    error={errors.password}
+                                >
                                     <PasswordInput
                                         id="password"
                                         name="password"
@@ -103,12 +111,12 @@ export default function Register({ passwordRules }: Props) {
                                         placeholder="Crie uma senha"
                                         passwordrules={passwordRules}
                                     />
-                                    <InputError message={errors.password} />
-                                </div>
+                                </FormField>
 
                                 <Button
                                     type="submit"
-                                    className="mt-2 w-full"
+                                    block
+                                    className="mt-2"
                                     tabIndex={6}
                                     data-test="register-user-button"
                                 >

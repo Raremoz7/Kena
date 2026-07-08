@@ -44,7 +44,11 @@ export default function SetPassword() {
                             placeholder="Mínimo 8 caracteres"
                         />
                     </FormField>
-                    <FormField label="Confirmar senha" htmlFor="password_confirmation">
+                    <FormField
+                        label="Confirmar senha"
+                        htmlFor="password_confirmation"
+                        error={form.errors.password_confirmation}
+                    >
                         <Input
                             id="password_confirmation"
                             type="password"

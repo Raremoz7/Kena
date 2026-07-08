@@ -1,18 +1,17 @@
-import { forwardRef, useContext  } from 'react';
-import type {InputHTMLAttributes} from 'react';
+import { forwardRef, useContext } from 'react';
+import type { SelectHTMLAttributes } from 'react';
 import { FieldContext } from '@/components/atoms/field-context';
 import { cn } from '@/lib/utils';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     invalid?: boolean;
 }
 
 /**
- * Input do Veludo. Foco em vinho com halo suave; estado de erro em danger.
- * Herda o estado de erro do FormField via FieldContext quando `invalid` não é
- * passado explicitamente.
+ * Select nativo do Veludo. Mesmo tratamento de foco/erro do Input; herda o
+ * estado de erro do FormField via FieldContext.
  */
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
     { className, invalid, 'aria-describedby': describedBy, ...props },
     ref,
 ) {
@@ -20,13 +19,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     const isInvalid = invalid ?? field.invalid;
 
     return (
-        <input
+        <select
             ref={ref}
             aria-invalid={isInvalid || undefined}
-            aria-describedby={describedBy ?? (isInvalid ? field.errorId : undefined)}
+            aria-describedby={
+                describedBy ?? (isInvalid ? field.errorId : undefined)
+            }
             className={cn(
-                'w-full rounded-input border bg-bg px-[14px] py-3 font-body text-sm text-foreground',
-                'placeholder:text-faint transition-colors outline-none',
+                'w-full cursor-pointer rounded-input border bg-bg px-[14px] py-3 font-body text-sm text-foreground',
+                'transition-colors outline-none',
                 'focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20',
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 isInvalid

@@ -5,6 +5,8 @@ import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
+import { Textarea } from '@/components/atoms/Textarea';
 import { FormField } from '@/components/molecules/FormField';
 import { api, ApiError } from '@/lib/veludo/api';
 import { veludoToast } from '@/lib/veludo/toast';
@@ -51,9 +53,6 @@ interface SettingsProps {
     setup: Setup;
     testMailUrl: string;
 }
-
-const fieldCls =
-    'w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20';
 
 function ChecklistItem({ done, label }: { done: boolean; label: string }) {
     return (
@@ -315,16 +314,15 @@ export default function Settings({ mp, mail, gw, webhookUrl, setup, testMailUrl 
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <FormField label="Criptografia" htmlFor="mail_encryption">
-                                    <select
+                                    <Select
                                         id="mail_encryption"
-                                        className={fieldCls}
                                         value={form.data.mail_encryption}
                                         onChange={(e) => form.setData('mail_encryption', e.target.value)}
                                     >
                                         <option value="tls">TLS (porta 587)</option>
                                         <option value="ssl">SSL (porta 465)</option>
                                         <option value="none">Nenhuma</option>
-                                    </select>
+                                    </Select>
                                 </FormField>
                             </div>
 
@@ -458,10 +456,10 @@ export default function Settings({ mp, mail, gw, webhookUrl, setup, testMailUrl 
                                 }
                                 error={form.errors.gw_private_key}
                             >
-                                <textarea
+                                <Textarea
                                     id="gw_private_key"
                                     rows={4}
-                                    className={`${fieldCls} font-mono text-xs`}
+                                    className="font-mono text-xs"
                                     value={form.data.gw_private_key}
                                     onChange={(e) => form.setData('gw_private_key', e.target.value)}
                                     placeholder={gw.privateKeyConfigured ? '•••••••• (configurada)' : '-----BEGIN PRIVATE KEY-----'}

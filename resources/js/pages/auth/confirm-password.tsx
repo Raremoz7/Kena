@@ -3,12 +3,11 @@ import {
     index as confirmOptions,
     store as confirmStore,
 } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
-import InputError from '@/components/input-error';
+import { Button } from '@/components/atoms/Button';
+import { Spinner } from '@/components/atoms/Spinner';
+import { FormField } from '@/components/molecules/FormField';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {
@@ -29,8 +28,11 @@ export default function ConfirmPassword() {
             <Form {...store.form()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Senha</Label>
+                        <FormField
+                            label="Senha"
+                            htmlFor="password"
+                            error={errors.password}
+                        >
                             <PasswordInput
                                 id="password"
                                 name="password"
@@ -38,20 +40,16 @@ export default function ConfirmPassword() {
                                 autoComplete="current-password"
                                 autoFocus
                             />
+                        </FormField>
 
-                            <InputError message={errors.password} />
-                        </div>
-
-                        <div className="flex items-center">
-                            <Button
-                                className="w-full"
-                                disabled={processing}
-                                data-test="confirm-password-button"
-                            >
-                                {processing && <Spinner />}
-                                Confirmar senha
-                            </Button>
-                        </div>
+                        <Button
+                            block
+                            disabled={processing}
+                            data-test="confirm-password-button"
+                        >
+                            {processing && <Spinner />}
+                            Confirmar senha
+                        </Button>
                     </div>
                 )}
             </Form>
