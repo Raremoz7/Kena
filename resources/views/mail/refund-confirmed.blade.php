@@ -10,5 +10,8 @@
 <div style="color:#A59D95;font-size:12px;margin-top:6px;">O estorno aparece no seu meio de pagamento conforme o prazo do Mercado Pago.</div>
 </x-mail.info-panel>
 
+@if (filled($reason ?? null))
+<p style="color:#A59D95;font-size:13px;margin:0 0 8px;">Motivo: {{ $reason }}</p>
+@endif
 <p style="color:#A59D95;font-size:13px;margin:0;">Seus ingressos desse pedido foram cancelados.</p>
 </x-mail.layout>

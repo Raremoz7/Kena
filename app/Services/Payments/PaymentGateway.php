@@ -25,4 +25,7 @@ interface PaymentGateway
 
     /** Estorna (total se $amountCents for null). */
     public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool;
+
+    /** Cancela um pagamento ainda pendente no gateway (ex.: Pix não pago). */
+    public function cancelPayment(string $gatewayPaymentId): bool;
 }

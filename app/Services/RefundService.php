@@ -18,9 +18,15 @@ class RefundService
 
     public function refundOrder(Order $order, ?string $reason = null): Refund
     {
-        $order->loadMissing(['payment', 'tickets']);
+        $order->loadMissing(['payment', 'tickets', 'session']);
 
-        if ($order->status !== Order::STATUS_PAID) {
+        // Claim atômico: só quem virar o status PAID→REFUNDED prossegue —
+        // duas requisições simultâneas não registram dois estornos.
+        $claimed = Order::whereKey($order->id)
+            ->where('status', Order::STATUS_PAID)
+            ->update(['status' => Order::STATUS_REFUNDED]);
+
+        if ($claimed === 0) {
             throw new \RuntimeException('Só pedidos pagos podem ser reembolsados.');
         }
 
@@ -30,28 +36,43 @@ class RefundService
             $gatewayOk = $this->gateway->refund($payment->gateway_payment_id);
         }
 
-        $refund = DB::transaction(function () use ($order, $payment, $reason, $gatewayOk): Refund {
+        if (! $gatewayOk) {
+            // Estorno recusado: devolve o pedido a PAID e registra a falha
+            // para o painel — nada de assento/ingresso muda.
+            $order->update(['status' => Order::STATUS_PAID]);
+
+            return Refund::create([
+                'order_id' => $order->id,
+                'amount_cents' => $order->total_cents,
+                'reason' => $reason,
+                'status' => Refund::STATUS_FAILED,
+                'gateway_refund_id' => null,
+            ]);
+        }
+
+        $refund = DB::transaction(function () use ($order, $payment, $reason): Refund {
             $refund = Refund::create([
                 'order_id' => $order->id,
                 'amount_cents' => $order->total_cents,
                 'reason' => $reason,
-                'status' => $gatewayOk ? Refund::STATUS_DONE : Refund::STATUS_FAILED,
+                'status' => Refund::STATUS_DONE,
                 'gateway_refund_id' => null,
             ]);
 
-            if (! $gatewayOk) {
-                return $refund;
-            }
+            // Assento só volta pra venda se a sessão ainda não começou —
+            // reembolso tardio não pode recolocar lugar de show em andamento.
+            $sessionUpcoming = $order->session->starts_at->isFuture();
 
             foreach ($order->tickets as $ticket) {
                 $ticket->update(['status' => Ticket::STATUS_REFUNDED]);
-                SessionSeat::where('id', $ticket->session_seat_id)->update([
-                    'status' => SessionSeat::STATUS_AVAILABLE,
-                    'sold_by_order_id' => null,
-                ]);
+                if ($sessionUpcoming) {
+                    SessionSeat::where('id', $ticket->session_seat_id)->update([
+                        'status' => SessionSeat::STATUS_AVAILABLE,
+                        'sold_by_order_id' => null,
+                    ]);
+                }
             }
 
-            $order->update(['status' => Order::STATUS_REFUNDED]);
             if ($payment !== null) {
                 $payment->update(['status' => 'refunded']);
             }
@@ -59,11 +80,9 @@ class RefundService
             return $refund;
         });
 
-        if ($refund->status === Refund::STATUS_DONE) {
-            $order->loadMissing('user');
-            if (filled($order->user->email)) {
-                Mail::to($order->user->email)->queue(new RefundConfirmedMail($order));
-            }
+        $order->loadMissing('user');
+        if (filled($order->user->email)) {
+            Mail::to($order->user->email)->queue(new RefundConfirmedMail($order, $reason));
         }
 
         return $refund;

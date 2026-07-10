@@ -14,11 +14,17 @@ use Inertia\Response;
 
 class CouponController extends Controller
 {
+    private const PER_PAGE = 25;
+
     public function index(): Response
     {
-        $eventTitles = Event::pluck('title', 'id');
+        $coupons = Coupon::latest('id')->paginate(self::PER_PAGE)->withQueryString();
 
-        $coupons = Coupon::latest('id')->get()->map(fn (Coupon $c): array => [
+        // Só os títulos dos eventos vinculados aos cupons DESTA página — não o catálogo inteiro.
+        $eventTitles = Event::whereIn('id', $coupons->getCollection()->pluck('event_id')->filter()->unique())
+            ->pluck('title', 'id');
+
+        $coupons->through(fn (Coupon $c): array => [
             'id' => $c->id,
             'code' => $c->code,
             'type' => $c->type,
@@ -31,7 +37,7 @@ class CouponController extends Controller
             'expired' => $c->expires_at !== null && $c->expires_at->isPast(),
             'event' => $c->event_id !== null ? ($eventTitles[$c->event_id] ?? 'Todos os eventos') : 'Todos os eventos',
             'expiresAt' => $c->expires_at?->format('d/m/Y H:i'),
-        ])->all();
+        ]);
 
         return Inertia::render('admin/coupons', ['coupons' => $coupons]);
     }

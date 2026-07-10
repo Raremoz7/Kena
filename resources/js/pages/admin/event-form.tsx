@@ -120,7 +120,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                             </Select>
                         </FormField>
                         {venue && venue.seats === 0 && (
-                            <p className="font-body text-xs text-warning">
+                            <p className="font-body text-xs text-warning-text">
                                 Esse local não tem assentos cadastrados — o mapa ficará vazio.
                             </p>
                         )}
@@ -282,7 +282,37 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                             onChange={(e) => setSession(i, { doors_at: e.target.value })}
                                         />
                                     </FormField>
-                                    <div className="flex items-end">
+                                    <div className="flex items-end gap-1">
+                                        {s.id && (
+                                            <>
+                                                <Button
+                                                    asChild
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    <Link
+                                                        href={`/dashboard/sessoes/${s.id}/assentos`}
+                                                        title="Gerenciar assentos (bloquear/liberar)"
+                                                    >
+                                                        <Icon name="map-pin" size={16} />
+                                                    </Link>
+                                                </Button>
+                                                <Button
+                                                    asChild
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    <Link
+                                                        href={`/dashboard/pedidos?session=${s.id}`}
+                                                        title="Ver pedidos desta sessão"
+                                                    >
+                                                        <Icon name="agenda" size={16} />
+                                                    </Link>
+                                                </Button>
+                                            </>
+                                        )}
                                         <Button
                                             type="button"
                                             variant="ghost"

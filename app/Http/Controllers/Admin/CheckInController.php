@@ -18,12 +18,23 @@ class CheckInController extends Controller
 
     public function show(): Response
     {
-        $sessions = EventSession::with('event')->get()->map(fn (EventSession $s): array => [
-            'id' => $s->id,
-            'eventTitle' => $s->event->title,
-            'label' => CatalogPresenter::sessionLabel($s),
-            'progress' => $this->checkins->progress($s),
-        ])->all();
+        // Só sessões relevantes pra portaria: não canceladas e de hoje/futuras
+        // (esconde o histórico antigo que só polui o seletor).
+        $eventSessions = EventSession::with('event')
+            ->where('status', '!=', 'cancelled')
+            ->where('starts_at', '>=', now()->subHours(12))
+            ->orderBy('starts_at')
+            ->get();
+
+        $progress = $this->checkins->progressForSessions($eventSessions);
+
+        $sessions = $eventSessions
+            ->map(fn (EventSession $s): array => [
+                'id' => $s->id,
+                'eventTitle' => $s->event->title,
+                'label' => CatalogPresenter::sessionLabel($s),
+                'progress' => $progress[$s->id],
+            ])->all();
 
         return Inertia::render('admin/checkin', [
             'sessions' => $sessions,

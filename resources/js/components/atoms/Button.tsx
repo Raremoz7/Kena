@@ -17,11 +17,11 @@ const button = cva(
         variants: {
             variant: {
                 primary: 'bg-accent text-accent-fg hover:bg-accent-hover',
-                secondary: 'border border-border text-foreground hover:bg-surface-2',
-                ghost: 'text-accent hover:bg-surface-2',
+                secondary: 'border border-border-strong text-foreground hover:bg-surface-2',
+                ghost: 'text-accent-text hover:bg-surface-2',
                 success: 'bg-success text-white hover:brightness-110',
-                danger: 'border border-danger text-danger hover:bg-danger/10',
-                'outline-danger': 'border border-danger text-danger hover:bg-danger/10',
+                danger: 'border border-danger text-danger-text hover:bg-danger/10',
+                'outline-danger': 'border border-danger text-danger-text hover:bg-danger/10',
             },
             size: {
                 md: 'px-[22px] py-[14px] text-sm rounded-btn',

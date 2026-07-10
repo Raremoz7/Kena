@@ -26,6 +26,9 @@ class Payment extends Model
 
     public const METHOD_PIX = 'pix';
 
+    /** Pedido gratuito (cupom 100%) — emitido sem gateway. */
+    public const METHOD_FREE = 'free';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_APPROVED = 'approved';

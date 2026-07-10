@@ -6,5 +6,5 @@ import { cn } from '@/lib/utils';
  * SEM caixa, SEM fundo.
  */
 export function Tag({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
-    return <span className={cn('kicker text-[oklch(0.72_0.13_24)]', className)} {...props} />;
+    return <span className={cn('kicker text-tag-wine', className)} {...props} />;
 }

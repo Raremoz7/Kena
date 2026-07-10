@@ -1,7 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import { Pagination } from '@/components/molecules/Pagination';
+import type { Paginator } from '@/components/molecules/Pagination';
 
 interface CouponRow {
     id: number;
@@ -47,12 +51,8 @@ function UsageCell({ used, maxUses, exhausted }: { used: number; maxUses: number
     );
 }
 
-export default function AdminCoupons({ coupons }: { coupons: CouponRow[] }) {
-    function remove(c: CouponRow) {
-        if (window.confirm(`Excluir o cupom ${c.code}?`)) {
-            router.delete(`/dashboard/cupons/${c.id}`, { preserveScroll: true });
-        }
-    }
+export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow> }) {
+    const [removing, setRemoving] = useState<CouponRow | null>(null);
 
     return (
         <>
@@ -86,7 +86,7 @@ export default function AdminCoupons({ coupons }: { coupons: CouponRow[] }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {coupons.map((c) => {
+                            {coupons.data.map((c) => {
                                 const exhausted = c.maxUses !== null && c.used >= c.maxUses;
                                 return (
                                 <tr key={c.id} className="border-b border-border last:border-b-0 hover:bg-surface-2">
@@ -118,7 +118,7 @@ export default function AdminCoupons({ coupons }: { coupons: CouponRow[] }) {
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                onClick={() => remove(c)}
+                                                onClick={() => setRemoving(c)}
                                                 aria-label={`Excluir ${c.code}`}
                                             >
                                                 <Icon name="trash" size={15} />
@@ -128,7 +128,7 @@ export default function AdminCoupons({ coupons }: { coupons: CouponRow[] }) {
                                 </tr>
                                 );
                             })}
-                            {coupons.length === 0 && (
+                            {coupons.data.length === 0 && (
                                 <tr>
                                     <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                                         Nenhum cupom criado ainda.
@@ -138,7 +138,26 @@ export default function AdminCoupons({ coupons }: { coupons: CouponRow[] }) {
                         </tbody>
                     </table>
                 </div>
+                <Pagination links={coupons.links} />
             </div>
+
+            <ConfirmDialog
+                open={removing !== null}
+                onOpenChange={(open) => !open && setRemoving(null)}
+                title="Excluir cupom"
+                description={
+                    removing ? `O cupom ${removing.code} será excluído.` : ''
+                }
+                confirmLabel="Excluir"
+                onConfirm={() => {
+                    if (removing) {
+                        router.delete(`/dashboard/cupons/${removing.id}`, {
+                            preserveScroll: true,
+                        });
+                    }
+                    setRemoving(null);
+                }}
+            />
         </>
     );
 }

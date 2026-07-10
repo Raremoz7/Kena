@@ -71,13 +71,11 @@ export interface EventInfo {
 export interface SelectedSeat {
     id: number;
     code: string;
-    row: string;
     sectorName: string;
     price: number;
 }
 
 export interface ReservationInfo {
-    id: number;
     expiresAt: string;
     eventTitle: string;
     sessionLabel: string;
@@ -104,10 +102,8 @@ export interface TicketInfo {
     code: string;
     /** Token assinado embutido no QR (validado no check-in). */
     qrToken: string;
-    price: number;
     status: TicketStatus;
     statusLabel: string;
-    transferLocksAt?: string;
     /** Endpoint POST de transferência deste ingresso. */
     transferUrl: string;
     /** Reembolso self-service disponível (pago + dentro do prazo). */

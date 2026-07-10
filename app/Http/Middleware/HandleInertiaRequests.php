@@ -41,7 +41,12 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Mensagens flash viram toast no front (useFlashToasts).
+            'flash' => [
+                'success' => $request->session()->get('status'),
+                'warning' => $request->session()->get('warning'),
+                'error' => $request->session()->get('error'),
+            ],
         ];
     }
 }

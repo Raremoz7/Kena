@@ -1,6 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import { Pagination } from '@/components/molecules/Pagination';
+import type { Paginator } from '@/components/molecules/Pagination';
 
 interface VenueRow {
     id: number;
@@ -11,16 +15,8 @@ interface VenueRow {
     events: number;
 }
 
-export default function AdminVenues({ venues }: { venues: VenueRow[] }) {
-    function remove(v: VenueRow) {
-        if (v.events > 0) {
-            return;
-        }
-
-        if (window.confirm(`Excluir o local "${v.name}"?`)) {
-            router.delete(`/dashboard/locais/${v.id}`, { preserveScroll: true });
-        }
-    }
+export default function AdminVenues({ venues }: { venues: Paginator<VenueRow> }) {
+    const [removing, setRemoving] = useState<VenueRow | null>(null);
 
     return (
         <>
@@ -52,7 +48,7 @@ export default function AdminVenues({ venues }: { venues: VenueRow[] }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {venues.map((v) => (
+                            {venues.data.map((v) => (
                                 <tr key={v.id} className="border-b border-border last:border-b-0 hover:bg-surface-2">
                                     <td className="px-4 py-3 font-medium text-foreground">{v.name}</td>
                                     <td className="px-4 py-3 text-muted-foreground">
@@ -71,7 +67,7 @@ export default function AdminVenues({ venues }: { venues: VenueRow[] }) {
                                                 size="sm"
                                                 variant="ghost"
                                                 disabled={v.events > 0}
-                                                onClick={() => remove(v)}
+                                                onClick={() => setRemoving(v)}
                                                 aria-label={`Excluir ${v.name}`}
                                             >
                                                 <Icon name="trash" size={15} />
@@ -80,7 +76,7 @@ export default function AdminVenues({ venues }: { venues: VenueRow[] }) {
                                     </td>
                                 </tr>
                             ))}
-                            {venues.length === 0 && (
+                            {venues.data.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                                         Nenhum local cadastrado ainda.
@@ -90,7 +86,26 @@ export default function AdminVenues({ venues }: { venues: VenueRow[] }) {
                         </tbody>
                     </table>
                 </div>
+                <Pagination links={venues.links} />
             </div>
+
+            <ConfirmDialog
+                open={removing !== null}
+                onOpenChange={(open) => !open && setRemoving(null)}
+                title="Excluir local"
+                description={
+                    removing ? `O local "${removing.name}" será excluído.` : ''
+                }
+                confirmLabel="Excluir"
+                onConfirm={() => {
+                    if (removing && removing.events === 0) {
+                        router.delete(`/dashboard/locais/${removing.id}`, {
+                            preserveScroll: true,
+                        });
+                    }
+                    setRemoving(null);
+                }}
+            />
         </>
     );
 }

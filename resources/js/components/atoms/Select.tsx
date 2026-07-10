@@ -32,7 +32,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 isInvalid
                     ? 'border-danger focus-visible:border-danger focus-visible:ring-danger/20'
-                    : 'border-border',
+                    : 'border-border-strong',
                 className,
             )}
             {...props}

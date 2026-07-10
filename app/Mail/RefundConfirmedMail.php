@@ -17,7 +17,10 @@ class RefundConfirmedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public function __construct(
+        public Order $order,
+        public ?string $reason = null,
+    ) {}
 
     public function envelope(): Envelope
     {
@@ -38,6 +41,7 @@ class RefundConfirmedMail extends Mailable implements ShouldQueue
                 'event' => $session->event,
                 'sessionLabel' => CatalogPresenter::sessionLabel($session),
                 'amount' => Money::toReais($this->order->total_cents),
+                'reason' => $this->reason,
             ],
         );
     }

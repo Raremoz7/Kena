@@ -33,7 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['name', 'email', 'role', 'phone', 'cpf', 'google_id', 'password', 'is_admin'])]
-#[Hidden(['password', 'cpf', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['password', 'cpf', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'magic_login_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -49,6 +49,15 @@ class User extends Authenticatable implements PasskeyUser
     public function canManageEvents(): bool
     {
         return in_array($this->role, [self::ROLE_ORGANIZER, self::ROLE_STAFF], true);
+    }
+
+    /**
+     * Gestão sensível (eventos, cupons, locais, pedidos, config, equipe):
+     * só organizador ou admin. Staff fica restrito ao check-in.
+     */
+    public function canManageOrganization(): bool
+    {
+        return $this->role === self::ROLE_ORGANIZER || $this->is_admin;
     }
 
     /**

@@ -1,9 +1,9 @@
 import { usePasskeyRegister } from '@laravel/passkeys/react';
 import { useState } from 'react';
+import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/molecules/FormField';
 
 type Props = {
     onSuccess: () => void;
@@ -13,15 +13,15 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
     const [name, setName] = useState(() => {
         const ua = navigator.userAgent;
 
-        const browser = ['Chrome', 'Firefox', 'Safari', 'Edge', 'Opera'].find(
-            (browser) => new RegExp(browser).test(ua),
+        const browser = ['Chrome', 'Firefox', 'Safari', 'Edge', 'Opera'].find((browser) =>
+            new RegExp(browser).test(ua),
         );
 
         const os = ['iPhone', 'iPad', 'Android', 'Mac', 'Windows'].find((os) =>
             new RegExp(os).test(ua),
         );
 
-        return [browser, os].filter(Boolean).join(' on ') || '';
+        return [browser, os].filter(Boolean).join(' no ') || '';
     });
 
     const [showForm, setShowForm] = useState(false);
@@ -50,16 +50,16 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
 
     if (!isSupported) {
         return (
-            <div className="text-sm text-muted-foreground">
-                Passkeys are not supported in this browser.
-            </div>
+            <p className="font-body text-sm text-muted-foreground">
+                Este navegador não suporta passkeys.
+            </p>
         );
     }
 
     if (!showForm) {
         return (
-            <Button variant="outline" onClick={() => setShowForm(true)}>
-                Add passkey
+            <Button variant="secondary" onClick={() => setShowForm(true)}>
+                Adicionar passkey
             </Button>
         );
     }
@@ -67,32 +67,31 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
     return (
         <form
             onSubmit={handleSubmit}
-            className="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
+            className="space-y-4 rounded-card border border-border bg-surface-2 p-4"
         >
-            <div className="grid gap-2">
-                <Label htmlFor="passkey-name">Passkey name</Label>
+            <FormField
+                label="Nome da passkey"
+                htmlFor="passkey-name"
+                helper="Um nome ajuda a identificar este dispositivo depois."
+            >
                 <Input
                     id="passkey-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., MacBook Pro, iPhone"
-                    className="mt-1 block w-full border-foreground/20"
+                    placeholder="ex.: MacBook Pro, iPhone"
                     autoFocus
                 />
-                <p className="text-xs text-muted-foreground">
-                    A name helps you identify this passkey later.
-                </p>
-            </div>
+            </FormField>
 
             {error && <InputError message={error} />}
 
             <div className="flex gap-2">
                 <Button type="submit" disabled={isLoading || !name.trim()}>
-                    {isLoading ? 'Registering...' : 'Register passkey'}
+                    {isLoading ? 'Registrando…' : 'Registrar passkey'}
                 </Button>
                 <Button type="button" variant="ghost" onClick={handleCancel}>
-                    Cancel
+                    Cancelar
                 </Button>
             </div>
         </form>

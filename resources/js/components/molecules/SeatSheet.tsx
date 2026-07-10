@@ -77,7 +77,7 @@ setOpen(false);
                                                 type="button"
                                                 aria-label={`Remover ${s.code}`}
                                                 onClick={() => onRemove(s)}
-                                                className="text-faint transition-colors hover:text-danger"
+                                                className="text-faint transition-colors hover:text-danger-text"
                                             >
                                                 <Icon name="close" size={15} />
                                             </button>

@@ -1,13 +1,14 @@
 import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Badge  } from '@/components/atoms/Badge';
 import type {BadgeProps} from '@/components/atoms/Badge';
 import { Icon } from '@/components/atoms/Icon';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 
 export interface EventRow {
     id: number;
     slug: string;
     title: string;
-    kicker: string;
     status: string;
     venue: string;
     sessionsCount: number;
@@ -17,19 +18,15 @@ export interface EventRow {
 }
 
 const tone: Record<string, NonNullable<BadgeProps['tone']>> = {
-    published: 'success',
     on_sale: 'success',
+    sold_out: 'warning',
     draft: 'neutral',
-    cancelled: 'danger',
-    finished: 'neutral',
 };
 
 const label: Record<string, string> = {
-    published: 'Publicado',
     on_sale: 'À venda',
+    sold_out: 'Esgotado',
     draft: 'Rascunho',
-    cancelled: 'Cancelado',
-    finished: 'Encerrado',
 };
 
 export function AdminEventsTable({
@@ -39,6 +36,8 @@ export function AdminEventsTable({
     events: EventRow[];
     editable?: boolean;
 }) {
+    const [removing, setRemoving] = useState<EventRow | null>(null);
+
     return (
         <div className="overflow-x-auto rounded-card border border-border">
             <table className="w-full text-left">
@@ -75,19 +74,15 @@ export function AdminEventsTable({
                                     <div className="flex items-center justify-end gap-4">
                                         <Link
                                             href={`/dashboard/eventos/${e.id}/editar`}
-                                            className="font-body text-xs font-semibold text-accent hover:underline"
+                                            className="font-body text-xs font-semibold text-accent-text hover:underline"
                                         >
                                             Editar
                                         </Link>
                                         <button
                                             type="button"
                                             aria-label={`Excluir ${e.title}`}
-                                            onClick={() => {
-                                                if (confirm(`Excluir "${e.title}"? Esta ação não pode ser desfeita.`)) {
-                                                    router.delete(`/dashboard/eventos/${e.id}`);
-                                                }
-                                            }}
-                                            className="text-faint transition-colors hover:text-danger"
+                                            onClick={() => setRemoving(e)}
+                                            className="text-faint transition-colors hover:text-danger-text"
                                         >
                                             <Icon name="trash" size={15} />
                                         </button>
@@ -95,7 +90,7 @@ export function AdminEventsTable({
                                 ) : (
                                     <Link
                                         href={`/e/${e.slug}`}
-                                        className="inline-flex items-center gap-1 font-body text-xs font-semibold text-accent hover:underline"
+                                        className="inline-flex items-center gap-1 font-body text-xs font-semibold text-accent-text hover:underline"
                                     >
                                         Ver <Icon name="arrow-right" size={13} />
                                     </Link>
@@ -103,8 +98,44 @@ export function AdminEventsTable({
                             </td>
                         </tr>
                     ))}
+                    {events.length === 0 && (
+                        <tr>
+                            <td
+                                colSpan={5}
+                                className="px-4 py-10 text-center font-body text-sm text-muted-foreground"
+                            >
+                                Nenhum evento ainda.{' '}
+                                {editable && (
+                                    <Link
+                                        href="/dashboard/eventos/novo"
+                                        className="font-semibold text-accent-text hover:underline"
+                                    >
+                                        Criar o primeiro
+                                    </Link>
+                                )}
+                            </td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
+
+            <ConfirmDialog
+                open={removing !== null}
+                onOpenChange={(open) => !open && setRemoving(null)}
+                title="Excluir evento"
+                description={
+                    removing
+                        ? `"${removing.title}" será excluído. Esta ação não pode ser desfeita.`
+                        : ''
+                }
+                confirmLabel="Excluir"
+                onConfirm={() => {
+                    if (removing) {
+                        router.delete(`/dashboard/eventos/${removing.id}`);
+                    }
+                    setRemoving(null);
+                }}
+            />
         </div>
     );
 }

@@ -7,7 +7,7 @@ import type { TicketInfo, TicketStatus } from '@/lib/veludo/types';
 
 const stripe: Record<TicketStatus, string> = {
     valid: 'bg-accent',
-    used: 'bg-[oklch(0.4_0.012_50)]',
+    used: 'bg-neutral-fill',
     transferred: 'bg-info',
     cancelled: 'bg-danger',
     refunded: 'bg-danger',
@@ -44,7 +44,7 @@ export function TicketStub({ ticket, actions, showQr = true, className }: Ticket
             <div className="flex items-stretch gap-5 p-5">
                 <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-center justify-between gap-3">
-                        <span className="kicker text-[oklch(0.72_0.13_24)]">{ticket.kicker}</span>
+                        <span className="kicker text-tag-wine">{ticket.kicker}</span>
                         <Badge tone={tone[ticket.status]}>{ticket.statusLabel}</Badge>
                     </div>
                     <div className="mt-2 flex items-baseline gap-2">

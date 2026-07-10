@@ -1,12 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { CSSProperties, PropsWithChildren } from 'react';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card } from '@/components/molecules/Card';
 import { home } from '@/routes';
 
 const MARK: CSSProperties = {
@@ -30,30 +24,26 @@ export default function AuthCardLayout({
     description?: string;
 }>) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-bg p-6 md:p-10">
             <div className="flex w-full max-w-md flex-col gap-6">
-                <Link
-                    href={home()}
-                    className="self-center"
-                    aria-label="Kena — início"
-                >
-                    <span
-                        aria-hidden="true"
-                        className="block size-10 bg-accent"
-                        style={MARK}
-                    />
+                <Link href={home()} className="self-center" aria-label="Kena — início">
+                    <span aria-hidden="true" className="block size-10 bg-accent" style={MARK} />
                 </Link>
 
-                <Card className="rounded-card border-border bg-card">
-                    <CardHeader className="px-8 pt-8 pb-0 text-center">
-                        <CardTitle className="font-display text-2xl">
-                            {title}
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground">
-                            {description}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="px-8 py-8">{children}</CardContent>
+                <Card className="p-8">
+                    <div className="text-center">
+                        {title && (
+                            <h1 className="font-display text-display-sm text-foreground uppercase">
+                                {title}
+                            </h1>
+                        )}
+                        {description && (
+                            <p className="mt-1.5 font-body text-sm text-muted-foreground">
+                                {description}
+                            </p>
+                        )}
+                    </div>
+                    <div className="mt-8">{children}</div>
                 </Card>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, InfiniteScroll, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge  } from '@/components/atoms/Badge';
@@ -23,6 +23,25 @@ interface ListedEvent {
     bannerTo: string;
     bannerImage?: string;
     priceFrom: number;
+}
+
+/** Espelha as proporções do EventCard para o grid não pular ao carregar a página seguinte. */
+function EventCardSkeleton() {
+    return (
+        <div className="overflow-hidden rounded-card border border-border bg-surface" aria-hidden="true">
+            <div className="h-40 animate-pulse bg-surface-2" />
+            <div className="p-5">
+                <span className="block h-2.5 w-20 animate-pulse rounded-full bg-surface-2" />
+                <span className="mt-2 block h-5 w-3/4 animate-pulse rounded-full bg-surface-2" />
+                <span className="mt-3 block h-3 w-2/3 animate-pulse rounded-full bg-surface-2" />
+                <span className="mt-1.5 block h-3 w-1/2 animate-pulse rounded-full bg-surface-2" />
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                    <span className="h-3 w-16 animate-pulse rounded-full bg-surface-2" />
+                    <span className="h-4 w-14 animate-pulse rounded-full bg-surface-2" />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 function EventCard({ event }: { event: ListedEvent }) {
@@ -72,7 +91,12 @@ function EventCard({ event }: { event: ListedEvent }) {
     );
 }
 
-export default function EventsPage({ events, q = '' }: { events: ListedEvent[]; q?: string }) {
+/** Paginator do Laravel; o <InfiniteScroll> concatena em `events.data`. */
+interface EventsPaginator {
+    data: ListedEvent[];
+}
+
+export default function EventsPage({ events, q = '' }: { events: EventsPaginator; q?: string }) {
     const [term, setTerm] = useState(q);
 
     function search(e: FormEvent) {
@@ -113,23 +137,27 @@ export default function EventsPage({ events, q = '' }: { events: ListedEvent[]; 
                     </Button>
                 </form>
 
-                {events.length === 0 ? (
+                {events.data.length === 0 ? (
                     <div className="mt-10 rounded-card border border-border bg-surface px-6 py-12 text-center">
                         <p className="font-body text-sm text-muted-foreground">
                             {q ? `Nenhum evento para “${q}”.` : 'Nenhum evento em cartaz no momento.'}
                         </p>
                         {q && (
-                            <Link href="/eventos" className="mt-2 inline-block font-body text-sm text-accent hover:underline">
+                            <Link href="/eventos" className="mt-2 inline-block font-body text-sm text-accent-text hover:underline">
                                 Limpar busca
                             </Link>
                         )}
                     </div>
                 ) : (
-                    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {events.map((e) => (
+                    <InfiniteScroll
+                        data="events"
+                        className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+                        loading={<EventCardSkeleton />}
+                    >
+                        {events.data.map((e) => (
                             <EventCard key={e.id} event={e} />
                         ))}
-                    </div>
+                    </InfiniteScroll>
                 )}
             </div>
         </>

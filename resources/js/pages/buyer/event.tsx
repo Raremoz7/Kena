@@ -1,9 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Deferred, Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/atoms/Button';
 import { Icon  } from '@/components/atoms/Icon';
 import type {IconName} from '@/components/atoms/Icon';
 import { EventHero } from '@/components/organisms/EventHero';
 import { SeatSelection } from '@/components/organisms/SeatSelection';
+import { SeatSelectionSkeleton } from '@/components/organisms/SeatSelectionSkeleton';
 import { SessionList } from '@/components/organisms/SessionList';
 import type { EventInfo, SeatMapData, Sector } from '@/lib/veludo/types';
 
@@ -34,8 +35,10 @@ interface EventPageProps {
     sessionId: number;
     sessionLabel: string;
     sessions: SessionOption[];
-    seatMap: SeatMapData;
+    /** Deferido (sessão única) ou null (evento multi-sessão, mapa não é usado). */
+    seatMap: SeatMapData | null;
     reserveUrl: string;
+    availabilityUrl: string;
 }
 
 export default function EventPage({
@@ -46,6 +49,7 @@ export default function EventPage({
     sessions,
     seatMap,
     reserveUrl,
+    availabilityUrl,
 }: EventPageProps) {
     const multi = sessions.length > 1;
 
@@ -132,7 +136,19 @@ export default function EventPage({
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
                                 {sessionLabel} · {event.venue.name}, {event.venue.city}
                             </p>
-                            <SeatSelection seatMap={seatMap} reserveUrl={reserveUrl} className="mt-6" />
+                            <Deferred
+                                data="seatMap"
+                                fallback={<SeatSelectionSkeleton className="mt-6" />}
+                            >
+                                {seatMap ? (
+                                    <SeatSelection
+                                        seatMap={seatMap}
+                                        reserveUrl={reserveUrl}
+                                        availabilityUrl={availabilityUrl}
+                                        className="mt-6"
+                                    />
+                                ) : null}
+                            </Deferred>
                         </>
                     )}
                 </section>
