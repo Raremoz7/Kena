@@ -13,6 +13,9 @@ class FakeGateway implements PaymentGateway
 
     public string $fetchStatus = PaymentResult::STATUS_APPROVED;
 
+    /** Quantas cobranças de cartão foram feitas no gateway (espião). */
+    public int $cardCharges = 0;
+
     public function chargeCard(
         Order $order,
         string $cardToken,
@@ -21,11 +24,28 @@ class FakeGateway implements PaymentGateway
         string $payerEmail,
         ?string $payerDoc,
     ): PaymentResult {
+        $this->cardCharges++;
+
         return new PaymentResult('FAKE-'.$order->id, $this->chargeStatus, 'card', ['id' => 'FAKE-'.$order->id]);
+    }
+
+    /** Quantos Pix foram criados no gateway (espião). */
+    public int $pixCreated = 0;
+
+    /** @var list<string> IDs cancelados no gateway (espião). */
+    public array $cancellations = [];
+
+    public function cancelPayment(string $gatewayPaymentId): bool
+    {
+        $this->cancellations[] = $gatewayPaymentId;
+
+        return true;
     }
 
     public function createPix(Order $order, string $payerEmail, ?string $payerDoc): PaymentResult
     {
+        $this->pixCreated++;
+
         return new PaymentResult(
             'FAKE-PIX-'.$order->id,
             PaymentResult::STATUS_PENDING,
@@ -42,8 +62,16 @@ class FakeGateway implements PaymentGateway
         return new PaymentResult($gatewayPaymentId, $this->fetchStatus, 'pix', ['id' => $gatewayPaymentId]);
     }
 
+    /** @var list<string> IDs estornados (espião para asserções). */
+    public array $refunds = [];
+
+    /** Simula recusa de estorno pelo gateway quando false. */
+    public bool $refundOk = true;
+
     public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool
     {
-        return true;
+        $this->refunds[] = $gatewayPaymentId;
+
+        return $this->refundOk;
     }
 }

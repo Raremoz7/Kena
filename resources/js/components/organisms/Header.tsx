@@ -25,7 +25,8 @@ function PillLink({ href, children }: { href: string; children: string }) {
         <Link
             href={href}
             className={cn(
-                'rounded-full px-4 py-1.5 font-body text-sm transition-colors',
+                // min-h-8 garante o alvo mínimo de 24px da WCAG 2.5.8 com folga.
+                'inline-flex min-h-8 items-center rounded-full px-4 py-1.5 font-body text-sm transition-colors',
                 active
                     ? 'bg-accent font-semibold text-accent-fg'
                     : 'text-muted-foreground hover:text-foreground',

@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
+use App\Models\EventSession;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Support\MailSettings;
+use App\Support\SessionOptionsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +33,28 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->overrideMercadoPagoConfig();
+        $this->invalidateSessionOptionsCache();
         MailSettings::apply();
+    }
+
+    /**
+     * O seletor de sessões do painel de pedidos é cacheado, e seu label combina
+     * título do evento + horário da sessão. Invalidar na escrita (em vez de
+     * chamar forget() em cada controller) cobre também os caminhos futuros.
+     */
+    protected function invalidateSessionOptionsCache(): void
+    {
+        $forget = static function (): void {
+            SessionOptionsCache::forget();
+        };
+
+        EventSession::saved($forget);
+        EventSession::deleted($forget);
+
+        // Event::deleted é necessário à parte: apagar o evento remove as sessões
+        // por cascade no banco, o que não dispara EventSession::deleted.
+        Event::saved($forget);
+        Event::deleted($forget);
     }
 
     /**

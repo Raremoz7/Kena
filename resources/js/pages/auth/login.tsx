@@ -1,14 +1,14 @@
 import { Form, Head } from '@inertiajs/react';
 import { Button } from '@/components/atoms/Button';
+import { Checkbox } from '@/components/atoms/Checkbox';
 import { Input } from '@/components/atoms/Input';
+import { Label } from '@/components/atoms/Label';
 import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
 import { FormField } from '@/components/molecules/FormField';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -115,7 +115,7 @@ export default function Login({ status, canResetPassword }: Props) {
             </div>
 
             {status && (
-                <div className="mt-4 text-center text-sm font-medium text-success">
+                <div className="mt-4 text-center text-sm font-medium text-success-text">
                     {status}
                 </div>
             )}

@@ -46,6 +46,21 @@
     --color-info: var(--info);
     --color-danger: var(--destructive);
 
+    /* Variantes de TEXTO sobre fundo escuro (WCAG 1.4.3 ≥ 4.5:1).
+       Os tokens de preenchimento acima não servem como cor de texto. */
+    --color-accent-text: var(--accent-text);
+    --color-danger-text: var(--danger-text);
+    --color-success-text: var(--success-text);
+    --color-warning-text: var(--warning-text);
+    --color-warning-fg: var(--warning-fg);
+
+    /* Borda de componente interativo (WCAG 1.4.11 ≥ 3:1).
+       --border segue decorativo; usar esta só onde a borda é a única affordance. */
+    --color-border-strong: var(--border-strong);
+
+    --color-neutral-fill: var(--neutral-fill);
+    --color-tag-wine: var(--tag-wine);
+
     /* assentos — tokens de domínio */
     --color-seat-available: var(--seat-available);
     --color-seat-selected: var(--seat-selected);
@@ -112,7 +127,8 @@
     --bg: oklch(0.16 0.013 48);
     --surface: oklch(0.205 0.015 48);
     --surface-2: oklch(0.245 0.016 48);
-    --faint: oklch(0.52 0.012 60);
+    /* 5.76:1 sobre --bg · 5.33:1 sobre --surface · 4.83:1 sobre --surface-2 */
+    --faint: oklch(0.64 0.012 60);
 
     /* assentos */
     --seat-available: oklch(0.52 0.14 155);
@@ -130,6 +146,24 @@
     --success: oklch(0.52 0.14 155);
     --warning: oklch(0.58 0.14 72);
     --info: oklch(0.52 0.14 230);
+
+    /*
+     * Variantes de texto: --accent e --destructive têm contraste suficiente como
+     * PREENCHIMENTO (texto claro por cima), mas não como cor de texto sobre o
+     * fundo escuro (3.69:1 e 3.20:1). Estas passam.
+     */
+    --accent-text: oklch(0.68 0.15 20); /* 6.29:1 sobre --bg */
+    --danger-text: oklch(0.66 0.17 27); /* 5.78:1 sobre --bg */
+    --success-text: oklch(0.61 0.14 155); /* 5.47:1 sobre --bg */
+    --warning-text: oklch(0.65 0.14 72); /* 5.85:1 sobre --bg */
+    --warning-fg: oklch(0.14 0.04 72); /* 4.54:1 sobre --warning */
+
+    /* Borda de componente interativo: 3.82:1 sobre --bg, 3.20:1 sobre --surface-2 */
+    --border-strong: oklch(0.54 0.02 48);
+
+    /* preenchimentos antes inline em Badge/TicketStub/Tag */
+    --neutral-fill: oklch(0.4 0.012 50);
+    --tag-wine: oklch(0.72 0.13 24);
 
     /* semânticos shadcn com valores Veludo */
     --background: oklch(0.16 0.013 48);

@@ -141,14 +141,23 @@ final class CatalogPresenter
      */
     public static function sessionsList(Event $event): array
     {
-        return $event->sessions
-            ->filter(fn (EventSession $s): bool => $s->status !== 'cancelled')
+        $sessions = $event->sessions->filter(fn (EventSession $s): bool => $s->status !== 'cancelled');
+        $sessionIds = $sessions->pluck('id');
+
+        // Uma query agregada para todas as sessões em vez de 1 count por sessão.
+        $available = SessionSeat::whereIn('session_id', $sessionIds)
+            ->where('status', SessionSeat::STATUS_AVAILABLE)
+            ->selectRaw('session_id, count(*) as total')
+            ->groupBy('session_id')
+            ->pluck('total', 'session_id');
+
+        return $sessions
             ->map(fn (EventSession $s): array => [
                 'id' => $s->id,
                 'label' => self::sessionLabel($s),
                 'dateLabel' => self::dateLabel($s->starts_at),
                 'timeLabel' => self::timeLabel($s->starts_at),
-                'availableCount' => $s->sessionSeats()->where('status', SessionSeat::STATUS_AVAILABLE)->count(),
+                'availableCount' => (int) ($available[$s->id] ?? 0),
                 'seatsUrl' => route('sessions.seats', ['slug' => $event->slug, 'session' => $s->id]),
             ])->values()->all();
     }

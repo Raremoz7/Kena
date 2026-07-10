@@ -5,7 +5,6 @@ namespace App\Support\Presenters;
 use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\User;
-use App\Support\Money;
 
 /** Converte os ingressos do usuário em TicketInfo (resources/js/lib/veludo/types.ts). */
 final class TicketPresenter
@@ -30,7 +29,11 @@ final class TicketPresenter
 
         $canRefund = $ticket->status === Ticket::STATUS_VALID
             && $ticket->order->status === Order::STATUS_PAID
-            && now()->lessThan($session->refundLocksAt());
+            && $ticket->order->user_id === $ticket->user_id // destinatário de transferência não reembolsa pedido alheio
+            && now()->lessThan($session->refundLocksAt())
+            && ! $ticket->order->tickets()
+                ->whereIn('status', [Ticket::STATUS_TRANSFERRED, Ticket::STATUS_USED])
+                ->exists();
 
         return [
             'id' => $ticket->id,
@@ -43,10 +46,8 @@ final class TicketPresenter
             'holderName' => $ticket->holder_name,
             'code' => $ticket->code,
             'qrToken' => $ticket->qr_token,
-            'price' => Money::toReais($ticket->price_cents),
             'status' => $ticket->status,
             'statusLabel' => self::statusLabel($ticket->status),
-            'transferLocksAt' => $session->transferLocksAt()->toIso8601String(),
             'transferUrl' => route('tickets.transfer', $ticket),
             'canRefund' => $canRefund,
             'refundUrl' => route('orders.refund', $ticket->order_id),

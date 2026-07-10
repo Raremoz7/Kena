@@ -53,8 +53,9 @@ class VenueSeatImportTest extends TestCase
         $this->assertSame(2, Seat::where('venue_id', $venue->id)->count());
     }
 
-    public function test_map_locked_when_venue_has_events(): void
+    public function test_map_editable_when_venue_has_events_without_sales(): void
     {
+        // Evento sem NENHUMA venda: o mapa continua reeditável (M12).
         $venue = $this->venue();
         Event::create([
             'venue_id' => $venue->id, 'slug' => 'ev', 'title' => 'Ev',
@@ -63,9 +64,10 @@ class VenueSeatImportTest extends TestCase
 
         $this->actingAs($this->organizer())
             ->post(route('admin.venues.seats.generate', $venue), ['rows' => 2, 'seats_per_row' => 2])
-            ->assertSessionHasErrors('seats');
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
-        $this->assertSame(0, Seat::where('venue_id', $venue->id)->count());
+        $this->assertSame(4, Seat::where('venue_id', $venue->id)->count());
     }
 
     public function test_buyer_cannot_import(): void

@@ -84,6 +84,15 @@ class MercadoPagoGateway implements PaymentGateway
         return $response->successful();
     }
 
+    public function cancelPayment(string $gatewayPaymentId): bool
+    {
+        $response = $this->client()
+            ->withHeaders(['X-Idempotency-Key' => 'cancel-'.$gatewayPaymentId])
+            ->put('/v1/payments/'.$gatewayPaymentId, ['status' => 'cancelled']);
+
+        return $response->successful();
+    }
+
     private function amount(Order $order): float
     {
         return round($order->total_cents / 100, 2);

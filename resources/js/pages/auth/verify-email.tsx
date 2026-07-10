@@ -1,8 +1,8 @@
 // Components
 import { Form, Head } from '@inertiajs/react';
+import { Button } from '@/components/atoms/Button';
+import { Spinner } from '@/components/atoms/Spinner';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
 
@@ -12,7 +12,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
             <Head title="Verificação de e-mail" />
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-success">
+                <div className="mb-4 text-center text-sm font-medium text-success-text">
                     Um novo link de verificação foi enviado para o e-mail que
                     você informou no cadastro.
                 </div>

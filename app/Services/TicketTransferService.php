@@ -53,7 +53,15 @@ class TicketTransferService
         }
 
         $newTicket = DB::transaction(function () use ($ticket, $from, $recipient, $toEmail): Ticket {
-            $ticket->update(['status' => Ticket::STATUS_TRANSFERRED]);
+            // Invalidação atômica: só transfere se AINDA estiver VALID — protege
+            // contra check-in/reembolso/outra transferência entre a leitura e aqui.
+            $invalidated = Ticket::whereKey($ticket->id)
+                ->where('status', Ticket::STATUS_VALID)
+                ->update(['status' => Ticket::STATUS_TRANSFERRED]);
+
+            if ($invalidated === 0) {
+                throw new TransferException('Este ingresso não está mais válido para transferência.');
+            }
 
             $code = Codes::ticket();
             $newTicket = Ticket::create([

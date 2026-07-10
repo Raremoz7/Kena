@@ -3,6 +3,8 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Models\User;
+use App\Support\MagicLink;
 use App\Support\Presenters\CatalogPresenter;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
@@ -11,7 +13,6 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\URL;
 
 /** Confirmação de compra com os ingressos + QR (enviada ao comprador no pago). */
 class TicketsIssuedMail extends Mailable implements ShouldQueue
@@ -46,11 +47,9 @@ class TicketsIssuedMail extends Mailable implements ShouldQueue
         );
     }
 
-    /** Link assinado de login sem senha, válido com folga. */
+    /** Magic-link de uso único (rotaciona o anterior) — ver App\Support\MagicLink. */
     public static function magicLink(int $userId, CarbonInterface $sessionStart): string
     {
-        $expiry = $sessionStart->copy()->addDay()->max(now()->addDays(30));
-
-        return URL::temporarySignedRoute('magic-login', $expiry, ['user' => $userId]);
+        return MagicLink::generate(User::findOrFail($userId), $sessionStart);
     }
 }

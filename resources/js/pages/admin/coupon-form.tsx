@@ -145,7 +145,7 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
                                 type="checkbox"
                                 checked={form.data.active}
                                 onChange={(e) => form.setData('active', e.target.checked)}
-                                className="size-4 rounded border-border"
+                                className="size-4 rounded border-border-strong"
                             />
                             Ativo
                         </label>

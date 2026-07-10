@@ -25,6 +25,7 @@ class ReservationController extends Controller
     {
         $session->load('event');
         abort_if($session->event->slug !== $slug, 404);
+        abort_unless($session->isSellable(), 410, 'As vendas desta sessão estão encerradas.');
 
         $rules = [
             'seats' => ['required', 'array', 'min:1'],

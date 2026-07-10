@@ -20,7 +20,7 @@ export function PriceSummary({ lines, total, className }: PriceSummaryProps) {
                         className={cn(
                             'font-body text-sm',
                             line.tone === 'success'
-                                ? 'text-success'
+                                ? 'text-success-text'
                                 : line.tone === 'muted'
                                   ? 'text-faint'
                                   : 'text-muted-foreground',
@@ -33,7 +33,7 @@ export function PriceSummary({ lines, total, className }: PriceSummaryProps) {
                         signed={line.value < 0}
                         className={cn(
                             'text-sm',
-                            line.tone === 'success' ? 'text-success' : 'text-foreground',
+                            line.tone === 'success' ? 'text-success-text' : 'text-foreground',
                         )}
                     />
                 </div>

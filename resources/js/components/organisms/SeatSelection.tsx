@@ -52,7 +52,7 @@ function SelectionPanel({
                                     type="button"
                                     aria-label={`Remover ${s.code}`}
                                     onClick={() => onRemove(s)}
-                                    className="text-faint transition-colors hover:text-danger"
+                                    className="text-faint transition-colors hover:text-danger-text"
                                 >
                                     <Icon name="close" size={15} />
                                 </button>
@@ -113,7 +113,9 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
     const [selected, setSelected] = useState<Seat[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
-    const user = usePage<{ auth: { user: { id: number } | null } }>().props.auth?.user ?? null;
+    const page = usePage<{ auth: { user: { id: number } | null }; ziggy?: { location?: string } }>();
+    const user = page.props.auth?.user ?? null;
+    const currentUrl = page.props.ziggy?.location ?? page.url;
     const [guestOpen, setGuestOpen] = useState(false);
     const [guest, setGuest] = useState({ name: '', email: '', cpf: '' });
     const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
@@ -156,12 +158,24 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
         };
     }, [availabilityUrl]);
 
-    // Remove da seleção assentos que deixaram de estar disponíveis.
+    // Remove da seleção assentos que deixaram de estar disponíveis, avisando
+    // o comprador (senão o assento some do resumo em silêncio).
     useEffect(() => {
         setSelected((prev) => {
-            const ok = prev.filter((s) => (statuses[s.id] ?? 'available') === 'available');
+            const taken = prev.filter((s) => (statuses[s.id] ?? 'available') !== 'available');
 
-            return ok.length === prev.length ? prev : ok;
+            if (taken.length === 0) {
+                return prev;
+            }
+
+            veludoToast.warning(
+                taken.length === 1
+                    ? 'Um assento foi reservado'
+                    : 'Alguns assentos foram reservados',
+                `${taken.map((s) => s.code).join(', ')} ${taken.length === 1 ? 'acabou' : 'acabaram'} de sair. Escolha ${taken.length === 1 ? 'outro' : 'outros'}.`,
+            );
+
+            return prev.filter((s) => (statuses[s.id] ?? 'available') === 'available');
         });
     }, [statuses]);
 
@@ -294,7 +308,10 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                     </FormField>
                     <p className="font-body text-xs text-faint">
                         Já tem conta?{' '}
-                        <a href="/login" className="text-accent hover:underline">
+                        <a
+                            href={`/login?redirect=${encodeURIComponent(currentUrl)}`}
+                            className="text-accent-text hover:underline"
+                        >
                             Entrar
                         </a>
                         .

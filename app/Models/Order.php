@@ -85,4 +85,10 @@ class Order extends Model
     {
         return $this->hasOne(Payment::class)->latestOfMany();
     }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
 }

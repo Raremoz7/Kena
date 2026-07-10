@@ -301,7 +301,7 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                     </label>
                     <select
                         id="ck-session"
-                        className="w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent"
+                        className="w-full rounded-input border border-border-strong bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent"
                         value={sessionId}
                         onChange={(e) => selectSession(Number(e.target.value))}
                     >

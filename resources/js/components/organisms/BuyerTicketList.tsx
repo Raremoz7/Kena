@@ -162,7 +162,7 @@ export function BuyerTicketList({
                         <div className="flex flex-col items-center gap-2">
                             <a
                                 href={qrTicket.calendarUrl}
-                                className="inline-flex items-center gap-1.5 font-body text-sm text-accent hover:underline"
+                                className="inline-flex items-center gap-1.5 font-body text-sm text-accent-text hover:underline"
                             >
                                 <Icon name="calendar" size={15} /> Adicionar à
                                 agenda
@@ -170,7 +170,7 @@ export function BuyerTicketList({
                             {walletEnabled && (
                                 <a
                                     href={qrTicket.googleWalletUrl}
-                                    className="inline-flex items-center gap-1.5 font-body text-sm text-accent hover:underline"
+                                    className="inline-flex items-center gap-1.5 font-body text-sm text-accent-text hover:underline"
                                 >
                                     <Icon name="ticket" size={15} /> Adicionar
                                     ao Google Wallet

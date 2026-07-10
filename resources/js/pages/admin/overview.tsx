@@ -54,7 +54,7 @@ export default function Overview({ kpis, events }: { kpis: Kpis; events: EventRo
                         <h2 className="kicker text-faint">Eventos</h2>
                         <Link
                             href="/dashboard/eventos"
-                            className="font-body text-xs font-semibold text-accent hover:underline"
+                            className="font-body text-xs font-semibold text-accent-text hover:underline"
                         >
                             Ver todos
                         </Link>

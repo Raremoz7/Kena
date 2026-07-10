@@ -232,7 +232,7 @@ export default function VenueForm({ venue }: { venue: VenueData | null }) {
                                 </div>
                             </div>
                         ) : (
-                            <p className="mt-4 flex items-start gap-1.5 font-body text-xs text-warning">
+                            <p className="mt-4 flex items-start gap-1.5 font-body text-xs text-warning-text">
                                 <Icon name="alert" size={14} className="mt-px" />
                                 O mapa não pode ser alterado porque já há eventos usando este local.
                             </p>

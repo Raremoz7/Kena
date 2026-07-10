@@ -1,15 +1,9 @@
 import { Form } from '@inertiajs/react';
-import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { Card } from '@/components/molecules/Card';
 import { regenerateRecoveryCodes } from '@/routes/two-factor';
 
 type Props = {
@@ -50,21 +44,18 @@ export default function TwoFactorRecoveryCodes({
         }
     }, [recoveryCodesList.length, fetchRecoveryCodes]);
 
-    const RecoveryCodeIconComponent = codesAreVisible ? EyeOff : Eye;
-
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex gap-3">
-                    <LockKeyhole className="size-4" aria-hidden="true" />
-                    2FA recovery codes
-                </CardTitle>
-                <CardDescription>
-                    Recovery codes let you regain access if you lose your 2FA
-                    device. Store them in a secure password manager.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <Card className="w-full p-6">
+            <h3 className="flex items-center gap-2 font-display text-display-sm text-foreground uppercase">
+                <Icon name="lock" size={18} aria-hidden="true" />
+                Códigos de recuperação
+            </h3>
+            <p className="mt-1.5 font-body text-sm text-muted-foreground">
+                Servem para recuperar o acesso caso você perca o aparelho com o autenticador.
+                Guarde-os num gerenciador de senhas.
+            </p>
+
+            <div className="mt-5">
                 <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
                     <Button
                         onClick={toggleCodesVisibility}
@@ -72,11 +63,8 @@ export default function TwoFactorRecoveryCodes({
                         aria-expanded={codesAreVisible}
                         aria-controls="recovery-codes-section"
                     >
-                        <RecoveryCodeIconComponent
-                            className="size-4"
-                            aria-hidden="true"
-                        />
-                        {codesAreVisible ? 'Hide' : 'View'} recovery codes
+                        <Icon name="eye" size={16} aria-hidden="true" />
+                        {codesAreVisible ? 'Ocultar códigos' : 'Ver códigos'}
                     </Button>
 
                     {canRegenerateCodes && (
@@ -92,12 +80,14 @@ export default function TwoFactorRecoveryCodes({
                                     disabled={processing}
                                     aria-describedby="regenerate-warning"
                                 >
-                                    <RefreshCw /> Regenerate codes
+                                    <Icon name="refund" size={16} aria-hidden="true" />
+                                    Gerar novos
                                 </Button>
                             )}
                         </Form>
                     )}
                 </div>
+
                 <div
                     id="recovery-codes-section"
                     className={`relative overflow-hidden transition-all duration-300 ${codesAreVisible ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}
@@ -110,55 +100,42 @@ export default function TwoFactorRecoveryCodes({
                             <>
                                 <div
                                     ref={codesSectionRef}
-                                    className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
+                                    className="grid gap-1 rounded-btn bg-surface-2 p-4 font-mono text-sm text-foreground"
                                     role="list"
-                                    aria-label="Recovery codes"
+                                    aria-label="Códigos de recuperação"
                                 >
                                     {recoveryCodesList.length ? (
                                         recoveryCodesList.map((code, index) => (
-                                            <div
-                                                key={index}
-                                                role="listitem"
-                                                className="select-text"
-                                            >
+                                            <div key={index} role="listitem" className="select-text">
                                                 {code}
                                             </div>
                                         ))
                                     ) : (
-                                        <div
-                                            className="space-y-2"
-                                            aria-label="Loading recovery codes"
-                                        >
-                                            {Array.from(
-                                                { length: 8 },
-                                                (_, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="h-4 animate-pulse rounded bg-muted-foreground/20"
-                                                        aria-hidden="true"
-                                                    />
-                                                ),
-                                            )}
+                                        <div className="space-y-2" aria-label="Carregando códigos">
+                                            {Array.from({ length: 8 }, (_, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="h-4 animate-pulse rounded bg-muted-foreground/20"
+                                                    aria-hidden="true"
+                                                />
+                                            ))}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="text-xs text-muted-foreground select-none">
-                                    <p id="regenerate-warning">
-                                        Each recovery code can be used once to
-                                        access your account and will be removed
-                                        after use. If you need more, click{' '}
-                                        <span className="font-bold">
-                                            Regenerate codes
-                                        </span>{' '}
-                                        above.
-                                    </p>
-                                </div>
+                                <p
+                                    id="regenerate-warning"
+                                    className="font-body text-xs text-muted-foreground select-none"
+                                >
+                                    Cada código só pode ser usado uma vez e some depois do uso. Se
+                                    precisar de mais, clique em{' '}
+                                    <span className="font-semibold">Gerar novos</span> acima.
+                                </p>
                             </>
                         )}
                     </div>
                 </div>
-            </CardContent>
+            </div>
         </Card>
     );
 }

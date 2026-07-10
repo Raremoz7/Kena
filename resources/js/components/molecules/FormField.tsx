@@ -46,7 +46,7 @@ export function FormField({
                 {children}
             </FieldContext.Provider>
             {error ? (
-                <p id={errorId} className="font-body text-xs text-danger">
+                <p id={errorId} className="font-body text-xs text-danger-text">
                     {error}
                 </p>
             ) : helper ? (

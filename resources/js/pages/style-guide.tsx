@@ -49,7 +49,6 @@ const demoTicket: TicketInfo = {
     holderName: 'Helena Drummond',
     code: 'KNA-7Q2X-J1K9-M4P1',
     qrToken: 'KNA-7Q2X-J1K9-M4P1.demo.0000',
-    price: 45,
     status: 'valid',
     statusLabel: 'Válido',
     transferUrl: '#',

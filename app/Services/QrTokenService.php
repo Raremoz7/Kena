@@ -31,6 +31,9 @@ class QrTokenService
     public function codeFromToken(string $token): ?string
     {
         $parts = explode('.', $token);
+        if (count($parts) !== 3 || $parts[0] === '') {
+            return null;
+        }
 
         return $parts[0];
     }

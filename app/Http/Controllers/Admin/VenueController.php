@@ -11,17 +11,22 @@ use Inertia\Response;
 
 class VenueController extends Controller
 {
+    private const PER_PAGE = 25;
+
     public function index(): Response
     {
-        $venues = Venue::withCount(['seats', 'events'])->orderBy('name')->get()
-            ->map(fn (Venue $v): array => [
+        $venues = Venue::withCount(['seats', 'events'])
+            ->orderBy('name')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString()
+            ->through(fn (Venue $v): array => [
                 'id' => $v->id,
                 'name' => $v->name,
                 'city' => $v->city,
                 'state' => $v->state,
                 'seats' => $v->seats_count,
                 'events' => $v->events_count,
-            ])->all();
+            ]);
 
         return Inertia::render('admin/venues', ['venues' => $venues]);
     }
@@ -49,7 +54,7 @@ class VenueController extends Controller
                 'address' => $venue->address,
                 'maps_query' => $venue->maps_query,
                 'seatsCount' => $venue->seats()->count(),
-                'canEditMap' => ! $venue->events()->exists(),
+                'canEditMap' => ! $venue->hasSales(),
                 'importUrl' => route('admin.venues.seats.import', $venue),
                 'generateUrl' => route('admin.venues.seats.generate', $venue),
             ],

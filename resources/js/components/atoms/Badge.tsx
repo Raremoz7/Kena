@@ -12,11 +12,11 @@ const badge = cva(
         variants: {
             tone: {
                 success: 'bg-success text-white',
-                warning: 'bg-warning text-[oklch(0.2_0.04_72)]',
+                warning: 'bg-warning text-warning-fg',
                 danger: 'bg-danger text-white',
                 accent: 'bg-accent text-accent-fg',
                 info: 'bg-info text-white',
-                neutral: 'bg-[oklch(0.4_0.012_50)] text-white',
+                neutral: 'bg-neutral-fill text-white',
             },
         },
         defaultVariants: { tone: 'neutral' },

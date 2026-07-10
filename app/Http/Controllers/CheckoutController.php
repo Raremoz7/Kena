@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CouponExhaustedException;
 use App\Exceptions\PaymentException;
 use App\Models\Order;
 use App\Models\Reservation;
@@ -34,10 +35,28 @@ class CheckoutController extends Controller
             abort(403);
         }
         if (! $reservation->isActive()) {
-            return redirect()->route('events.show', $reservation->session->event->slug);
+            return redirect()
+                ->route('events.show', $reservation->session->event->slug)
+                ->with('warning', 'Sua reserva expirou e os assentos foram liberados. Escolha novamente.');
         }
 
         $quote = $this->pricing->quoteForReservation($reservation);
+
+        // Refresh com Pix vivo: devolve o pagamento pendente pro front
+        // restaurar o QR e o polling em vez de perder o estado.
+        //
+        // NÃO deferir/adiar este prop. Ele alimenta os useState iniciais de
+        // buyer/checkout.tsx (método de pagamento, QR, polling e prazo do
+        // countdown); adiá-lo faria a tela pintar como "cartão, sem Pix, sem
+        // polling" antes de saltar para o estado pendente.
+        $pendingPayment = null;
+        $pendingOrder = Order::where('reservation_id', $reservation->id)
+            ->where('status', Order::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+        if ($pendingOrder !== null && $pendingOrder->payment !== null) {
+            $pendingPayment = $this->orderStatusPayload($pendingOrder);
+        }
 
         return Inertia::render('buyer/checkout', [
             'reservation' => CheckoutPresenter::reservation($reservation),
@@ -45,7 +64,9 @@ class CheckoutController extends Controller
             'couponUrl' => route('checkout.coupon', $reservation),
             'payUrl' => route('checkout.pay', $reservation),
             'statusUrl' => route('checkout.status', $reservation),
+            'releaseUrl' => route('reservations.release', $reservation),
             'mpPublicKey' => MercadoPagoSettings::publicKey(),
+            'pendingPayment' => $pendingPayment,
         ]);
     }
 
@@ -84,6 +105,8 @@ class CheckoutController extends Controller
 
         try {
             $order = $this->payments->pay($reservation, $data);
+        } catch (CouponExhaustedException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (PaymentException) {
             return response()->json([
                 'message' => 'Não foi possível processar o pagamento. Confira os dados e tente novamente.',
@@ -109,7 +132,7 @@ class CheckoutController extends Controller
     /** @return array<string, mixed> */
     private function orderStatusPayload(Order $order): array
     {
-        $order->loadMissing('payment');
+        $order->loadMissing(['payment', 'reservation']);
         $payment = $order->payment;
 
         $pix = null;
@@ -122,10 +145,12 @@ class CheckoutController extends Controller
         }
 
         return [
-            'status' => $order->status, // pending | paid | failed
+            'status' => $order->status, // pending | paid | failed | cancelled | refunded
             'orderReference' => $order->reference,
             'redirect' => $order->status === Order::STATUS_PAID ? route('tickets.index') : null,
             'pix' => $pix,
+            // Prazo REAL da reserva (o Pix estende o hold) — o countdown do front usa isso.
+            'reservationExpiresAt' => $order->reservation?->expires_at?->toIso8601String(),
         ];
     }
 
