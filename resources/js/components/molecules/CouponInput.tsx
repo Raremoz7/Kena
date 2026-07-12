@@ -66,8 +66,8 @@ export function CouponInput({
                     className={cn(
                         'flex items-center gap-1.5 font-body text-xs',
                         feedback.tone === 'success'
-                            ? 'text-success'
-                            : 'text-danger',
+                            ? 'text-success-text'
+                            : 'text-danger-text',
                     )}
                 >
                     <Icon

@@ -25,7 +25,7 @@ export function Countdown({ expiresAt, onExpire, className, withIcon = true, lab
             aria-live={urgent ? 'assertive' : 'off'}
             className={cn(
                 'inline-flex items-center gap-1.5 font-body text-sm font-semibold tabular',
-                expired ? 'text-danger' : urgent ? 'text-warning' : 'text-muted-foreground',
+                expired ? 'text-danger-text' : urgent ? 'text-warning-text' : 'text-muted-foreground',
                 urgent && !expired && 'motion-safe:animate-pulse',
                 className,
             )}

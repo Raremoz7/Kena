@@ -16,34 +16,83 @@ class TicketIssuanceService
 {
     public function __construct(private readonly QrTokenService $qr) {}
 
-    public function issueForOrder(Order $order): void
+    /**
+     * Emissão serializada e defensiva: relê o pedido com lock (webhook e
+     * reconciliação podem chegar juntos), recusa pedido não-pagável e só
+     * reivindica assento que ainda pertence a este pedido — nunca sobrescreve
+     * um assento revendido a outro comprador.
+     */
+    public function issueForOrder(Order $order): IssueOutcome
     {
-        $issued = DB::transaction(function () use ($order): bool {
-            $order->loadMissing(['items', 'user', 'reservation']);
+        try {
+            $outcome = $this->issueInTransaction($order);
+        } catch (SeatsUnavailableForIssuance) {
+            return IssueOutcome::SeatsUnavailable;
+        }
+
+        // E-mail de confirmação com ingressos + QR (só na emissão nova).
+        if ($outcome === IssueOutcome::Issued) {
+            $order->refresh()->loadMissing('user');
+            if (filled($order->user->email)) {
+                Mail::to($order->user->email)->queue(new TicketsIssuedMail($order));
+            }
+        }
+
+        return $outcome;
+    }
+
+    private function issueInTransaction(Order $order): IssueOutcome
+    {
+        return DB::transaction(function () use ($order): IssueOutcome {
+            // Fonte da verdade: estado atual do pedido, serializado pelo lock.
+            $fresh = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $fresh->loadMissing(['items', 'user']);
 
             // Idempotente: se já pago e com ingressos, não reemite.
-            if ($order->status === Order::STATUS_PAID && $order->tickets()->exists()) {
-                return false;
+            if ($fresh->status === Order::STATUS_PAID && $fresh->tickets()->exists()) {
+                return IssueOutcome::AlreadyIssued;
             }
 
-            foreach ($order->items as $item) {
-                SessionSeat::where('id', $item->session_seat_id)->update([
-                    'status' => SessionSeat::STATUS_SOLD,
-                    'hold_expires_at' => null,
-                    'held_by_reservation_id' => null,
-                    'sold_by_order_id' => $order->id,
-                ]);
+            // Pedido cancelado/reembolsado/falho não pode reviver com aprovação atrasada.
+            if (! in_array($fresh->status, [Order::STATUS_PENDING, Order::STATUS_PAID], true)) {
+                return IssueOutcome::NotPayable;
+            }
+
+            foreach ($fresh->items as $item) {
+                // Só reivindica o assento se ele ainda é deste pedido: em hold
+                // da reserva original ou liberado (ninguém levou). Assento
+                // vendido/segurado por outro → aprovação chegou tarde.
+                $claimed = SessionSeat::whereKey($item->session_seat_id)
+                    ->where(function ($query) use ($fresh): void {
+                        $query
+                            ->where(function ($held) use ($fresh): void {
+                                $held->where('status', SessionSeat::STATUS_HELD)
+                                    ->where('held_by_reservation_id', $fresh->reservation_id);
+                            })
+                            ->orWhere('status', SessionSeat::STATUS_AVAILABLE);
+                    })
+                    ->update([
+                        'status' => SessionSeat::STATUS_SOLD,
+                        'hold_expires_at' => null,
+                        'held_by_reservation_id' => null,
+                        'sold_by_order_id' => $fresh->id,
+                    ]);
+
+                if ($claimed === 0) {
+                    // Rollback total: nenhum ingresso parcial.
+                    throw new SeatsUnavailableForIssuance;
+                }
 
                 $code = Codes::ticket();
                 Ticket::create([
-                    'order_id' => $order->id,
+                    'order_id' => $fresh->id,
                     'order_item_id' => $item->id,
-                    'session_id' => $order->session_id,
-                    'user_id' => $order->user_id,
+                    'session_id' => $fresh->session_id,
+                    'user_id' => $fresh->user_id,
                     'session_seat_id' => $item->session_seat_id,
                     'code' => $code,
                     'qr_token' => $this->qr->issue($code),
-                    'holder_name' => $order->user->name,
+                    'holder_name' => $fresh->user->name,
                     'seat_code' => $item->seat_code,
                     'sector_name' => $item->sector_name,
                     'price_cents' => $item->price_cents,
@@ -51,21 +100,14 @@ class TicketIssuanceService
                 ]);
             }
 
-            $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
+            $fresh->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
 
-            if ($order->reservation !== null) {
-                $order->reservation->update(['status' => Reservation::STATUS_CONVERTED]);
+            $fresh->loadMissing('reservation');
+            if ($fresh->reservation !== null) {
+                $fresh->reservation->update(['status' => Reservation::STATUS_CONVERTED]);
             }
 
-            return true;
+            return IssueOutcome::Issued;
         });
-
-        // E-mail de confirmação com ingressos + QR (só na emissão nova).
-        if ($issued) {
-            $order->loadMissing('user');
-            if (filled($order->user->email)) {
-                Mail::to($order->user->email)->queue(new TicketsIssuedMail($order));
-            }
-        }
     }
 }

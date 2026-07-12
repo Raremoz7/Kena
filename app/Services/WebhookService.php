@@ -37,17 +37,21 @@ class WebhookService
         }
 
         if ($paymentId !== '' && ($type === 'payment' || $type === null)) {
-            $this->reconcile($paymentId);
+            // Se o Payment ainda não existe (webhook chegou durante o pay()),
+            // NÃO marca como processado — a reentrega do MP reprocessa depois.
+            if (! $this->reconcile($paymentId)) {
+                return;
+            }
         }
 
         $record->update(['processed_at' => now()]);
     }
 
-    private function reconcile(string $gatewayPaymentId): void
+    private function reconcile(string $gatewayPaymentId): bool
     {
         $payment = Payment::where('gateway_payment_id', $gatewayPaymentId)->first();
         if ($payment === null) {
-            return;
+            return false;
         }
 
         try {
@@ -55,10 +59,13 @@ class WebhookService
         } catch (\Throwable $e) {
             Log::warning('Falha ao reconciliar pagamento MP', ['id' => $gatewayPaymentId, 'erro' => $e->getMessage()]);
 
-            return;
+            // Erro transitório na consulta: deixa reprocessar na reentrega.
+            return false;
         }
 
         $this->payments->sync($payment, $result);
+
+        return true;
     }
 
     /** @param array<string, mixed> $payload */

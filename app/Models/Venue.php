@@ -30,4 +30,16 @@ class Venue extends Model
     {
         return $this->hasMany(Event::class);
     }
+
+    /**
+     * Há venda viva em qualquer sessão deste local? (assento vendido/segurado ou
+     * ingresso emitido). Enquanto não houver, o mapa pode ser reeditado com segurança.
+     */
+    public function hasSales(): bool
+    {
+        return SessionSeat::query()
+            ->whereIn('session_id', EventSession::whereIn('event_id', $this->events()->select('id'))->select('id'))
+            ->whereIn('status', [SessionSeat::STATUS_SOLD, SessionSeat::STATUS_HELD])
+            ->exists();
+    }
 }

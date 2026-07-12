@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 import { KenaMark } from '@/components/atoms/KenaMark';
 import { AdminSidebar } from '@/components/organisms/AdminSidebar';
+import { useFlashToasts } from '@/lib/veludo/use-flash-toasts';
 
 /**
  * Shell do painel admin: sidebar fixa (desktop) + barra compacta no mobile.
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
+    useFlashToasts();
+
     return (
         <div className="flex min-h-dvh bg-bg">
             <AdminSidebar />

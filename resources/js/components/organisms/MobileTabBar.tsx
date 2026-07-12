@@ -25,7 +25,7 @@ export function MobileTabBar() {
                             href={it.href}
                             className={cn(
                                 'flex flex-1 flex-col items-center gap-1 rounded-btn py-1.5 font-body text-[11px] font-medium transition-colors',
-                                active ? 'text-accent' : 'text-muted-foreground',
+                                active ? 'text-accent-text' : 'text-muted-foreground',
                             )}
                         >
                             <Icon name={it.icon} size={20} />

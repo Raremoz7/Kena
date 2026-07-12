@@ -7,7 +7,6 @@ import { Spinner } from '@/components/atoms/Spinner';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import { FormField } from '@/components/molecules/FormField';
-import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
 
@@ -97,7 +96,7 @@ export default function Profile(
 
                                         {status ===
                                             'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-success">
+                                            <div className="mt-2 text-sm font-medium text-success-text">
                                                 Um novo link de verificação foi
                                                 enviado para o seu e-mail.
                                             </div>
@@ -124,11 +123,3 @@ export default function Profile(
     );
 }
 
-Profile.layout = {
-    breadcrumbs: [
-        {
-            title: 'Perfil',
-            href: edit(),
-        },
-    ],
-};

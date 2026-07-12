@@ -29,8 +29,8 @@ class DatabaseSeeder extends Seeder
     /** Cria/atualiza o admin a partir das variáveis de ambiente, se definidas. */
     private function seedAdminFromEnv(): void
     {
-        $email = env('ADMIN_EMAIL');
-        $password = env('ADMIN_PASSWORD');
+        $email = config('kena.admin.email');
+        $password = config('kena.admin.password');
 
         if (blank($email) || blank($password)) {
             return;
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['email' => $email],
             [
-                'name' => env('ADMIN_NAME', 'Administrador'),
+                'name' => config('kena.admin.name', 'Administrador'),
                 'password' => $password,
                 'is_admin' => true,
                 'role' => User::ROLE_ORGANIZER,

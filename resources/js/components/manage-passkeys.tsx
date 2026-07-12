@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
-import { KeyRound } from 'lucide-react';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
+import { Icon } from '@/components/atoms/Icon';
 import Heading from '@/components/heading';
 import PasskeyItem from '@/components/passkey-item';
 import PasskeyRegistration from '@/components/passkey-register';
@@ -14,12 +14,12 @@ export type Props = {
 const EmptyState = () => {
     return (
         <div className="p-8 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                <KeyRound className="h-7 w-7 text-muted-foreground" />
+            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-card bg-surface-2">
+                <Icon name="lock" size={26} className="text-muted-foreground" />
             </div>
-            <p className="font-medium">No passkeys yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-                Add a passkey to sign in without a password
+            <p className="font-body font-medium text-foreground">Nenhuma passkey ainda</p>
+            <p className="mt-1 font-body text-sm text-muted-foreground">
+                Adicione uma passkey para entrar sem senha
             </p>
         </div>
     );
@@ -48,17 +48,13 @@ export default function ManagePasskeys(props: Props) {
             <Heading
                 variant="small"
                 title="Passkeys"
-                description="Manage your passkeys for passwordless sign-in"
+                description="Entre sem senha usando o desbloqueio do seu dispositivo"
             />
 
-            <div className="overflow-hidden rounded-lg border border-border">
+            <div className="overflow-hidden rounded-card border border-border">
                 {passkeys.length > 0 ? (
                     passkeys.map((passkey) => (
-                        <PasskeyItem
-                            key={passkey.id}
-                            passkey={passkey}
-                            onDelete={handleDelete}
-                        />
+                        <PasskeyItem key={passkey.id} passkey={passkey} onDelete={handleDelete} />
                     ))
                 ) : (
                     <EmptyState />

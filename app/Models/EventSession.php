@@ -45,6 +45,16 @@ class EventSession extends Model
         return $this->hasMany(SessionSeat::class, 'session_id');
     }
 
+    /** Sessão vendável: evento publicado, sessão não cancelada e ainda no futuro. */
+    public function isSellable(): bool
+    {
+        $this->loadMissing('event');
+
+        return $this->status !== 'cancelled'
+            && $this->starts_at->isFuture()
+            && in_array($this->event->status, ['on_sale', 'sold_out'], true);
+    }
+
     /** Transferência bloqueada quando faltam <= 24h para a sessão. */
     public function transferLocksAt(): CarbonInterface
     {

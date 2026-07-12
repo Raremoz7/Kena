@@ -23,10 +23,18 @@ interface PriceSummary {
 }
 
 interface PayResponse {
-    status: 'pending' | 'paid' | 'failed' | 'none';
+    status:
+        | 'pending'
+        | 'paid'
+        | 'failed'
+        | 'cancelled'
+        | 'refunded'
+        | 'none';
     orderReference?: string;
     redirect: string | null;
     pix: (PixData & { expiresAt?: string | null }) | null;
+    /** Prazo real da reserva — o Pix estende o hold no servidor. */
+    reservationExpiresAt?: string | null;
 }
 
 interface CheckoutPageProps {
@@ -35,7 +43,10 @@ interface CheckoutPageProps {
     couponUrl: string;
     payUrl: string;
     statusUrl: string;
+    releaseUrl: string;
     mpPublicKey: string | null;
+    /** Pagamento pendente vivo (ex.: refresh com Pix aguardando) — restaura QR e polling. */
+    pendingPayment: PayResponse | null;
 }
 
 const brl = new Intl.NumberFormat('pt-BR', {
@@ -85,7 +96,9 @@ export default function CheckoutPage({
     couponUrl,
     payUrl,
     statusUrl,
+    releaseUrl,
     mpPublicKey,
+    pendingPayment,
 }: CheckoutPageProps) {
     const [summary, setSummary] = useState<PriceSummary>(priceSummary);
     const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -94,7 +107,12 @@ export default function CheckoutPage({
         null,
     );
 
-    const [method, setMethod] = useState<PaymentMethod>('card');
+    // Refresh com pagamento pendente: restaura QR, polling e prazo.
+    const restoredPix = pendingPayment?.pix ?? null;
+
+    const [method, setMethod] = useState<PaymentMethod>(
+        restoredPix ? 'pix' : 'card',
+    );
     const [card, setCard] = useState<CardFields>({
         number: '',
         exp: '',
@@ -102,10 +120,20 @@ export default function CheckoutPage({
         name: '',
         installments: 1,
     });
-    const [pix, setPix] = useState<PixData | null>(null);
+    const [pix, setPix] = useState<PixData | null>(
+        restoredPix
+            ? { qrBase64: restoredPix.qrBase64, copyPaste: restoredPix.copyPaste }
+            : null,
+    );
     const [cardErrors, setCardErrors] = useState<CardErrors>({});
     const [submitting, setSubmitting] = useState(false);
-    const [awaitingPix, setAwaitingPix] = useState(false);
+    const [awaitingPayment, setAwaitingPayment] = useState(
+        pendingPayment?.status === 'pending',
+    );
+    // Prazo real do hold — o back estende quando um Pix é gerado.
+    const [deadline, setDeadline] = useState(
+        pendingPayment?.reservationExpiresAt ?? reservation.expiresAt,
+    );
 
     const installmentOptions = useMemo(() => {
         return [1, 2, 3].map((n) => ({
@@ -117,6 +145,11 @@ export default function CheckoutPage({
     function onExpire() {
         veludoToast.warning('Reserva expirada', 'Os assentos foram liberados.');
         router.visit('/eventos');
+    }
+
+    /** Libera o hold e volta pra escolher assentos de novo. */
+    function chooseOtherSeats() {
+        router.delete(releaseUrl, { preserveScroll: true });
     }
 
     async function applyCoupon(code: string) {
@@ -145,6 +178,10 @@ export default function CheckoutPage({
     }
 
     function handlePay(res: PayResponse) {
+        if (res.reservationExpiresAt) {
+            setDeadline(res.reservationExpiresAt);
+        }
+
         if (res.status === 'paid' && res.redirect) {
             veludoToast.success(
                 'Pagamento aprovado',
@@ -170,10 +207,23 @@ export default function CheckoutPage({
                 qrBase64: res.pix.qrBase64,
                 copyPaste: res.pix.copyPaste,
             });
-            setAwaitingPix(true);
+            setAwaitingPayment(true);
             veludoToast.info(
                 'Pix gerado',
                 'Escaneie o QR. Confirmamos automaticamente quando cair.',
+            );
+            setSubmitting(false);
+
+            return;
+        }
+
+        if (res.status === 'pending') {
+            // Cartão em análise (in_process): trava o botão e acompanha por polling
+            // — sem isso o usuário clica de novo e paga duas vezes.
+            setAwaitingPayment(true);
+            veludoToast.info(
+                'Pagamento em análise',
+                'Estamos aguardando a confirmação da operadora. Não feche esta página.',
             );
         }
 
@@ -181,7 +231,7 @@ export default function CheckoutPage({
     }
 
     async function confirm() {
-        if (submitting || awaitingPix) {
+        if (submitting || awaitingPayment) {
             return;
         }
 
@@ -247,9 +297,9 @@ export default function CheckoutPage({
         }
     }
 
-    // Polling do Pix até confirmar.
+    // Polling do pagamento pendente (Pix ou cartão em análise) até um estado final.
     useEffect(() => {
-        if (!awaitingPix) {
+        if (!awaitingPayment) {
             return;
         }
 
@@ -264,10 +314,33 @@ export default function CheckoutPage({
 
                 if (res.status === 'paid' && res.redirect) {
                     veludoToast.success(
-                        'Pix confirmado',
+                        'Pagamento confirmado',
                         'Seus ingressos foram emitidos. Bom espetáculo!',
                     );
                     router.visit(res.redirect);
+
+                    return;
+                }
+
+                if (res.status === 'failed') {
+                    // Recusado: destrava para tentar outro meio (o hold segue vivo).
+                    veludoToast.error(
+                        'Pagamento não aprovado',
+                        'Tente novamente com outro meio de pagamento.',
+                    );
+                    setAwaitingPayment(false);
+                    setPix(null);
+
+                    return;
+                }
+
+                if (res.status === 'cancelled' || res.status === 'refunded') {
+                    // Pix expirou/cancelado: os assentos foram liberados no servidor.
+                    veludoToast.warning(
+                        'Pagamento expirado',
+                        'O prazo do Pix terminou e os assentos foram liberados. Escolha novamente.',
+                    );
+                    router.visit('/eventos');
                 }
             } catch {
                 /* tenta de novo */
@@ -278,7 +351,7 @@ export default function CheckoutPage({
             active = false;
             window.clearInterval(id);
         };
-    }, [awaitingPix, statusUrl]);
+    }, [awaitingPayment, statusUrl]);
 
     return (
         <>
@@ -297,14 +370,25 @@ export default function CheckoutPage({
                         />
                         <span className="text-foreground">Pagamento</span>
                     </nav>
-                    <div className="flex items-center gap-2 rounded-btn border border-border bg-bg px-3 py-1.5">
-                        <Icon name="alert" size={15} className="text-warning" />
-                        <Countdown
-                            expiresAt={reservation.expiresAt}
-                            onExpire={onExpire}
-                            withIcon={false}
-                            label="Reserva"
-                        />
+                    <div className="flex items-center gap-3">
+                        {!awaitingPayment && (
+                            <button
+                                type="button"
+                                onClick={chooseOtherSeats}
+                                className="font-body text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                            >
+                                Escolher outros lugares
+                            </button>
+                        )}
+                        <div className="flex items-center gap-2 rounded-btn border border-border bg-bg px-3 py-1.5">
+                            <Icon name="alert" size={15} className="text-warning" />
+                            <Countdown
+                                expiresAt={deadline}
+                                onExpire={onExpire}
+                                withIcon={false}
+                                label="Reserva"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -319,7 +403,7 @@ export default function CheckoutPage({
                             <div className="mt-3">
                                 <CouponInput
                                     onApply={applyCoupon}
-                                    busy={couponBusy}
+                                    busy={couponBusy || awaitingPayment}
                                     feedback={couponFeedback}
                                 />
                             </div>
@@ -364,7 +448,7 @@ export default function CheckoutPage({
                             lines={summary.lines}
                             total={summary.total}
                             onConfirm={confirm}
-                            submitting={submitting || awaitingPix}
+                            submitting={submitting || awaitingPayment}
                         />
                     </aside>
                 </div>

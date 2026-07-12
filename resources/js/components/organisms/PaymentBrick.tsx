@@ -84,7 +84,7 @@ export function PaymentBrick({
 }: PaymentBrickProps) {
     return (
         <div>
-            <div className="grid grid-cols-2 gap-1 rounded-btn border border-border p-1">
+            <div className="grid grid-cols-2 gap-1 rounded-btn border border-border-strong p-1">
                 <TabBtn
                     active={method === 'card'}
                     icon="credit-card"
@@ -178,7 +178,7 @@ export function PaymentBrick({
                     <FormField label="Parcelas" htmlFor="cc-inst">
                         <select
                             id="cc-inst"
-                            className="w-full rounded-input border border-border bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20"
+                            className="w-full rounded-input border border-border-strong bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20"
                             value={card.installments}
                             onChange={(e) =>
                                 onCardChange({
@@ -222,7 +222,7 @@ export function PaymentBrick({
                         <button
                             type="button"
                             onClick={() => copy(pix.copyPaste as string)}
-                            className="w-full truncate rounded-btn border border-border py-2.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-surface-2"
+                            className="w-full truncate rounded-btn border border-border-strong py-2.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-surface-2"
                         >
                             {pix.copyPaste.slice(0, 28)}… · toque para copiar
                         </button>

@@ -1,15 +1,7 @@
-import { KeyRound, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { Button } from '@/components/atoms/Button';
+import { Icon } from '@/components/atoms/Icon';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import type { Passkey } from '@/types/auth';
 
 type Props = {
@@ -19,75 +11,60 @@ type Props = {
 
 export default function PasskeyItem({ passkey, onDelete }: Props) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const [confirming, setConfirming] = useState(false);
 
     const handleDelete = () => {
+        setConfirming(false);
         setIsDeleting(true);
         onDelete(passkey.id, () => setIsDeleting(false));
     };
 
     return (
-        <div className="flex items-center justify-between border-b p-4 last:border-b-0">
+        <div className="flex items-center justify-between border-b border-border p-4 last:border-b-0">
             <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-                    <KeyRound className="h-5 w-5 text-muted-foreground" />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-btn bg-surface-2">
+                    <Icon name="lock" size={18} className="text-muted-foreground" />
                 </div>
                 <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
-                        <p className="font-medium tracking-tight">
-                            {passkey.name}
-                        </p>
+                        <p className="font-body font-medium text-foreground">{passkey.name}</p>
                         {passkey.authenticator && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase ring-1 ring-border ring-inset">
+                            <span className="inline-flex items-center gap-1 rounded-badge border border-border bg-surface-2 px-2 py-0.5 font-body text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                                 {passkey.authenticator}
                             </span>
                         )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        Added {passkey.created_at_diff}
+                    <p className="font-body text-sm text-muted-foreground">
+                        Adicionada {passkey.created_at_diff}
                         {passkey.last_used_at_diff && (
                             <>
-                                <span className="mx-1 text-muted-foreground/50">
-                                    /
-                                </span>
-                                Last used {passkey.last_used_at_diff}
+                                <span className="mx-1 text-faint">/</span>
+                                Usada {passkey.last_used_at_diff}
                             </>
                         )}
                     </p>
                 </div>
             </div>
 
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Remove</span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogTitle>Remove passkey</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to remove the "{passkey.name}"
-                        passkey? You will no longer be able to use it to sign
-                        in.
-                    </DialogDescription>
-                    <DialogFooter className="gap-2">
-                        <DialogClose asChild>
-                            <Button variant="secondary">Cancel</Button>
-                        </DialogClose>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                        >
-                            {isDeleting ? 'Removing...' : 'Remove passkey'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <Button
+                variant="ghost"
+                size="sm"
+                disabled={isDeleting}
+                onClick={() => setConfirming(true)}
+                className="text-danger-text"
+            >
+                <Icon name="trash" size={16} />
+                <span className="sr-only">Remover passkey {passkey.name}</span>
+            </Button>
+
+            <ConfirmDialog
+                open={confirming}
+                onOpenChange={setConfirming}
+                title="Remover passkey"
+                description={`A passkey "${passkey.name}" será removida e não poderá mais ser usada para entrar.`}
+                confirmLabel="Remover passkey"
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

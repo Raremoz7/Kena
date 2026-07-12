@@ -385,7 +385,7 @@ export default function Settings({ mp, mail, gw, webhookUrl, setup, testMailUrl 
                                     href="https://pay.google.com/business/console"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-accent hover:underline"
+                                    className="text-accent-text hover:underline"
                                 >
                                     Google Wallet Console
                                 </a>{' '}
@@ -402,7 +402,7 @@ export default function Settings({ mp, mail, gw, webhookUrl, setup, testMailUrl 
                                     href="https://console.cloud.google.com/iam-admin/serviceaccounts"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-accent hover:underline"
+                                    className="text-accent-text hover:underline"
                                 >
                                     Google Cloud Console
                                 </a>

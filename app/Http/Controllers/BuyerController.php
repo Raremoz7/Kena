@@ -20,6 +20,8 @@ use Inertia\Response;
  */
 class BuyerController extends Controller
 {
+    private const EVENTS_PER_PAGE = 12;
+
     public function events(Request $request): Response
     {
         $q = trim((string) $request->query('q', ''));
@@ -32,12 +34,17 @@ class BuyerController extends Controller
                         ->orWhereHas('venue', fn ($v) => $v->where('name', 'like', "%{$q}%")->orWhere('city', 'like', "%{$q}%"));
                 });
             })
-            ->get()
-            ->map(fn (Event $e): array => CatalogPresenter::listItem($e))
-            ->all();
+            // Ordem determinística: sem ela a paginação repete/pula eventos entre páginas.
+            ->orderBy('id')
+            ->paginate(self::EVENTS_PER_PAGE)
+            ->withQueryString()
+            ->through(fn (Event $e): array => CatalogPresenter::listItem($e));
 
         return Inertia::render('buyer/events', [
-            'events' => $events,
+            // scroll() = paginator + metadata de página; o <InfiniteScroll> do front
+            // concatena em `events.data` a cada partial reload. A busca é visita
+            // completa, então substitui a lista em vez de concatenar.
+            'events' => Inertia::scroll($events),
             'q' => $q,
         ]);
     }
@@ -46,19 +53,29 @@ class BuyerController extends Controller
     {
         $event = Event::with(['venue', 'sectors', 'sessions'])
             ->where('slug', $slug)
+            ->whereIn('status', ['on_sale', 'sold_out']) // draft/encerrado não é público
             ->firstOrFail();
 
-        $session = $event->sessions->first();
+        // Só sessões vendáveis alimentam o mapa/CTA da página.
+        $session = $event->sessions->first(fn (EventSession $s): bool => $s->isSellable());
         abort_if($session === null, 404);
+
+        $sessions = CatalogPresenter::sessionsList($event);
+
+        // Com várias sessões a página só lista links — o mapa nunca é renderizado,
+        // então nem sai do banco. Com sessão única ele fica abaixo da dobra: sai do
+        // payload inicial e chega numa segunda requisição.
+        $multi = count($sessions) > 1;
 
         return Inertia::render('buyer/event', [
             'event' => CatalogPresenter::detail($event),
             'sectors' => CatalogPresenter::sectors($event, $session),
             'sessionId' => $session->id,
             'sessionLabel' => CatalogPresenter::sessionLabel($session),
-            'sessions' => CatalogPresenter::sessionsList($event),
-            'seatMap' => CatalogPresenter::seatMap($session),
+            'sessions' => $sessions,
+            'seatMap' => $multi ? null : Inertia::defer(fn (): array => CatalogPresenter::seatMap($session)),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
+            'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
         ]);
     }
 
@@ -68,9 +85,10 @@ class BuyerController extends Controller
         $event = $session->event;
         abort_if($event->slug !== $slug, 404);
 
-        // Sessão cancelada não recebe mais reservas.
-        if ($session->status === 'cancelled') {
-            return redirect()->route('events.show', $event->slug);
+        // Sessão não vendável (cancelada, passada ou evento fora de venda)
+        // não recebe mais reservas.
+        if (! $session->isSellable()) {
+            return redirect()->route('events.index');
         }
 
         return Inertia::render('buyer/seats', [

@@ -1,9 +1,13 @@
 import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { Badge } from '@/components/atoms/Badge';
 import type { BadgeProps } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Price } from '@/components/atoms/Price';
+import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
+import { Pagination } from '@/components/molecules/Pagination';
+import type { Paginator } from '@/components/molecules/Pagination';
 import { veludoToast } from '@/lib/veludo/toast';
 
 interface OrderRow {
@@ -16,18 +20,8 @@ interface OrderRow {
     seats: string;
     total: number;
     status: string;
+    refundFailed: boolean;
     date: string | null;
-}
-
-interface PageLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
-interface Paginator {
-    data: OrderRow[];
-    links: PageLink[];
 }
 
 interface SessionOption {
@@ -36,7 +30,7 @@ interface SessionOption {
 }
 
 interface OrdersPageProps {
-    orders: Paginator;
+    orders: Paginator<OrderRow>;
     sessions: SessionOption[];
     sessionId: number | null;
     exportUrl: string;
@@ -58,15 +52,6 @@ const statusLabel: Record<string, string> = {
     refunded: 'Reembolsado',
 };
 
-/** Texto seguro do label do paginator (decodifica « » e remove qualquer tag). */
-function linkLabel(label: string): string {
-    return label
-        .replace(/<[^>]*>/g, '')
-        .replace(/&laquo;/g, '«')
-        .replace(/&raquo;/g, '»')
-        .trim();
-}
-
 export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: OrdersPageProps) {
     function filterSession(value: string) {
         router.get('/dashboard/pedidos', value ? { session: Number(value) } : {}, {
@@ -75,45 +60,50 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
         });
     }
 
+    const [confirm, setConfirm] = useState<{
+        title: string;
+        description: string;
+        action: () => void;
+    } | null>(null);
+
     function cancelSession() {
         if (!sessionId) {
             return;
         }
 
-        if (
-            !window.confirm(
-                'Cancelar esta sessão e reembolsar TODOS os pedidos pagos? Esta ação não pode ser desfeita.',
-            )
-        ) {
-            return;
-        }
-
-        router.post(
-            `/dashboard/sessoes/${sessionId}/cancelar`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () =>
-                    veludoToast.success('Sessão cancelada', 'Os pedidos pagos foram reembolsados.'),
-                onError: () => veludoToast.error('Não foi possível cancelar', 'Tente novamente.'),
-            },
-        );
+        setConfirm({
+            title: 'Cancelar sessão',
+            description:
+                'Todos os pedidos pagos desta sessão serão reembolsados e a sessão sai da venda. Esta ação não pode ser desfeita.',
+            action: () =>
+                router.post(
+                    `/dashboard/sessoes/${sessionId}/cancelar`,
+                    {},
+                    {
+                        preserveScroll: true,
+                        onSuccess: () =>
+                            veludoToast.success('Sessão cancelada', 'Os pedidos pagos foram reembolsados.'),
+                        onError: () => veludoToast.error('Não foi possível cancelar', 'Tente novamente.'),
+                    },
+                ),
+        });
     }
 
     function refundOrder(o: OrderRow) {
-        if (!window.confirm(`Reembolsar o pedido ${o.reference}? Os ingressos serão cancelados e os assentos liberados.`)) {
-            return;
-        }
-
-        router.post(
-            `/dashboard/pedidos/${o.id}/reembolso`,
-            {},
-            {
-                preserveScroll: true,
-                onError: (e) => veludoToast.error('Reembolso não concluído', e.order ?? 'Tente novamente.'),
-                onSuccess: () => veludoToast.success('Reembolso processado', `Pedido ${o.reference} reembolsado.`),
-            },
-        );
+        setConfirm({
+            title: 'Reembolsar pedido',
+            description: `O pedido ${o.reference} será reembolsado, os ingressos cancelados e os assentos liberados.`,
+            action: () =>
+                router.post(
+                    `/dashboard/pedidos/${o.id}/reembolso`,
+                    {},
+                    {
+                        preserveScroll: true,
+                        onError: (e) => veludoToast.error('Reembolso não concluído', e.order ?? 'Tente novamente.'),
+                        onSuccess: () => veludoToast.success('Reembolso processado', `Pedido ${o.reference} reembolsado.`),
+                    },
+                ),
+        });
     }
 
     return (
@@ -130,7 +120,7 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
                     <div className="flex items-end gap-2">
                         <select
                             aria-label="Filtrar por sessão"
-                            className="rounded-input border border-border bg-bg px-3 py-2.5 font-body text-sm text-foreground outline-none focus-visible:border-accent"
+                            className="rounded-input border border-border-strong bg-bg px-3 py-2.5 font-body text-sm text-foreground outline-none focus-visible:border-accent"
                             value={sessionId ?? ''}
                             onChange={(e) => filterSession(e.target.value)}
                         >
@@ -192,6 +182,11 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
                                         <Badge tone={statusTone[o.status] ?? 'neutral'}>
                                             {statusLabel[o.status] ?? o.status}
                                         </Badge>
+                                        {o.refundFailed && (
+                                            <Badge tone="danger">
+                                                Estorno falhou
+                                            </Badge>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-faint">{o.date ?? '—'}</td>
                                     <td className="px-4 py-3 text-right">
@@ -214,26 +209,19 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
                     </table>
                 </div>
 
-                {orders.links.length > 3 && (
-                    <div className="mt-4 flex flex-wrap gap-1">
-                        {orders.links.map((link, i) => (
-                            <button
-                                key={i}
-                                type="button"
-                                disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url, {}, { preserveScroll: true })}
-                                className={`rounded-btn px-3 py-1.5 font-body text-sm transition-colors ${
-                                    link.active
-                                        ? 'bg-accent text-white'
-                                        : 'border border-border text-muted-foreground hover:bg-surface-2 disabled:opacity-40'
-                                }`}
-                            >
-                                {linkLabel(link.label)}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                <Pagination links={orders.links} />
             </div>
+            <ConfirmDialog
+                open={confirm !== null}
+                onOpenChange={(open) => !open && setConfirm(null)}
+                title={confirm?.title ?? ''}
+                description={confirm?.description}
+                confirmLabel="Confirmar"
+                onConfirm={() => {
+                    confirm?.action();
+                    setConfirm(null);
+                }}
+            />
         </>
     );
 }

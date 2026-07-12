@@ -4,8 +4,8 @@ namespace Tests\Feature\Kena;
 
 use App\Models\Reservation;
 use App\Models\User;
+use App\Support\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\URL;
 use Tests\Feature\Kena\Concerns\MakesKenaData;
 use Tests\TestCase;
 
@@ -75,7 +75,7 @@ class GuestCheckoutTest extends TestCase
     public function test_magic_link_logs_in_and_redirects_to_tickets(): void
     {
         $user = User::factory()->create();
-        $url = URL::temporarySignedRoute('magic-login', now()->addDay(), ['user' => $user->id]);
+        $url = MagicLink::generate($user, now()->addDays(10));
 
         $this->get($url)->assertRedirect(route('tickets.index'));
         $this->assertAuthenticatedAs($user);

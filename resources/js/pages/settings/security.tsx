@@ -10,7 +10,6 @@ import type { Props as ManageTwoFactorProps } from '@/components/manage-two-fact
 import ManageTwoFactor from '@/components/manage-two-factor';
 import { FormField } from '@/components/molecules/FormField';
 import PasswordInput from '@/components/password-input';
-import { edit } from '@/routes/security';
 
 type Props = {
     passwordRules: string;
@@ -129,11 +128,3 @@ export default function Security(props: Props) {
     );
 }
 
-Security.layout = {
-    breadcrumbs: [
-        {
-            title: 'Segurança',
-            href: edit(),
-        },
-    ],
-};

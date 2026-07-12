@@ -237,11 +237,11 @@ class EventController extends Controller
     /** @return array<int, array<string, mixed>> */
     private function venues(): array
     {
-        return Venue::orderBy('name')->get()->map(fn (Venue $v): array => [
+        return Venue::withCount('seats')->orderBy('name')->get()->map(fn (Venue $v): array => [
             'id' => $v->id,
             'name' => $v->name,
             'city' => $v->city,
-            'seats' => $v->seats()->count(),
+            'seats' => $v->seats_count,
         ])->all();
     }
 

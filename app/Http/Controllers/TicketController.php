@@ -100,6 +100,21 @@ class TicketController extends Controller
             ], 422);
         }
 
+        // Pedido com ingresso transferido não pode ser estornado pelo comprador:
+        // o reembolso derrubaria o ingresso válido de quem recebeu.
+        if ($order->tickets()->where('status', Ticket::STATUS_TRANSFERRED)->exists()) {
+            return response()->json([
+                'message' => 'Este pedido tem ingresso transferido e não pode mais ser reembolsado por aqui. Fale com o organizador.',
+            ], 422);
+        }
+
+        // Ingresso já utilizado na portaria não é reembolsável pelo comprador.
+        if ($order->tickets()->where('status', Ticket::STATUS_USED)->exists()) {
+            return response()->json([
+                'message' => 'Este pedido tem ingresso já utilizado e não pode ser reembolsado por aqui. Fale com o organizador.',
+            ], 422);
+        }
+
         try {
             $refunds->refundOrder($order, 'Solicitado pelo comprador');
         } catch (\RuntimeException $e) {

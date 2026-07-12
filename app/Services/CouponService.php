@@ -25,9 +25,22 @@ class CouponService
         return $coupon;
     }
 
-    /** Registra o resgate e incrementa o uso. */
-    public function redeem(Coupon $coupon, Order $order, int $discountCents): void
+    /**
+     * Registra o resgate com incremento ATÔMICO: o `used` só sobe se ainda há
+     * uso disponível — duas pessoas disputando o último uso, só uma leva.
+     */
+    public function redeem(Coupon $coupon, Order $order, int $discountCents): bool
     {
+        $claimed = Coupon::whereKey($coupon->id)
+            ->where(function ($query): void {
+                $query->whereNull('max_uses')->orWhereColumn('used', '<', 'max_uses');
+            })
+            ->increment('used');
+
+        if ($claimed === 0) {
+            return false;
+        }
+
         CouponRedemption::create([
             'coupon_id' => $coupon->id,
             'order_id' => $order->id,
@@ -35,6 +48,20 @@ class CouponService
             'discount_cents' => $discountCents,
         ]);
 
-        $coupon->increment('used');
+        return true;
+    }
+
+    /** Devolve o uso quando o pedido morre sem virar venda (falha/cancelamento). */
+    public function release(Order $order): void
+    {
+        $redemption = CouponRedemption::where('order_id', $order->id)->first();
+        if ($redemption === null) {
+            return;
+        }
+
+        $redemption->delete();
+        Coupon::whereKey($redemption->coupon_id)
+            ->where('used', '>', 0)
+            ->decrement('used');
     }
 }

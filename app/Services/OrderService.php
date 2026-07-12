@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CouponExhaustedException;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -27,7 +28,14 @@ class OrderService
                 ->where('status', Order::STATUS_PENDING)
                 ->first();
             if ($existing !== null) {
-                return $existing;
+                if ($existing->coupon_id === $coupon?->id) {
+                    return $existing;
+                }
+
+                // Cupom mudou desde o pedido pendente: o total antigo não vale
+                // mais — cancela o pedido (devolvendo o resgate) e recria.
+                $existing->update(['status' => Order::STATUS_CANCELLED]);
+                $this->coupons->release($existing);
             }
 
             $quote = $this->pricing->quoteForReservation($reservation, $coupon);
@@ -55,8 +63,10 @@ class OrderService
                 ]);
             }
 
-            if ($coupon !== null && $quote['discount_cents'] > 0) {
-                $this->coupons->redeem($coupon, $order, $quote['discount_cents']);
+            if ($coupon !== null && $quote['discount_cents'] > 0
+                && ! $this->coupons->redeem($coupon, $order, $quote['discount_cents'])) {
+                // Rollback do pedido inteiro: o desconto já estava no total.
+                throw new CouponExhaustedException;
             }
 
             return $order;

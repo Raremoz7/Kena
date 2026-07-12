@@ -35,7 +35,7 @@ class ConversionPolishTest extends TestCase
         }
 
         $this->get('/eventos?q=quebra')
-            ->assertInertia(fn (Assert $p) => $p->component('buyer/events')->where('q', 'quebra')->has('events', 1));
+            ->assertInertia(fn (Assert $p) => $p->component('buyer/events')->where('q', 'quebra')->has('events.data', 1));
     }
 
     public function test_ticket_calendar_returns_ics(): void

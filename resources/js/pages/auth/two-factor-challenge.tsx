@@ -7,7 +7,7 @@ import {
     InputOTP,
     InputOTPGroup,
     InputOTPSlot,
-} from '@/components/ui/input-otp';
+} from '@/components/atoms/OtpInput';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { store } from '@/routes/two-factor/login';
 
@@ -72,7 +72,7 @@ export default function TwoFactorChallenge() {
                                         invalid={!!errors.recovery_code}
                                     />
                                     {errors.recovery_code && (
-                                        <p className="font-body text-xs text-danger">
+                                        <p className="font-body text-xs text-danger-text">
                                             {errors.recovery_code}
                                         </p>
                                     )}
@@ -103,7 +103,7 @@ export default function TwoFactorChallenge() {
                                         </InputOTP>
                                     </div>
                                     {errors.code && (
-                                        <p className="font-body text-xs text-danger">
+                                        <p className="font-body text-xs text-danger-text">
                                             {errors.code}
                                         </p>
                                     )}

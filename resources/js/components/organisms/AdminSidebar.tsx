@@ -10,21 +10,27 @@ interface NavItem {
     href?: string;
     icon: IconName;
     soon?: boolean;
+    /** Só organizador/admin — staff não vê. */
+    organizerOnly?: boolean;
 }
 
 const nav: NavItem[] = [
-    { label: 'Visão geral', href: '/dashboard', icon: 'home' },
-    { label: 'Eventos', href: '/dashboard/eventos', icon: 'ticket' },
-    { label: 'Pedidos', href: '/dashboard/pedidos', icon: 'agenda' },
-    { label: 'Cupons', href: '/dashboard/cupons', icon: 'tag' },
-    { label: 'Locais', href: '/dashboard/locais', icon: 'map-pin' },
+    { label: 'Visão geral', href: '/dashboard', icon: 'home', organizerOnly: true },
+    { label: 'Eventos', href: '/dashboard/eventos', icon: 'ticket', organizerOnly: true },
+    { label: 'Pedidos', href: '/dashboard/pedidos', icon: 'agenda', organizerOnly: true },
+    { label: 'Cupons', href: '/dashboard/cupons', icon: 'tag', organizerOnly: true },
+    { label: 'Locais', href: '/dashboard/locais', icon: 'map-pin', organizerOnly: true },
+    { label: 'Equipe', href: '/dashboard/equipe', icon: 'shield', organizerOnly: true },
     { label: 'Check-in', href: '/dashboard/checkin', icon: 'qr' },
-    { label: 'Configurações', href: '/dashboard/config', icon: 'shield' },
+    { label: 'Configurações', href: '/dashboard/config', icon: 'shield', organizerOnly: true },
 ];
 
 export function AdminSidebar() {
     const { url, props } = usePage();
     const user = props.auth?.user;
+    const canOrganize =
+        user?.role === 'organizer' || Boolean(user?.is_admin);
+    const items = nav.filter((item) => !item.organizerOnly || canOrganize);
 
     return (
         <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
@@ -37,7 +43,7 @@ export function AdminSidebar() {
             </div>
 
             <nav className="flex flex-1 flex-col gap-1 p-3">
-                {nav.map((item) => {
+                {items.map((item) => {
                     if (item.soon || !item.href) {
                         return (
                             <span

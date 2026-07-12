@@ -48,14 +48,35 @@ class CheckInService
     /** @return array{checkedIn: int, total: int} */
     public function progress(EventSession $session): array
     {
-        $total = Ticket::where('session_id', $session->id)
-            ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED])
-            ->count();
-        $checkedIn = Ticket::where('session_id', $session->id)
-            ->where('status', Ticket::STATUS_USED)
-            ->count();
+        return $this->progressForSessions(collect([$session]))[$session->id];
+    }
 
-        return ['checkedIn' => $checkedIn, 'total' => $total];
+    /**
+     * Progresso de várias sessões de uma vez (2 queries agregadas em vez de
+     * 2 por sessão) — usado no seletor de sessões da tela de check-in.
+     *
+     * @param  \Illuminate\Support\Collection<int, EventSession>  $sessions
+     * @return array<int, array{checkedIn: int, total: int}>
+     */
+    public function progressForSessions($sessions): array
+    {
+        $ids = $sessions->pluck('id');
+
+        $totals = Ticket::whereIn('session_id', $ids)
+            ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED])
+            ->selectRaw('session_id, count(*) as total')
+            ->groupBy('session_id')
+            ->pluck('total', 'session_id');
+        $checkedIn = Ticket::whereIn('session_id', $ids)
+            ->where('status', Ticket::STATUS_USED)
+            ->selectRaw('session_id, count(*) as total')
+            ->groupBy('session_id')
+            ->pluck('total', 'session_id');
+
+        return $ids->mapWithKeys(fn ($id): array => [$id => [
+            'checkedIn' => (int) ($checkedIn[$id] ?? 0),
+            'total' => (int) ($totals[$id] ?? 0),
+        ]])->all();
     }
 
     /**
@@ -74,20 +95,29 @@ class CheckInService
         if ($ticket->session_id !== $session->id) {
             return [CheckIn::RESULT_DENIED, 'Ingresso de outra sessão.'];
         }
+
+        // Admissão atômica: só marca USED se ainda estiver VALID. Dois leitores
+        // escaneando o mesmo QR ao mesmo tempo → só o primeiro admite.
+        $admitted = DB::transaction(fn (): int => Ticket::whereKey($ticket->id)
+            ->where('status', Ticket::STATUS_VALID)
+            ->update(['status' => Ticket::STATUS_USED, 'checked_in_at' => now()]));
+
+        if ($admitted === 1) {
+            $ticket->refresh();
+
+            return [CheckIn::RESULT_OK, null];
+        }
+
+        // Perdeu a corrida (ou nunca foi válido): relê o estado real pra negar com motivo.
+        $ticket->refresh();
+
         if ($ticket->status === Ticket::STATUS_USED) {
             $when = $ticket->checked_in_at?->format('d/m H:i');
 
             return [CheckIn::RESULT_DENIED, 'Ingresso já utilizado'.($when ? " ({$when})" : '').'.'];
         }
-        if ($ticket->status !== Ticket::STATUS_VALID) {
-            return [CheckIn::RESULT_DENIED, 'Ingresso '.$ticket->status.'.'];
-        }
 
-        DB::transaction(function () use ($ticket): void {
-            $ticket->update(['status' => Ticket::STATUS_USED, 'checked_in_at' => now()]);
-        });
-
-        return [CheckIn::RESULT_OK, null];
+        return [CheckIn::RESULT_DENIED, 'Ingresso '.$ticket->status.'.'];
     }
 
     /**

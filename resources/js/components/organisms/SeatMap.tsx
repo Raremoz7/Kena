@@ -65,6 +65,10 @@ function SeatDot({
     ];
 
     return (
+        // Assentos vendidos/bloqueados são botões inativos (disabled). WCAG 1.4.3 e
+        // 1.4.11 isentam componentes de UI inativos do mínimo de contraste — por isso
+        // o número esmaecido e o preenchimento apagado são conformes, e intencionais:
+        // é o que comunica "indisponível". Os assentos ativos passam (6.4–7.7:1).
         <button
             type="button"
             disabled={!interactive}

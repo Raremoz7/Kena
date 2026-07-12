@@ -13,6 +13,13 @@ return [
     /** Segredo HMAC dos tokens de QR dos ingressos (fallback: APP_KEY). */
     'qr_secret' => env('KENA_QR_SECRET'),
 
+    /** Admin inicial criado pelo seeder (defina no .env, rode o seed, remova a senha). */
+    'admin' => [
+        'name' => env('ADMIN_NAME', 'Administrador'),
+        'email' => env('ADMIN_EMAIL'),
+        'password' => env('ADMIN_PASSWORD'),
+    ],
+
     'mercadopago' => [
         'access_token' => env('MP_ACCESS_TOKEN'),
         'public_key' => env('MP_PUBLIC_KEY'),

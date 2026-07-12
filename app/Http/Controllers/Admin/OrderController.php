@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
 use App\Models\Order;
+use App\Models\Refund;
 use App\Models\Ticket;
 use App\Services\RefundService;
 use App\Services\SessionCancellationService;
 use App\Support\Money;
 use App\Support\Presenters\CatalogPresenter;
+use App\Support\SessionOptionsCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,7 +25,7 @@ class OrderController extends Controller
         $sessionId = $request->integer('session') ?: null;
 
         $orders = Order::query()
-            ->with(['user', 'session.event', 'items'])
+            ->with(['user', 'session.event', 'items', 'refunds'])
             ->when($sessionId, fn ($q) => $q->where('session_id', $sessionId))
             ->latest('id')
             ->paginate(25)
@@ -38,12 +40,15 @@ class OrderController extends Controller
                 'seats' => $o->items->pluck('seat_code')->implode(', '),
                 'total' => Money::toReais($o->total_cents),
                 'status' => $o->status,
+                // Estorno recusado pelo gateway precisa de ação manual do organizador.
+                'refundFailed' => $o->refunds->contains('status', Refund::STATUS_FAILED)
+                    && ! $o->refunds->contains('status', Refund::STATUS_DONE),
                 'date' => $o->created_at?->format('d/m/Y H:i'),
             ]);
 
         return Inertia::render('admin/orders', [
             'orders' => $orders,
-            'sessions' => $this->sessionOptions(),
+            'sessions' => SessionOptionsCache::get(),
             'sessionId' => $sessionId,
             'exportUrl' => route('admin.orders.export', $sessionId ? ['session' => $sessionId] : []),
         ]);
@@ -52,9 +57,16 @@ class OrderController extends Controller
     /** Cancela a sessão e reembolsa todos os pedidos pagos em massa. */
     public function cancelSession(EventSession $session, SessionCancellationService $service): RedirectResponse
     {
-        $service->cancel($session);
+        $report = $service->cancel($session);
 
-        return back();
+        $summary = "Sessão cancelada: {$report['refunded']} reembolsado(s), {$report['cancelled']} pendente(s) cancelado(s).";
+        if ($report['failed'] > 0) {
+            return back()->withErrors([
+                'session' => $summary." ATENÇÃO: {$report['failed']} estorno(s) FALHARAM no gateway — reprocesse pelo botão de reembolso do pedido.",
+            ]);
+        }
+
+        return back()->with('status', $summary);
     }
 
     /** Reembolso pelo organizador — sem prazo (a qualquer momento, pedido pago). */
@@ -107,12 +119,4 @@ class OrderController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    /** @return array<int, array<string, mixed>> */
-    private function sessionOptions(): array
-    {
-        return EventSession::with('event')->get()->map(fn (EventSession $s): array => [
-            'id' => $s->id,
-            'label' => $s->event->title.' · '.CatalogPresenter::sessionLabel($s),
-        ])->all();
-    }
 }

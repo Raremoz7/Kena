@@ -85,7 +85,7 @@ export function LocationMap({ name, city, address, query, className }: LocationM
                         href={external}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-flex items-center gap-1.5 font-body text-xs font-semibold text-accent hover:underline"
+                        className="mt-2 inline-flex items-center gap-1.5 font-body text-xs font-semibold text-accent-text hover:underline"
                     >
                         Abrir no Google Maps
                         <Icon name="arrow-right" size={14} />
