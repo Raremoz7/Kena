@@ -3,11 +3,16 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {{-- Equivalente hex de --bg (oklch(0.16 0.013 48)): pinta a barra do navegador no mobile. --}}
+        <meta name="theme-color" content="#120c08">
 
-        {{-- Kena é dark-only: a classe .dark é fixa no <html>, sem toggle de aparência. --}}
+        {{-- Kena é dark-only: a classe .dark é fixa no <html>, sem toggle de aparência.
+             color-scheme faz o navegador pintar scrollbars, <select> nativo e controles
+             de formulário no esquema escuro (sem isso ficam claros no Windows). --}}
         <style>
             html,
             html.dark {
+                color-scheme: dark;
                 background-color: oklch(0.16 0.013 48);
             }
         </style>
