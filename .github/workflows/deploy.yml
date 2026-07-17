@@ -60,7 +60,9 @@ jobs:
             echo ">>> Otimizando app..."
             php artisan optimize
 
+            # O :* e obrigatorio: numprocs>1 cria um grupo, e restart sem ele
+            # falha com "no such process" e o worker segue com o codigo antigo.
             echo ">>> Reiniciando worker da fila..."
-            sudo supervisorctl restart kena-worker || true
+            sudo supervisorctl restart kena-worker:*
 
             echo ">>> Deploy concluido."
