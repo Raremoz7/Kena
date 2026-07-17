@@ -1,0 +1,66 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            cd /var/www/kena
+            DEPLOY_USER="$(id -un)"
+
+            echo ">>> Atualizando codigo (origin/main)..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo ">>> Instalando dependencias PHP (composer)..."
+            composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+            echo ">>> Limpando caches Laravel..."
+            php artisan optimize:clear
+
+            echo ">>> Garantindo pastas de runtime..."
+            mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
+            php artisan storage:link || true
+
+            echo ">>> Ajustando permissoes..."
+            sudo chown -R "${DEPLOY_USER}:www-data" /var/www/kena
+            sudo chmod -R ug+rwX storage bootstrap/cache
+
+            echo ">>> Instalando dependencias JS..."
+            npm ci
+
+            echo ">>> Build dos assets (Vite)..."
+            npm run build
+
+            echo ">>> Executando migracoes..."
+            php artisan migrate --force
+
+            echo ">>> Otimizando app..."
+            php artisan optimize
+
+            echo ">>> Reiniciando worker da fila..."
+            sudo supervisorctl restart kena-worker || true
+
+            echo ">>> Deploy concluido."
