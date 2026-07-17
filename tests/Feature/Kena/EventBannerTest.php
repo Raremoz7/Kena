@@ -24,7 +24,7 @@ class EventBannerTest extends TestCase
         Seat::create(['venue_id' => $venue->id, 'code' => 'A1', 'line' => 'A', 'number' => '1', 'pos_x' => 1, 'pos_y' => 1, 'kind' => 'standard']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A2', 'line' => 'A', 'number' => '2', 'pos_x' => 2, 'pos_y' => 1, 'kind' => 'standard']);
 
-        $response = $this->actingAs($organizer)->post('/dashboard/eventos', [
+        $response = $this->actingAs($organizer)->post('/painel/eventos', [
             'venue_id' => $venue->id,
             'title' => 'Evento com Banner',
             'kicker' => 'Show',
@@ -55,7 +55,7 @@ class EventBannerTest extends TestCase
         Seat::create(['venue_id' => $venue->id, 'code' => 'A1', 'line' => 'A', 'number' => '1', 'pos_x' => 1, 'pos_y' => 1, 'kind' => 'standard']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A2', 'line' => 'A', 'number' => '2', 'pos_x' => 2, 'pos_y' => 1, 'kind' => 'standard']);
 
-        $this->actingAs($organizer)->post('/dashboard/eventos', [
+        $this->actingAs($organizer)->post('/painel/eventos', [
             'venue_id' => $venue->id,
             'title' => 'Temporada',
             'kicker' => 'Show',

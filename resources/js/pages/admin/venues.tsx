@@ -30,7 +30,7 @@ export default function AdminVenues({ venues }: { venues: Paginator<VenueRow> })
                         </p>
                     </div>
                     <Button asChild>
-                        <Link href="/dashboard/locais/novo">
+                        <Link href="/painel/locais/novo">
                             <Icon name="plus" size={18} /> Novo local
                         </Link>
                     </Button>
@@ -59,7 +59,7 @@ export default function AdminVenues({ venues }: { venues: Paginator<VenueRow> })
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-end gap-1">
                                             <Button asChild size="sm" variant="ghost">
-                                                <Link href={`/dashboard/locais/${v.id}/editar`}>
+                                                <Link href={`/painel/locais/${v.id}/editar`}>
                                                     <Icon name="eye" size={15} /> Editar
                                                 </Link>
                                             </Button>
@@ -99,7 +99,7 @@ export default function AdminVenues({ venues }: { venues: Paginator<VenueRow> })
                 confirmLabel="Excluir"
                 onConfirm={() => {
                     if (removing && removing.events === 0) {
-                        router.delete(`/dashboard/locais/${removing.id}`, {
+                        router.delete(`/painel/locais/${removing.id}`, {
                             preserveScroll: true,
                         });
                     }
