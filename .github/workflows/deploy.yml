@@ -15,72 +15,52 @@ concurrency:
 
 jobs:
   deploy:
+    name: Deploy
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          persist-credentials: false
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            cd /var/www/kena
+            DEPLOY_USER="$(id -un)"
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.3'
-          tools: composer:v2
-          coverage: none
+            echo ">>> Atualizando codigo (origin/main)..."
+            git fetch origin main
+            git reset --hard origin/main
 
-      - name: Setup Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
-        with:
-          node-version: '22'
+            echo ">>> Instalando dependencias PHP (composer)..."
+            composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
-      - name: Install PHP Dependencies
-        run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
+            echo ">>> Limpando caches Laravel..."
+            php artisan optimize:clear
 
-      - name: Install Node Dependencies
-        run: npm ci
+            echo ">>> Garantindo pastas de runtime..."
+            mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
+            php artisan storage:link || true
 
-      # O .env real vive no servidor. Este aqui é descartável e serve só para o
-      # artisan bootar durante o build do Vite (Wayfinder gera rotas/actions).
-      # O rsync abaixo exclui .env, então ele nunca chega em produção.
-      - name: Prepare build environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
+            echo ">>> Ajustando permissoes..."
+            sudo chown -R "${DEPLOY_USER}:www-data" /var/www/kena
+            sudo chmod -R ug+rwX storage bootstrap/cache
 
-      - name: Build Assets
-        run: npm run build
+            echo ">>> Instalando dependencias JS..."
+            npm ci
 
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+            echo ">>> Build dos assets (Vite)..."
+            npm run build
 
-      - name: Rsync to production
-        run: |
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.SSH_PORT }}" \
-            --exclude='.env' \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='node_modules/' \
-            --exclude='storage/' \
-            --exclude='public/storage' \
-            --exclude='tests/' \
-            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/"
+            echo ">>> Executando migracoes..."
+            php artisan migrate --force
 
-      - name: Run post-deploy tasks
-        run: |
-          ssh -i ~/.ssh/id_ed25519 -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "cd ${{ secrets.DEPLOY_PATH }} && \
-             php artisan migrate --force && \
-             php artisan storage:link && \
-             php artisan config:cache && \
-             php artisan route:cache && \
-             php artisan view:cache && \
-             php artisan queue:restart"
+            echo ">>> Otimizando app..."
+            php artisan optimize
+
+            echo ">>> Reiniciando worker da fila..."
+            sudo supervisorctl restart kena-worker || true
+
+            echo ">>> Deploy concluido."
