@@ -101,7 +101,7 @@ class AdminListsPaginationTest extends TestCase
 
         // Overview: resumo com no máximo 8 linhas, sem envelope de paginator.
         $this->actingAs($organizer)
-            ->get(route('dashboard'))
+            ->get(route('painel'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
                 ->component('admin/overview')

@@ -30,7 +30,7 @@ export default function PasskeyVerify({
             },
         }),
         onSuccess: (response) => {
-            // O fallback é a home do comprador — /dashboard é o painel do organizador.
+            // O fallback é a home do comprador — /painel é o painel do organizador.
             router.visit(response.redirect ?? '/');
         },
     });

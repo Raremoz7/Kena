@@ -86,7 +86,7 @@ class EmailVerificationTest extends TestCase
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
 
-    public function test_verified_user_is_redirected_to_dashboard_from_verification_prompt(): void
+    public function test_verified_user_is_redirected_to_painel_from_verification_prompt(): void
     {
         $user = User::factory()->create();
 

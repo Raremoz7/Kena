@@ -66,7 +66,7 @@ export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow
                         </p>
                     </div>
                     <Button asChild>
-                        <Link href="/dashboard/cupons/novo">
+                        <Link href="/painel/cupons/novo">
                             <Icon name="plus" size={18} /> Novo cupom
                         </Link>
                     </Button>
@@ -111,7 +111,7 @@ export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-end gap-1">
                                             <Button asChild size="sm" variant="ghost">
-                                                <Link href={`/dashboard/cupons/${c.id}/editar`}>
+                                                <Link href={`/painel/cupons/${c.id}/editar`}>
                                                     <Icon name="eye" size={15} /> Editar
                                                 </Link>
                                             </Button>
@@ -151,7 +151,7 @@ export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow
                 confirmLabel="Excluir"
                 onConfirm={() => {
                     if (removing) {
-                        router.delete(`/dashboard/cupons/${removing.id}`, {
+                        router.delete(`/painel/cupons/${removing.id}`, {
                             preserveScroll: true,
                         });
                     }

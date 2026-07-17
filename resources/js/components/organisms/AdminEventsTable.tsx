@@ -73,7 +73,7 @@ export function AdminEventsTable({
                                 {editable ? (
                                     <div className="flex items-center justify-end gap-4">
                                         <Link
-                                            href={`/dashboard/eventos/${e.id}/editar`}
+                                            href={`/painel/eventos/${e.id}/editar`}
                                             className="font-body text-xs font-semibold text-accent-text hover:underline"
                                         >
                                             Editar
@@ -107,7 +107,7 @@ export function AdminEventsTable({
                                 Nenhum evento ainda.{' '}
                                 {editable && (
                                     <Link
-                                        href="/dashboard/eventos/novo"
+                                        href="/painel/eventos/novo"
                                         className="font-semibold text-accent-text hover:underline"
                                     >
                                         Criar o primeiro
@@ -131,7 +131,7 @@ export function AdminEventsTable({
                 confirmLabel="Excluir"
                 onConfirm={() => {
                     if (removing) {
-                        router.delete(`/dashboard/eventos/${removing.id}`);
+                        router.delete(`/painel/eventos/${removing.id}`);
                     }
                     setRemoving(null);
                 }}

@@ -48,7 +48,7 @@ export default function AdminSeats({ event, session, seatMap, toggleUrl }: Seats
             <Head title={`Assentos · ${event.title}`} />
             <div className="px-4 py-6 sm:px-8 sm:py-8">
                 <Link
-                    href="/dashboard/pedidos"
+                    href="/painel/pedidos"
                     className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Painel

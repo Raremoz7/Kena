@@ -20,7 +20,7 @@ class EventSessionsUpdateTest extends TestCase
         $venue = Venue::create(['name' => 'Teatro', 'city' => 'Brasília', 'state' => 'DF']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A1', 'line' => 'A', 'number' => '1', 'pos_x' => 1, 'pos_y' => 1, 'kind' => 'standard']);
 
-        $this->actingAs($organizer)->post('/dashboard/eventos', [
+        $this->actingAs($organizer)->post('/painel/eventos', [
             'venue_id' => $venue->id,
             'title' => 'Editável',
             'kicker' => 'Show',
@@ -38,7 +38,7 @@ class EventSessionsUpdateTest extends TestCase
         $this->assertSame(1, $event->sessions()->count());
 
         // Atualiza mantendo a 1ª e adicionando uma 2ª.
-        $this->actingAs($organizer)->put("/dashboard/eventos/{$event->id}", [
+        $this->actingAs($organizer)->put("/painel/eventos/{$event->id}", [
             'venue_id' => $venue->id,
             'title' => 'Editável',
             'kicker' => 'Show',
@@ -58,7 +58,7 @@ class EventSessionsUpdateTest extends TestCase
         $this->assertSame(1, EventSession::where('id', $first->id)->whereDate('starts_at', now()->addDays(6)->toDateString())->count());
 
         // Atualiza removendo a 2ª (sem vendidos → pode remover).
-        $this->actingAs($organizer)->put("/dashboard/eventos/{$event->id}", [
+        $this->actingAs($organizer)->put("/painel/eventos/{$event->id}", [
             'venue_id' => $venue->id,
             'title' => 'Editável',
             'kicker' => 'Show',

@@ -78,60 +78,60 @@ Route::get('/dev/mail-preview/{type}', [MailPreviewController::class, 'show'])
 
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
 Route::middleware(['auth', 'can-manage'])->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'overview'])->name('dashboard');
+    Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
 
     // Check-in scanner (staff + organizer)
-    Route::get('/dashboard/checkin', [CheckInController::class, 'show'])->name('admin.checkin');
+    Route::get('/painel/checkin', [CheckInController::class, 'show'])->name('admin.checkin');
     Route::post('/api/checkin', [CheckInController::class, 'scan'])->name('admin.checkin.scan');
     Route::post('/api/checkin/buscar', [CheckInController::class, 'lookup'])->name('admin.checkin.lookup');
     Route::post('/api/checkin/admitir', [CheckInController::class, 'admit'])->name('admin.checkin.admit');
 
     // Gestão sensível — só organizer/admin (staff recebe 403).
     Route::middleware('can-organize')->group(function () {
-        Route::get('/dashboard/eventos', [AdminController::class, 'events'])->name('admin.events');
-        Route::get('/dashboard/eventos/novo', [EventController::class, 'create'])->name('admin.events.create');
-        Route::post('/dashboard/eventos', [EventController::class, 'store'])->name('admin.events.store');
-        Route::get('/dashboard/eventos/{event}/editar', [EventController::class, 'edit'])->name('admin.events.edit');
-        Route::put('/dashboard/eventos/{event}', [EventController::class, 'update'])->name('admin.events.update');
-        Route::delete('/dashboard/eventos/{event}', [EventController::class, 'destroy'])->name('admin.events.destroy');
+        Route::get('/painel/eventos', [AdminController::class, 'events'])->name('admin.events');
+        Route::get('/painel/eventos/novo', [EventController::class, 'create'])->name('admin.events.create');
+        Route::post('/painel/eventos', [EventController::class, 'store'])->name('admin.events.store');
+        Route::get('/painel/eventos/{event}/editar', [EventController::class, 'edit'])->name('admin.events.edit');
+        Route::put('/painel/eventos/{event}', [EventController::class, 'update'])->name('admin.events.update');
+        Route::delete('/painel/eventos/{event}', [EventController::class, 'destroy'])->name('admin.events.destroy');
 
         // Pedidos + export de participantes + reembolso pelo organizador
-        Route::get('/dashboard/pedidos', [OrderController::class, 'index'])->name('admin.orders');
-        Route::get('/dashboard/pedidos/export', [OrderController::class, 'exportAttendees'])->name('admin.orders.export');
-        Route::post('/dashboard/pedidos/{order}/reembolso', [OrderController::class, 'refund'])->name('admin.orders.refund');
-        Route::post('/dashboard/sessoes/{session}/cancelar', [OrderController::class, 'cancelSession'])->name('admin.sessions.cancel');
+        Route::get('/painel/pedidos', [OrderController::class, 'index'])->name('admin.orders');
+        Route::get('/painel/pedidos/export', [OrderController::class, 'exportAttendees'])->name('admin.orders.export');
+        Route::post('/painel/pedidos/{order}/reembolso', [OrderController::class, 'refund'])->name('admin.orders.refund');
+        Route::post('/painel/sessoes/{session}/cancelar', [OrderController::class, 'cancelSession'])->name('admin.sessions.cancel');
 
         // Cupons de desconto
-        Route::get('/dashboard/cupons', [CouponController::class, 'index'])->name('admin.coupons');
-        Route::get('/dashboard/cupons/novo', [CouponController::class, 'create'])->name('admin.coupons.create');
-        Route::post('/dashboard/cupons', [CouponController::class, 'store'])->name('admin.coupons.store');
-        Route::get('/dashboard/cupons/{coupon}/editar', [CouponController::class, 'edit'])->name('admin.coupons.edit');
-        Route::put('/dashboard/cupons/{coupon}', [CouponController::class, 'update'])->name('admin.coupons.update');
-        Route::delete('/dashboard/cupons/{coupon}', [CouponController::class, 'destroy'])->name('admin.coupons.destroy');
+        Route::get('/painel/cupons', [CouponController::class, 'index'])->name('admin.coupons');
+        Route::get('/painel/cupons/novo', [CouponController::class, 'create'])->name('admin.coupons.create');
+        Route::post('/painel/cupons', [CouponController::class, 'store'])->name('admin.coupons.store');
+        Route::get('/painel/cupons/{coupon}/editar', [CouponController::class, 'edit'])->name('admin.coupons.edit');
+        Route::put('/painel/cupons/{coupon}', [CouponController::class, 'update'])->name('admin.coupons.update');
+        Route::delete('/painel/cupons/{coupon}', [CouponController::class, 'destroy'])->name('admin.coupons.destroy');
 
         // Locais (venues)
-        Route::get('/dashboard/locais', [VenueController::class, 'index'])->name('admin.venues');
-        Route::get('/dashboard/locais/novo', [VenueController::class, 'create'])->name('admin.venues.create');
-        Route::post('/dashboard/locais', [VenueController::class, 'store'])->name('admin.venues.store');
-        Route::get('/dashboard/locais/{venue}/editar', [VenueController::class, 'edit'])->name('admin.venues.edit');
-        Route::put('/dashboard/locais/{venue}', [VenueController::class, 'update'])->name('admin.venues.update');
-        Route::delete('/dashboard/locais/{venue}', [VenueController::class, 'destroy'])->name('admin.venues.destroy');
-        Route::post('/dashboard/locais/{venue}/assentos/importar', [VenueSeatController::class, 'import'])->name('admin.venues.seats.import');
-        Route::post('/dashboard/locais/{venue}/assentos/gerar', [VenueSeatController::class, 'generateGrid'])->name('admin.venues.seats.generate');
+        Route::get('/painel/locais', [VenueController::class, 'index'])->name('admin.venues');
+        Route::get('/painel/locais/novo', [VenueController::class, 'create'])->name('admin.venues.create');
+        Route::post('/painel/locais', [VenueController::class, 'store'])->name('admin.venues.store');
+        Route::get('/painel/locais/{venue}/editar', [VenueController::class, 'edit'])->name('admin.venues.edit');
+        Route::put('/painel/locais/{venue}', [VenueController::class, 'update'])->name('admin.venues.update');
+        Route::delete('/painel/locais/{venue}', [VenueController::class, 'destroy'])->name('admin.venues.destroy');
+        Route::post('/painel/locais/{venue}/assentos/importar', [VenueSeatController::class, 'import'])->name('admin.venues.seats.import');
+        Route::post('/painel/locais/{venue}/assentos/gerar', [VenueSeatController::class, 'generateGrid'])->name('admin.venues.seats.generate');
 
         // Gestão de assentos (bloquear/liberar cortesias e lugares interditados)
-        Route::get('/dashboard/sessoes/{session}/assentos', [SeatController::class, 'show'])->name('admin.seats');
-        Route::post('/dashboard/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
+        Route::get('/painel/sessoes/{session}/assentos', [SeatController::class, 'show'])->name('admin.seats');
+        Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
 
         // Equipe (organizadores e staff)
-        Route::get('/dashboard/equipe', [TeamController::class, 'index'])->name('admin.team');
-        Route::post('/dashboard/equipe', [TeamController::class, 'store'])->name('admin.team.store');
-        Route::put('/dashboard/equipe/{user}', [TeamController::class, 'update'])->name('admin.team.update');
-        Route::delete('/dashboard/equipe/{user}', [TeamController::class, 'destroy'])->name('admin.team.destroy');
+        Route::get('/painel/equipe', [TeamController::class, 'index'])->name('admin.team');
+        Route::post('/painel/equipe', [TeamController::class, 'store'])->name('admin.team.store');
+        Route::put('/painel/equipe/{user}', [TeamController::class, 'update'])->name('admin.team.update');
+        Route::delete('/painel/equipe/{user}', [TeamController::class, 'destroy'])->name('admin.team.destroy');
 
-        Route::get('/dashboard/config', [SettingsController::class, 'show'])->name('admin.settings');
-        Route::post('/dashboard/config', [SettingsController::class, 'update'])->name('admin.settings.update');
-        Route::post('/dashboard/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
+        Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
+        Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
+        Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
     });
 });
 

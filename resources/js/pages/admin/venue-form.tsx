@@ -34,9 +34,9 @@ export default function VenueForm({ venue }: { venue: VenueData | null }) {
         e.preventDefault();
 
         if (editing && venue) {
-            form.put(`/dashboard/locais/${venue.id}`);
+            form.put(`/painel/locais/${venue.id}`);
         } else {
-            form.post('/dashboard/locais');
+            form.post('/painel/locais');
         }
     }
 
@@ -95,7 +95,7 @@ export default function VenueForm({ venue }: { venue: VenueData | null }) {
             <Head title={editing ? 'Editar local' : 'Novo local'} />
             <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
                 <Link
-                    href="/dashboard/locais"
+                    href="/painel/locais"
                     className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Locais
@@ -161,7 +161,7 @@ export default function VenueForm({ venue }: { venue: VenueData | null }) {
 
                     <div className="flex justify-end gap-3">
                         <Button asChild variant="secondary">
-                            <Link href="/dashboard/locais">Cancelar</Link>
+                            <Link href="/painel/locais">Cancelar</Link>
                         </Button>
                         <Button type="submit" disabled={form.processing}>
                             {form.processing ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar local'}

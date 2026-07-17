@@ -19,7 +19,7 @@ export default function AdminEvents({ events }: { events: Paginator<EventRow> })
                         </p>
                     </div>
                     <Button asChild>
-                        <Link href="/dashboard/eventos/novo">
+                        <Link href="/painel/eventos/novo">
                             <Icon name="plus" size={18} /> Novo evento
                         </Link>
                     </Button>

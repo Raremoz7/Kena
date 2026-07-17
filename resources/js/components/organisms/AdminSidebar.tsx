@@ -17,44 +17,44 @@ interface NavItem {
 const nav: NavItem[] = [
     {
         label: 'Visão geral',
-        href: '/dashboard',
+        href: '/painel',
         icon: 'home',
         organizerOnly: true,
     },
     {
         label: 'Eventos',
-        href: '/dashboard/eventos',
+        href: '/painel/eventos',
         icon: 'ticket',
         organizerOnly: true,
     },
     {
         label: 'Pedidos',
-        href: '/dashboard/pedidos',
+        href: '/painel/pedidos',
         icon: 'agenda',
         organizerOnly: true,
     },
     {
         label: 'Cupons',
-        href: '/dashboard/cupons',
+        href: '/painel/cupons',
         icon: 'tag',
         organizerOnly: true,
     },
     {
         label: 'Locais',
-        href: '/dashboard/locais',
+        href: '/painel/locais',
         icon: 'map-pin',
         organizerOnly: true,
     },
     {
         label: 'Equipe',
-        href: '/dashboard/equipe',
+        href: '/painel/equipe',
         icon: 'shield',
         organizerOnly: true,
     },
-    { label: 'Check-in', href: '/dashboard/checkin', icon: 'qr' },
+    { label: 'Check-in', href: '/painel/checkin', icon: 'qr' },
     {
         label: 'Configurações',
-        href: '/dashboard/config',
+        href: '/painel/config',
         icon: 'shield',
         organizerOnly: true,
     },
@@ -104,7 +104,7 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
 
                     const active =
                         url === item.href ||
-                        (item.href !== '/dashboard' &&
+                        (item.href !== '/painel' &&
                             url.startsWith(item.href));
 
                     return (

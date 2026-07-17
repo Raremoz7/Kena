@@ -54,7 +54,7 @@ const statusLabel: Record<string, string> = {
 
 export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: OrdersPageProps) {
     function filterSession(value: string) {
-        router.get('/dashboard/pedidos', value ? { session: Number(value) } : {}, {
+        router.get('/painel/pedidos', value ? { session: Number(value) } : {}, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -77,7 +77,7 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
                 'Todos os pedidos pagos desta sessão serão reembolsados e a sessão sai da venda. Esta ação não pode ser desfeita.',
             action: () =>
                 router.post(
-                    `/dashboard/sessoes/${sessionId}/cancelar`,
+                    `/painel/sessoes/${sessionId}/cancelar`,
                     {},
                     {
                         preserveScroll: true,
@@ -95,7 +95,7 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
             description: `O pedido ${o.reference} será reembolsado, os ingressos cancelados e os assentos liberados.`,
             action: () =>
                 router.post(
-                    `/dashboard/pedidos/${o.id}/reembolso`,
+                    `/painel/pedidos/${o.id}/reembolso`,
                     {},
                     {
                         preserveScroll: true,
@@ -139,7 +139,7 @@ export default function AdminOrders({ orders, sessions, sessionId, exportUrl }: 
                         {sessionId !== null && (
                             <>
                                 <Button asChild variant="secondary">
-                                    <a href={`/dashboard/sessoes/${sessionId}/assentos`}>
+                                    <a href={`/painel/sessoes/${sessionId}/assentos`}>
                                         <Icon name="maximize" size={16} /> Assentos
                                     </a>
                                 </Button>

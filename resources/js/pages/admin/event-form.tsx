@@ -66,9 +66,9 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
         e.preventDefault();
 
         if (editing && event) {
-            form.put(`/dashboard/eventos/${event.id}`);
+            form.put(`/painel/eventos/${event.id}`);
         } else {
-            form.post('/dashboard/eventos');
+            form.post('/painel/eventos');
         }
     }
 
@@ -95,7 +95,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
             <Head title={editing ? 'Editar evento' : 'Novo evento'} />
             <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
                 <Link
-                    href="/dashboard/eventos"
+                    href="/painel/eventos"
                     className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Eventos
@@ -292,7 +292,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                     size="sm"
                                                 >
                                                     <Link
-                                                        href={`/dashboard/sessoes/${s.id}/assentos`}
+                                                        href={`/painel/sessoes/${s.id}/assentos`}
                                                         title="Gerenciar assentos (bloquear/liberar)"
                                                     >
                                                         <Icon name="map-pin" size={16} />
@@ -305,7 +305,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                     size="sm"
                                                 >
                                                     <Link
-                                                        href={`/dashboard/pedidos?session=${s.id}`}
+                                                        href={`/painel/pedidos?session=${s.id}`}
                                                         title="Ver pedidos desta sessão"
                                                     >
                                                         <Icon name="agenda" size={16} />
@@ -337,7 +337,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
 
                     <div className="flex justify-end gap-3">
                         <Button asChild variant="secondary">
-                            <Link href="/dashboard/eventos">Cancelar</Link>
+                            <Link href="/painel/eventos">Cancelar</Link>
                         </Button>
                         <Button type="submit" disabled={form.processing}>
                             {form.processing ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar evento'}
