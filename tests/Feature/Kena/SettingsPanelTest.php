@@ -18,7 +18,7 @@ class SettingsPanelTest extends TestCase
     {
         $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
 
-        $this->actingAs($organizer)->post('/dashboard/config', [
+        $this->actingAs($organizer)->post('/painel/config', [
             'mail_host' => 'smtp.test.com',
             'mail_port' => 587,
             'mail_username' => 'u@test.com',

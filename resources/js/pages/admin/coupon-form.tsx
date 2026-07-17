@@ -37,9 +37,9 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
         e.preventDefault();
 
         if (editing && coupon) {
-            form.put(`/dashboard/cupons/${coupon.id}`);
+            form.put(`/painel/cupons/${coupon.id}`);
         } else {
-            form.post('/dashboard/cupons');
+            form.post('/painel/cupons');
         }
     }
 
@@ -50,7 +50,7 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
             <Head title={editing ? 'Editar cupom' : 'Novo cupom'} />
             <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
                 <Link
-                    href="/dashboard/cupons"
+                    href="/painel/cupons"
                     className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Cupons
@@ -153,7 +153,7 @@ export default function CouponForm({ coupon, events }: { coupon: CouponData | nu
 
                     <div className="flex justify-end gap-3">
                         <Button asChild variant="secondary">
-                            <Link href="/dashboard/cupons">Cancelar</Link>
+                            <Link href="/painel/cupons">Cancelar</Link>
                         </Button>
                         <Button type="submit" disabled={form.processing}>
                             {form.processing ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar cupom'}

@@ -40,7 +40,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
 
     function invite(e: React.FormEvent) {
         e.preventDefault();
-        form.post('/dashboard/equipe', {
+        form.post('/painel/equipe', {
             preserveScroll: true,
             onSuccess: () => form.reset(),
         });
@@ -48,7 +48,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
 
     function changeRole(member: Member, role: string) {
         router.put(
-            `/dashboard/equipe/${member.id}`,
+            `/painel/equipe/${member.id}`,
             { role },
             { preserveScroll: true },
         );
@@ -201,7 +201,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                 confirmLabel="Remover"
                 onConfirm={() => {
                     if (removing) {
-                        router.delete(`/dashboard/equipe/${removing.id}`, {
+                        router.delete(`/painel/equipe/${removing.id}`, {
                             preserveScroll: true,
                         });
                     }

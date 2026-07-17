@@ -114,7 +114,7 @@ export default function Settings({ mp, mail, gw, webhookUrl, setup, testMailUrl 
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        form.post('/dashboard/config', {
+        form.post('/painel/config', {
             preserveScroll: true,
             onSuccess: () => {
                 veludoToast.success('Configurações salvas', 'Parâmetros atualizados.');

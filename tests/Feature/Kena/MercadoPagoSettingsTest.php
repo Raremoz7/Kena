@@ -40,14 +40,14 @@ class MercadoPagoSettingsTest extends TestCase
     {
         $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
 
-        $this->actingAs($organizer)->post('/dashboard/config', [
+        $this->actingAs($organizer)->post('/painel/config', [
             'mp_public_key' => 'APP_USR-PANEL-KEY',
             'mp_access_token' => 'APP_USR-PANEL-TOKEN',
             'mp_pix_expiration' => 20,
         ])->assertRedirect();
 
         $this->actingAs($organizer)
-            ->get('/dashboard/config')
+            ->get('/painel/config')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('mp.publicKey', 'APP_USR-PANEL-KEY')
                 ->where('mp.accessTokenConfigured', true)
