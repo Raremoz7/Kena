@@ -51,8 +51,30 @@ jobs:
             echo ">>> Instalando dependencias JS..."
             npm ci
 
+            # O vite limpa public/build ANTES de gerar. Se o build falhar no meio
+            # (ex.: timeout buscando fontes remotas), o manifest some e o site
+            # inteiro cai com 500. Entao: guarda o build atual, tenta de novo uma
+            # vez (cobre falha de rede transitoria) e restaura se nao der.
             echo ">>> Build dos assets (Vite)..."
-            npm run build
+            rm -rf /tmp/kena-build-anterior
+            if [ -d public/build ]; then
+              cp -r public/build /tmp/kena-build-anterior
+            fi
+
+            if ! npm run build; then
+              echo ">>> Build falhou. Tentando mais uma vez..."
+              if ! npm run build; then
+                echo ">>> Build falhou de novo. Restaurando assets anteriores."
+                rm -rf public/build
+                if [ -d /tmp/kena-build-anterior ]; then
+                  mv /tmp/kena-build-anterior public/build
+                  php artisan optimize
+                  echo ">>> Site restaurado na versao anterior dos assets."
+                fi
+                exit 1
+              fi
+            fi
+            rm -rf /tmp/kena-build-anterior
 
             echo ">>> Executando migracoes..."
             php artisan migrate --force
