@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PanelUser;
 use App\Models\User;
 
 return [
@@ -42,6 +43,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Painel (organizador/staff). Guard de sessao proprio: estar logado
+        // como comprador nao autentica aqui, e vice-versa.
+        'painel' => [
+            'driver' => 'session',
+            'provider' => 'panel_users',
+        ],
     ],
 
     /*
@@ -65,6 +73,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'panel_users' => [
+            'driver' => 'eloquent',
+            'model' => PanelUser::class,
         ],
 
         // 'users' => [

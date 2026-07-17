@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\Models\CheckIn;
 use App\Models\EventSession;
+use App\Models\PanelUser;
 use App\Models\Ticket;
-use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -21,7 +22,7 @@ class CheckInService
      *
      * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
      */
-    public function check(string $token, EventSession $session, ?User $operator): array
+    public function check(string $token, EventSession $session, ?PanelUser $operator): array
     {
         if (! $this->qr->verify($token)) {
             return $this->record($session, $operator, CheckIn::RESULT_DENIED, 'QR inválido.', null, mb_substr($token, 0, 40));
@@ -40,7 +41,7 @@ class CheckInService
      *
      * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
      */
-    public function admit(Ticket $ticket, EventSession $session, ?User $operator): array
+    public function admit(Ticket $ticket, EventSession $session, ?PanelUser $operator): array
     {
         return $this->admitOrDeny($ticket, $session, $operator);
     }
@@ -55,7 +56,7 @@ class CheckInService
      * Progresso de várias sessões de uma vez (2 queries agregadas em vez de
      * 2 por sessão) — usado no seletor de sessões da tela de check-in.
      *
-     * @param  \Illuminate\Support\Collection<int, EventSession>  $sessions
+     * @param  Collection<int, EventSession>  $sessions
      * @return array<int, array{checkedIn: int, total: int}>
      */
     public function progressForSessions($sessions): array
@@ -82,7 +83,7 @@ class CheckInService
     /**
      * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
      */
-    private function admitOrDeny(Ticket $ticket, EventSession $session, ?User $operator): array
+    private function admitOrDeny(Ticket $ticket, EventSession $session, ?PanelUser $operator): array
     {
         [$result, $reason] = $this->evaluate($ticket, $session);
 
@@ -123,7 +124,7 @@ class CheckInService
     /**
      * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
      */
-    private function record(EventSession $session, ?User $operator, string $result, ?string $reason, ?Ticket $ticket, string $scanned): array
+    private function record(EventSession $session, ?PanelUser $operator, string $result, ?string $reason, ?Ticket $ticket, string $scanned): array
     {
         CheckIn::create([
             'ticket_id' => $ticket?->id,

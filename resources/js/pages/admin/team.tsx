@@ -15,7 +15,6 @@ interface Member {
     name: string;
     email: string;
     role: string;
-    isAdmin: boolean;
     isSelf: boolean;
 }
 
@@ -35,7 +34,7 @@ const roleLabel: Record<string, string> = {
 };
 
 export default function AdminTeam({ members, roles }: TeamPageProps) {
-    const form = useForm({ name: '', email: '', role: 'staff' });
+    const form = useForm({ name: '', email: '', role: 'staff', password: '' });
     const [removing, setRemoving] = useState<Member | null>(null);
 
     function invite(e: React.FormEvent) {
@@ -63,37 +62,71 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                         Equipe
                     </h1>
                     <p className="mt-1 font-body text-sm text-muted-foreground">
-                        Organizadores acessam o painel completo. Staff faz apenas
-                        o check-in na portaria.
+                        Organizadores acessam o painel completo. Staff faz
+                        apenas o check-in na portaria.
                     </p>
                 </div>
 
                 <form
                     onSubmit={invite}
-                    className="mt-6 grid gap-4 rounded-card border border-border bg-surface p-6 sm:grid-cols-[1fr_1fr_200px_auto] sm:items-end"
+                    className="mt-6 grid gap-4 rounded-card border border-border bg-surface p-6 sm:grid-cols-[1fr_1fr_1fr_180px_auto] sm:items-end"
                 >
-                    <FormField label="Nome" htmlFor="tm-name" error={form.errors.name}>
+                    <FormField
+                        label="Nome"
+                        htmlFor="tm-name"
+                        error={form.errors.name}
+                    >
                         <Input
                             id="tm-name"
                             value={form.data.name}
-                            onChange={(e) => form.setData('name', e.target.value)}
+                            onChange={(e) =>
+                                form.setData('name', e.target.value)
+                            }
                             placeholder="Nome do membro"
                         />
                     </FormField>
-                    <FormField label="E-mail" htmlFor="tm-email" error={form.errors.email}>
+                    <FormField
+                        label="E-mail"
+                        htmlFor="tm-email"
+                        error={form.errors.email}
+                    >
                         <Input
                             id="tm-email"
                             type="email"
                             value={form.data.email}
-                            onChange={(e) => form.setData('email', e.target.value)}
+                            onChange={(e) =>
+                                form.setData('email', e.target.value)
+                            }
                             placeholder="email@exemplo.com"
                         />
                     </FormField>
-                    <FormField label="Papel" htmlFor="tm-role" error={form.errors.role}>
+                    <FormField
+                        label="Senha inicial"
+                        htmlFor="tm-password"
+                        error={form.errors.password}
+                    >
+                        <Input
+                            id="tm-password"
+                            type="password"
+                            value={form.data.password}
+                            onChange={(e) =>
+                                form.setData('password', e.target.value)
+                            }
+                            autoComplete="new-password"
+                            placeholder="Mínimo 8 caracteres"
+                        />
+                    </FormField>
+                    <FormField
+                        label="Papel"
+                        htmlFor="tm-role"
+                        error={form.errors.role}
+                    >
                         <Select
                             id="tm-role"
                             value={form.data.role}
-                            onChange={(e) => form.setData('role', e.target.value)}
+                            onChange={(e) =>
+                                form.setData('role', e.target.value)
+                            }
                         >
                             {roles.map((r) => (
                                 <option key={r.value} value={r.value}>
@@ -108,16 +141,21 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                 </form>
 
                 <p className="mt-2 font-body text-xs text-faint">
-                    Membro novo define a senha por "Esqueci a senha". Adicionar um
-                    e-mail já cadastrado apenas atualiza o papel dele.
+                    O painel entra por e-mail e senha em /painel/login. Defina a
+                    senha inicial e repasse ao membro — a conta do painel é
+                    separada da conta de comprador.
                 </p>
 
                 <div className="mt-6 overflow-hidden rounded-card border border-border">
                     <table className="w-full border-collapse font-body text-sm">
                         <thead>
                             <tr className="border-b border-border bg-surface-2 text-left">
-                                <th className="kicker px-4 py-3 text-faint">Membro</th>
-                                <th className="kicker px-4 py-3 text-faint">Papel</th>
+                                <th className="kicker px-4 py-3 text-faint">
+                                    Membro
+                                </th>
+                                <th className="kicker px-4 py-3 text-faint">
+                                    Papel
+                                </th>
                                 <th className="px-4 py-3" />
                             </tr>
                         </thead>
@@ -141,9 +179,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {m.isAdmin ? (
-                                            <Badge tone="info">Admin</Badge>
-                                        ) : m.isSelf ? (
+                                        {m.isSelf ? (
                                             <Badge tone="neutral">
                                                 {roleLabel[m.role] ?? m.role}
                                             </Badge>
@@ -151,7 +187,10 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                                             <Select
                                                 value={m.role}
                                                 onChange={(e) =>
-                                                    changeRole(m, e.target.value)
+                                                    changeRole(
+                                                        m,
+                                                        e.target.value,
+                                                    )
                                                 }
                                                 className="max-w-[220px]"
                                             >
@@ -168,14 +207,19 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex justify-end">
-                                            {!m.isSelf && !m.isAdmin && (
+                                            {!m.isSelf && (
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    onClick={() => setRemoving(m)}
+                                                    onClick={() =>
+                                                        setRemoving(m)
+                                                    }
                                                     aria-label={`Remover ${m.name}`}
                                                 >
-                                                    <Icon name="trash" size={15} />{' '}
+                                                    <Icon
+                                                        name="trash"
+                                                        size={15}
+                                                    />{' '}
                                                     Remover
                                                 </Button>
                                             )}
@@ -205,6 +249,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                             preserveScroll: true,
                         });
                     }
+
                     setRemoving(null);
                 }}
             />

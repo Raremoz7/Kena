@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Kena;
 
+use App\Models\PanelUser;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\OrderService;
@@ -33,9 +34,9 @@ class CheckInLookupTest extends TestCase
     public function test_lookup_then_admit_marks_used_and_blocks_reentry(): void
     {
         $ticket = $this->issuedTicket();
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $lookup = $this->actingAs($organizer)->postJson(route('admin.checkin.lookup'), [
+        $lookup = $this->actingAs($organizer, 'painel')->postJson(route('admin.checkin.lookup'), [
             'session_id' => $ticket->session_id,
             'q' => substr($ticket->code, 0, 8),
         ]);
@@ -43,14 +44,14 @@ class CheckInLookupTest extends TestCase
         $this->assertCount(1, $lookup->json('results'));
         $this->assertSame($ticket->id, $lookup->json('results.0.id'));
 
-        $this->actingAs($organizer)->postJson(route('admin.checkin.admit'), [
+        $this->actingAs($organizer, 'painel')->postJson(route('admin.checkin.admit'), [
             'session_id' => $ticket->session_id,
             'ticket_id' => $ticket->id,
         ])->assertOk()->assertJson(['result' => 'ok']);
         $this->assertSame(Ticket::STATUS_USED, $ticket->refresh()->status);
 
         // Segunda admissão → negada.
-        $this->actingAs($organizer)->postJson(route('admin.checkin.admit'), [
+        $this->actingAs($organizer, 'painel')->postJson(route('admin.checkin.admit'), [
             'session_id' => $ticket->session_id,
             'ticket_id' => $ticket->id,
         ])->assertOk()->assertJson(['result' => 'denied']);
@@ -59,11 +60,11 @@ class CheckInLookupTest extends TestCase
     public function test_buyer_cannot_lookup(): void
     {
         $ticket = $this->issuedTicket();
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
         $this->actingAs($buyer)->postJson(route('admin.checkin.lookup'), [
             'session_id' => $ticket->session_id,
             'q' => 'abc',
-        ])->assertForbidden();
+        ])->assertUnauthorized();
     }
 }

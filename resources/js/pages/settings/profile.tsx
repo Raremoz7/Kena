@@ -24,6 +24,8 @@ export default function Profile(
     },
 ) {
     const { auth } = usePage<PageProps>().props;
+    // Rota autenticada (auth:web): o comprador sempre existe aqui.
+    const user = auth.user!;
 
     return (
         <>
@@ -54,7 +56,7 @@ export default function Profile(
                             >
                                 <Input
                                     id="name"
-                                    defaultValue={auth.user.name}
+                                    defaultValue={user.name}
                                     name="name"
                                     required
                                     autoComplete="name"
@@ -70,7 +72,7 @@ export default function Profile(
                                 <Input
                                     id="email"
                                     type="email"
-                                    defaultValue={auth.user.email}
+                                    defaultValue={user.email}
                                     name="email"
                                     required
                                     autoComplete="username"
@@ -79,7 +81,7 @@ export default function Profile(
                             </FormField>
 
                             {mustVerifyEmail &&
-                                auth.user.email_verified_at === null && (
+                                user.email_verified_at === null && (
                                     <div>
                                         <p className="-mt-4 text-sm text-muted-foreground">
                                             Seu e-mail ainda não foi

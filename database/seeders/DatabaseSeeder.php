@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PanelUser;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -10,24 +11,24 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed da aplicação.
      *
-     * - Usuários demo (comprador/organizador) só são criados FORA de produção.
-     * - O admin é criado a partir de ADMIN_EMAIL / ADMIN_PASSWORD no .env
+     * - Contas demo (comprador e painel) só são criadas FORA de produção.
+     * - O organizador é criado a partir de ADMIN_EMAIL / ADMIN_PASSWORD no .env
      *   (nenhuma credencial fica hardcoded no repositório). Em produção,
      *   defina essas variáveis, rode o seed uma vez e remova a senha do .env.
      */
     public function run(): void
     {
-        $this->seedAdminFromEnv();
+        $this->seedOrganizerFromEnv();
 
         if (! app()->isProduction()) {
-            $this->seedDemoUsers();
+            $this->seedDemoAccounts();
         }
 
         $this->call(KenaSeeder::class);
     }
 
-    /** Cria/atualiza o admin a partir das variáveis de ambiente, se definidas. */
-    private function seedAdminFromEnv(): void
+    /** Cria/atualiza o organizador do painel a partir do ambiente, se definido. */
+    private function seedOrganizerFromEnv(): void
     {
         $email = config('kena.admin.email');
         $password = config('kena.admin.password');
@@ -36,20 +37,18 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        User::updateOrCreate(
+        PanelUser::updateOrCreate(
             ['email' => $email],
             [
                 'name' => config('kena.admin.name', 'Administrador'),
                 'password' => $password,
-                'is_admin' => true,
-                'role' => User::ROLE_ORGANIZER,
-                'email_verified_at' => now(),
+                'role' => PanelUser::ROLE_ORGANIZER,
             ],
         );
     }
 
-    /** Usuários de demonstração para as telas autenticadas (nunca em produção). */
-    private function seedDemoUsers(): void
+    /** Contas de demonstração — nunca em produção. */
+    private function seedDemoAccounts(): void
     {
         User::updateOrCreate(
             ['email' => 'helena@veludo.test'],
@@ -60,13 +59,21 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        User::updateOrCreate(
+        PanelUser::updateOrCreate(
             ['email' => 'organizador@veludo.test'],
             [
                 'name' => 'Produção Kena',
                 'password' => 'veludo123',
-                'role' => User::ROLE_ORGANIZER,
-                'email_verified_at' => now(),
+                'role' => PanelUser::ROLE_ORGANIZER,
+            ],
+        );
+
+        PanelUser::updateOrCreate(
+            ['email' => 'portaria@veludo.test'],
+            [
+                'name' => 'Portaria Kena',
+                'password' => 'veludo123',
+                'role' => PanelUser::ROLE_STAFF,
             ],
         );
     }

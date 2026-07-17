@@ -20,7 +20,7 @@ class BuyerPolishTest extends TestCase
         $guest = User::forceCreate([
             'name' => 'Convidado',
             'email' => 'guest@example.com',
-            'role' => User::ROLE_BUYER,
+
             'email_verified_at' => now(),
         ]);
         $this->assertNull($guest->password);

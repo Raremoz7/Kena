@@ -36,7 +36,6 @@ class GuestIdentityService
             'email' => $email,
             'name' => $data['name'],
             'cpf' => $cpf,
-            'role' => User::ROLE_BUYER,
             'email_verified_at' => now(),
         ]);
     }

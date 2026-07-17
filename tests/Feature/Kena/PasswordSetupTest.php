@@ -17,7 +17,7 @@ class PasswordSetupTest extends TestCase
         return User::create([
             'email' => 'leve'.uniqid().'@guest.test',
             'name' => 'Convidado',
-            'role' => User::ROLE_BUYER,
+
             'email_verified_at' => now(),
         ]);
     }

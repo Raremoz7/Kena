@@ -3,8 +3,8 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\Event;
+use App\Models\PanelUser;
 use App\Models\Seat;
-use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -19,12 +19,12 @@ class EventBannerTest extends TestCase
     {
         Storage::fake('public');
 
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
         $venue = Venue::create(['name' => 'Teatro', 'city' => 'Brasília', 'state' => 'DF']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A1', 'line' => 'A', 'number' => '1', 'pos_x' => 1, 'pos_y' => 1, 'kind' => 'standard']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A2', 'line' => 'A', 'number' => '2', 'pos_x' => 2, 'pos_y' => 1, 'kind' => 'standard']);
 
-        $response = $this->actingAs($organizer)->post('/painel/eventos', [
+        $response = $this->actingAs($organizer, 'painel')->post('/painel/eventos', [
             'venue_id' => $venue->id,
             'title' => 'Evento com Banner',
             'kicker' => 'Show',
@@ -50,12 +50,12 @@ class EventBannerTest extends TestCase
     {
         Storage::fake('public');
 
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
         $venue = Venue::create(['name' => 'Teatro', 'city' => 'Brasília', 'state' => 'DF']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A1', 'line' => 'A', 'number' => '1', 'pos_x' => 1, 'pos_y' => 1, 'kind' => 'standard']);
         Seat::create(['venue_id' => $venue->id, 'code' => 'A2', 'line' => 'A', 'number' => '2', 'pos_x' => 2, 'pos_y' => 1, 'kind' => 'standard']);
 
-        $this->actingAs($organizer)->post('/painel/eventos', [
+        $this->actingAs($organizer, 'painel')->post('/painel/eventos', [
             'venue_id' => $venue->id,
             'title' => 'Temporada',
             'kicker' => 'Show',

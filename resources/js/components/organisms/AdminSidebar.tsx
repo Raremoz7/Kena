@@ -79,8 +79,8 @@ export function AdminBrand() {
  */
 export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
     const { url, props } = usePage();
-    const user = props.auth?.user;
-    const canOrganize = user?.role === 'organizer' || Boolean(user?.is_admin);
+    const user = props.auth?.panelUser;
+    const canOrganize = user?.role === 'organizer';
     const items = nav.filter((item) => !item.organizerOnly || canOrganize);
 
     return (
