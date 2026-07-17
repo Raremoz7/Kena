@@ -6,7 +6,6 @@ import { Label } from '@/components/atoms/Label';
 import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
 import { FormField } from '@/components/molecules/FormField';
-import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { register } from '@/routes';
@@ -22,8 +21,6 @@ export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
             <Head title="Entrar" />
-
-            <PasskeyVerify />
 
             <div className="flex flex-col gap-6">
                 <SocialAuth label="Continuar com Google" />
