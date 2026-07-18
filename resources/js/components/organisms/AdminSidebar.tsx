@@ -4,6 +4,7 @@ import { Icon } from '@/components/atoms/Icon';
 import type { IconName } from '@/components/atoms/Icon';
 import { KenaMark } from '@/components/atoms/KenaMark';
 import { cn } from '@/lib/utils';
+import { logout } from '@/routes/painel';
 
 interface NavItem {
     label: string;
@@ -104,8 +105,7 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
 
                     const active =
                         url === item.href ||
-                        (item.href !== '/painel' &&
-                            url.startsWith(item.href));
+                        (item.href !== '/painel' && url.startsWith(item.href));
 
                     return (
                         <Link
@@ -129,7 +129,7 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
             {user && (
                 <div className="flex items-center gap-3 border-t border-border p-4">
                     <Avatar name={user.name} />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                         <p className="truncate font-body text-sm font-medium text-foreground">
                             {user.name}
                         </p>
@@ -137,6 +137,16 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
                             {String(user.role ?? 'equipe')}
                         </p>
                     </div>
+                    <Link
+                        href={logout()}
+                        as="button"
+                        onClick={onNavigate}
+                        title="Sair do painel"
+                        aria-label="Sair do painel"
+                        className="shrink-0 rounded-btn p-1.5 text-faint transition-colors hover:bg-surface-2 hover:text-foreground"
+                    >
+                        <Icon name="logout" size={18} />
+                    </Link>
                 </div>
             )}
         </>

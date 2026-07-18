@@ -37,6 +37,7 @@ export type IconName =
     | 'sparkle'
     | 'trash'
     | 'eye'
+    | 'logout'
     | 'image';
 
 const paths: Record<IconName, ReactElement> = {
@@ -53,7 +54,13 @@ const paths: Record<IconName, ReactElement> = {
         <>
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7.5v6" />
-            <circle cx="12" cy="16.5" r=".6" fill="currentColor" stroke="none" />
+            <circle
+                cx="12"
+                cy="16.5"
+                r=".6"
+                fill="currentColor"
+                stroke="none"
+            />
         </>
     ),
     lock: (
@@ -117,11 +124,19 @@ const paths: Record<IconName, ReactElement> = {
             <path d="M3 10h18M7 15h3" />
         </>
     ),
-    pix: <path d="M12 3l3.4 3.4a3 3 0 010 4.2L12 14l-3.4-3.4a3 3 0 010-4.2L12 3zM5.5 9.5L3 12l2.5 2.5M18.5 9.5L21 12l-2.5 2.5M12 14l3.4 3.4a3 3 0 01-4.8 0L12 14z" />,
+    pix: (
+        <path d="M12 3l3.4 3.4a3 3 0 010 4.2L12 14l-3.4-3.4a3 3 0 010-4.2L12 3zM5.5 9.5L3 12l2.5 2.5M18.5 9.5L21 12l-2.5 2.5M12 14l3.4 3.4a3 3 0 01-4.8 0L12 14z" />
+    ),
     tag: (
         <>
             <path d="M4 12.7V5a1 1 0 011-1h7.7a1 1 0 01.7.3l6 6a1 1 0 010 1.4l-6.3 6.3a1 1 0 01-1.4 0l-6-6a1 1 0 01-.3-.7z" />
-            <circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none" />
+            <circle
+                cx="8.5"
+                cy="8.5"
+                r="1.3"
+                fill="currentColor"
+                stroke="none"
+            />
         </>
     ),
     shield: (
@@ -145,6 +160,12 @@ const paths: Record<IconName, ReactElement> = {
         </>
     ),
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+    logout: (
+        <>
+            <path d="M15 4.5H6.5a2 2 0 00-2 2v11a2 2 0 002 2H15" />
+            <path d="M12.5 12h7m-3-3.5l3.5 3.5-3.5 3.5" />
+        </>
+    ),
     info: (
         <>
             <circle cx="12" cy="12" r="9" />
@@ -154,7 +175,9 @@ const paths: Record<IconName, ReactElement> = {
     ),
     minus: <path d="M5 12h14" />,
     plus: <path d="M12 5v14M5 12h14" />,
-    maximize: <path d="M4 9V5a1 1 0 011-1h4M15 4h4a1 1 0 011 1v4M20 15v4a1 1 0 01-1 1h-4M9 20H5a1 1 0 01-1-1v-4" />,
+    maximize: (
+        <path d="M4 9V5a1 1 0 011-1h4M15 4h4a1 1 0 011 1v4M20 15v4a1 1 0 01-1 1h-4M9 20H5a1 1 0 01-1-1v-4" />
+    ),
     home: <path d="M4 11l8-7 8 7M6 9.5V20h12V9.5" />,
     agenda: (
         <>
@@ -162,7 +185,9 @@ const paths: Record<IconName, ReactElement> = {
             <path d="M4 9.5h16M8 3.5v3M16 3.5v3M8 13h4" />
         </>
     ),
-    sparkle: <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z" />,
+    sparkle: (
+        <path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z" />
+    ),
     trash: (
         <>
             <path d="M4.5 7h15M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7" />
@@ -182,7 +207,13 @@ interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
     size?: number;
 }
 
-export function Icon({ name, size = 18, className, strokeWidth = 1.5, ...props }: IconProps) {
+export function Icon({
+    name,
+    size = 18,
+    className,
+    strokeWidth = 1.5,
+    ...props
+}: IconProps) {
     return (
         <svg
             width={size}
