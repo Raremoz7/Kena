@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Kena;
 
+use App\Models\PanelUser;
 use App\Models\SessionSeat;
 use App\Models\User;
 use App\Services\OrderService;
@@ -19,78 +20,116 @@ class AdminAccessAndTeamTest extends TestCase
     use MakesKenaData;
     use RefreshDatabase;
 
-    private function organizer(): User
+    private function organizer(): PanelUser
     {
-        return User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        return PanelUser::factory()->create();
     }
 
-    private function staff(): User
+    private function staff(): PanelUser
     {
-        return User::factory()->create(['role' => User::ROLE_STAFF]);
+        return PanelUser::factory()->staff()->create();
     }
 
     public function test_staff_can_reach_check_in_but_not_sensitive_pages(): void
     {
         $staff = $this->staff();
 
-        $this->actingAs($staff)->get(route('admin.checkin'))->assertOk();
-        $this->actingAs($staff)->get(route('admin.events'))->assertForbidden();
-        $this->actingAs($staff)->get(route('admin.coupons'))->assertForbidden();
-        $this->actingAs($staff)->get(route('admin.settings'))->assertForbidden();
-        $this->actingAs($staff)->get(route('admin.team'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.checkin'))->assertOk();
+        $this->actingAs($staff, 'painel')->get(route('admin.events'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.coupons'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.settings'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.team'))->assertForbidden();
     }
 
     public function test_organizer_reaches_team_page(): void
     {
-        $this->actingAs($this->organizer())->get(route('admin.team'))->assertOk();
+        $this->actingAs($this->organizer(), 'painel')->get(route('admin.team'))->assertOk();
     }
 
-    public function test_organizer_invites_a_new_staff_member(): void
+    /** Comprador logado nao tem sessao de painel: vai para o login do painel. */
+    public function test_buyer_session_does_not_reach_the_panel(): void
     {
-        $organizer = $this->organizer();
+        $buyer = User::factory()->create();
 
-        $this->actingAs($organizer)->post(route('admin.team.store'), [
+        $this->actingAs($buyer)->get(route('painel'))->assertRedirect(route('painel.login'));
+        $this->actingAs($buyer)->get(route('admin.checkin'))->assertRedirect(route('painel.login'));
+    }
+
+    /** Conta de painel nao e conta de comprador: nao alcanca a area do comprador. */
+    public function test_panel_session_does_not_reach_buyer_area(): void
+    {
+        $this->actingAs($this->organizer(), 'painel')
+            ->get(route('tickets.index'))
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_organizer_creates_a_new_staff_account(): void
+    {
+        $this->actingAs($this->organizer(), 'painel')->post(route('admin.team.store'), [
             'name' => 'Portaria 1',
             'email' => 'portaria1@example.com',
-            'role' => User::ROLE_STAFF,
+            'role' => PanelUser::ROLE_STAFF,
+            'password' => 'senha-da-portaria',
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('panel_users', [
             'email' => 'portaria1@example.com',
-            'role' => User::ROLE_STAFF,
+            'role' => PanelUser::ROLE_STAFF,
         ]);
+        // A conta de painel nao vaza para a tabela do comprador.
+        $this->assertDatabaseMissing('users', ['email' => 'portaria1@example.com']);
     }
 
-    public function test_organizer_promotes_existing_buyer_to_staff(): void
+    /** O e-mail de um comprador nao bloqueia a criacao da conta de painel. */
+    public function test_buyer_email_can_also_be_a_panel_account(): void
     {
-        $organizer = $this->organizer();
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER, 'email' => 'ana@example.com']);
+        User::factory()->create(['email' => 'ana@example.com']);
 
-        $this->actingAs($organizer)->post(route('admin.team.store'), [
-            'name' => 'Ana', 'email' => 'ana@example.com', 'role' => User::ROLE_STAFF,
-        ])->assertRedirect();
+        $this->actingAs($this->organizer(), 'painel')->post(route('admin.team.store'), [
+            'name' => 'Ana',
+            'email' => 'ana@example.com',
+            'role' => PanelUser::ROLE_STAFF,
+            'password' => 'senha-da-ana',
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertSame(User::ROLE_STAFF, $buyer->refresh()->role);
+        $this->assertDatabaseHas('panel_users', ['email' => 'ana@example.com']);
     }
 
-    public function test_removing_a_member_demotes_to_buyer(): void
+    public function test_removing_a_member_deletes_the_panel_account(): void
     {
-        $organizer = $this->organizer();
         $member = $this->staff();
 
-        $this->actingAs($organizer)->delete(route('admin.team.destroy', $member))->assertRedirect();
+        $this->actingAs($this->organizer(), 'painel')
+            ->delete(route('admin.team.destroy', $member))
+            ->assertRedirect();
 
-        $this->assertSame(User::ROLE_BUYER, $member->refresh()->role);
+        $this->assertDatabaseMissing('panel_users', ['id' => $member->id]);
     }
 
     public function test_organizer_cannot_remove_themselves(): void
     {
         $organizer = $this->organizer();
 
-        $this->actingAs($organizer)->delete(route('admin.team.destroy', $organizer))
+        $this->actingAs($organizer, 'painel')->delete(route('admin.team.destroy', $organizer))
             ->assertSessionHasErrors();
 
-        $this->assertSame(User::ROLE_ORGANIZER, $organizer->refresh()->role);
+        $this->assertDatabaseHas('panel_users', ['id' => $organizer->id]);
+    }
+
+    /** Painel sem organizador nenhum ficaria ingerenciavel. */
+    public function test_last_organizer_cannot_be_removed(): void
+    {
+        $organizer = $this->organizer();
+        $outro = $this->organizer();
+
+        // Com dois organizadores, remover um e permitido.
+        $this->actingAs($organizer, 'painel')->delete(route('admin.team.destroy', $outro))
+            ->assertSessionHasNoErrors();
+
+        // Agora so resta um: o staff nao serve de substituto.
+        $this->staff();
+        $this->actingAs($organizer, 'painel')->delete(route('admin.team.destroy', $organizer))
+            ->assertSessionHasErrors();
     }
 
     public function test_venue_map_can_be_edited_when_there_are_no_sales(): void
@@ -99,7 +138,7 @@ class AdminAccessAndTeamTest extends TestCase
         $session = $this->makeSession(2, 4500);
         $venue = $session->event->venue;
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->post(route('admin.venues.seats.generate', $venue), ['rows' => 2, 'seats_per_row' => 3])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -121,7 +160,7 @@ class AdminAccessAndTeamTest extends TestCase
         $order = app(OrderService::class)->createFromReservation($reservation);
         app(TicketIssuanceService::class)->issueForOrder($order);
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->post(route('admin.venues.seats.generate', $venue), ['rows' => 5, 'seats_per_row' => 5])
             ->assertSessionHasErrors('seats');
     }

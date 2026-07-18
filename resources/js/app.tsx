@@ -13,7 +13,10 @@ createInertiaApp({
         switch (true) {
             case name.startsWith('admin/'):
                 return AdminLayout;
+            // Entradas (comprador e painel) usam a casca enxuta, sem a
+            // navegação da loja.
             case name.startsWith('auth/'):
+            case name.startsWith('painel/'):
                 return AuthLayout;
             // Settings é área do comprador: mesmo header/rodapé, com sub-nav própria.
             case name.startsWith('settings/'):

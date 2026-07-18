@@ -133,6 +133,7 @@ export function AdminEventsTable({
                     if (removing) {
                         router.delete(`/painel/eventos/${removing.id}`);
                     }
+
                     setRemoving(null);
                 }}
             />

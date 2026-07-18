@@ -88,6 +88,7 @@ export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow
                         <tbody>
                             {coupons.data.map((c) => {
                                 const exhausted = c.maxUses !== null && c.used >= c.maxUses;
+
                                 return (
                                 <tr key={c.id} className="border-b border-border last:border-b-0 hover:bg-surface-2">
                                     <td className="px-4 py-3 font-mono font-semibold text-foreground">{c.code}</td>
@@ -155,6 +156,7 @@ export default function AdminCoupons({ coupons }: { coupons: Paginator<CouponRow
                             preserveScroll: true,
                         });
                     }
+
                     setRemoving(null);
                 }}
             />

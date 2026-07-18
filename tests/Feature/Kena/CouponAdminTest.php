@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\Coupon;
+use App\Models\PanelUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,9 +14,9 @@ class CouponAdminTest extends TestCase
 
     public function test_organizer_creates_percent_coupon(): void
     {
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->post(route('admin.coupons.store'), [
                 'code' => 'promo20',
                 'type' => 'percent',
@@ -31,9 +32,9 @@ class CouponAdminTest extends TestCase
 
     public function test_organizer_creates_fixed_coupon_in_reais(): void
     {
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->post(route('admin.coupons.store'), [
                 'code' => 'menos15',
                 'type' => 'fixed',
@@ -48,8 +49,8 @@ class CouponAdminTest extends TestCase
 
     public function test_buyer_cannot_access_coupons(): void
     {
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->get(route('admin.coupons'))->assertForbidden();
+        $this->actingAs($buyer)->get(route('admin.coupons'))->assertRedirect(route('painel.login'));
     }
 }

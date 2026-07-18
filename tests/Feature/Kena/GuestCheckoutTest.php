@@ -35,7 +35,6 @@ class GuestCheckoutTest extends TestCase
 
         $user = User::where('email', 'joao@guest.test')->firstOrFail();
         $this->assertNull($user->password);
-        $this->assertSame(User::ROLE_BUYER, $user->role);
         $this->assertSame(self::VALID_CPF, $user->cpf);
         $this->assertSame(1, Reservation::where('user_id', $user->id)->count());
     }

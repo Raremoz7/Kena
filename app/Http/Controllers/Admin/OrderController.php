@@ -118,5 +118,4 @@ class OrderController extends Controller
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
-
 }

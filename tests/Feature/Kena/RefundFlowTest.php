@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Mail\RefundConfirmedMail;
 use App\Models\Order;
+use App\Models\PanelUser;
 use App\Models\SessionSeat;
 use App\Models\User;
 use App\Services\OrderService;
@@ -63,9 +64,9 @@ class RefundFlowTest extends TestCase
     public function test_organizer_can_refund_anytime(): void
     {
         $order = $this->paidOrder(now()->addHour()); // prazo do comprador encerrado
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->post(route('admin.orders.refund', $order))
             ->assertRedirect();
 

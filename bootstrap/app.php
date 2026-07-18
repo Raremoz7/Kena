@@ -26,6 +26,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'can-organize' => EnsureCanManageOrganization::class,
         ]);
 
+        // Sem sessão de painel, /painel/* vai para o login do painel — nunca
+        // para o /login do comprador, que é outro guard.
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => $request->is('painel', 'painel/*')
+                ? route('painel.login')
+                : route('login'),
+        );
+
         // Webhooks externos não enviam token CSRF.
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })

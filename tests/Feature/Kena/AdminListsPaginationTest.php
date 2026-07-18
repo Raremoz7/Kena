@@ -4,7 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Models\Coupon;
 use App\Models\Event;
-use App\Models\User;
+use App\Models\PanelUser;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -24,9 +24,9 @@ class AdminListsPaginationTest extends TestCase
 
     private const PER_PAGE = 25;
 
-    private function organizer(): User
+    private function organizer(): PanelUser
     {
-        return User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        return PanelUser::factory()->create();
     }
 
     public function test_coupons_are_paginated(): void
@@ -40,7 +40,7 @@ class AdminListsPaginationTest extends TestCase
             ]);
         }
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->get(route('admin.coupons'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
@@ -48,7 +48,7 @@ class AdminListsPaginationTest extends TestCase
                 ->has('coupons.data', self::PER_PAGE)
                 ->has('coupons.links'));
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->get(route('admin.coupons', ['page' => 2]))
             ->assertInertia(fn (Assert $p) => $p->has('coupons.data', 5));
     }
@@ -59,7 +59,7 @@ class AdminListsPaginationTest extends TestCase
             Venue::create(['name' => 'Local '.Str::padLeft((string) $i, 2, '0'), 'city' => 'Brasília', 'state' => 'DF']);
         }
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->get(route('admin.venues'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
@@ -70,9 +70,9 @@ class AdminListsPaginationTest extends TestCase
 
     public function test_team_members_are_paginated(): void
     {
-        User::factory()->count(30)->create(['role' => User::ROLE_STAFF]);
+        PanelUser::factory()->count(30)->staff()->create();
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->get(route('admin.team'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
@@ -91,7 +91,7 @@ class AdminListsPaginationTest extends TestCase
 
         $organizer = $this->organizer();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.events'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
@@ -100,7 +100,7 @@ class AdminListsPaginationTest extends TestCase
                 ->has('events.links'));
 
         // Overview: resumo com no máximo 8 linhas, sem envelope de paginator.
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('painel'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p
@@ -113,7 +113,7 @@ class AdminListsPaginationTest extends TestCase
     {
         $session = $this->makeSession(3);
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->get(route('admin.events'))
             ->assertInertia(fn (Assert $p) => $p
                 ->where('events.data.0.capacity', 3)

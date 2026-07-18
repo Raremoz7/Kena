@@ -3,7 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\EventSession;
-use App\Models\User;
+use App\Models\PanelUser;
 use App\Support\SessionOptionsCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -21,9 +21,9 @@ class SessionOptionsCacheTest extends TestCase
     use MakesKenaData;
     use RefreshDatabase;
 
-    private function organizer(): User
+    private function organizer(): PanelUser
     {
-        return User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        return PanelUser::factory()->create();
     }
 
     public function test_creating_a_session_invalidates_the_dropdown(): void
@@ -32,7 +32,7 @@ class SessionOptionsCacheTest extends TestCase
         $organizer = $this->organizer();
 
         // Primeira visita popula o cache.
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.orders'))
             ->assertInertia(fn (Assert $p) => $p->component('admin/orders')->has('sessions', 1));
 
@@ -42,7 +42,7 @@ class SessionOptionsCacheTest extends TestCase
             'status' => 'on_sale',
         ]);
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.orders'))
             ->assertInertia(fn (Assert $p) => $p->has('sessions', 2));
     }
@@ -52,11 +52,11 @@ class SessionOptionsCacheTest extends TestCase
         $session = $this->makeSession(1);
         $organizer = $this->organizer();
 
-        $this->actingAs($organizer)->get(route('admin.orders'));
+        $this->actingAs($organizer, 'painel')->get(route('admin.orders'));
 
         $session->delete();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.orders'))
             ->assertInertia(fn (Assert $p) => $p->has('sessions', 0));
     }
@@ -66,11 +66,11 @@ class SessionOptionsCacheTest extends TestCase
         $session = $this->makeSession(1);
         $organizer = $this->organizer();
 
-        $this->actingAs($organizer)->get(route('admin.orders'));
+        $this->actingAs($organizer, 'painel')->get(route('admin.orders'));
 
         $session->event->update(['title' => 'Título Renomeado']);
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.orders'))
             ->assertInertia(fn (Assert $p) => $p->where(
                 'sessions.0.label',
@@ -86,7 +86,7 @@ class SessionOptionsCacheTest extends TestCase
         Cache::forget(SessionOptionsCache::KEY);
         $this->assertFalse(Cache::has(SessionOptionsCache::KEY));
 
-        $this->actingAs($organizer)->get(route('admin.orders'));
+        $this->actingAs($organizer, 'painel')->get(route('admin.orders'));
 
         $this->assertTrue(Cache::has(SessionOptionsCache::KEY));
     }

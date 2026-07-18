@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Kena;
 
+use App\Models\PanelUser;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\MailSettings;
@@ -16,9 +17,9 @@ class SettingsPanelTest extends TestCase
 
     public function test_saving_mail_settings_persists_and_applies_to_mailer(): void
     {
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)->post('/painel/config', [
+        $this->actingAs($organizer, 'painel')->post('/painel/config', [
             'mail_host' => 'smtp.test.com',
             'mail_port' => 587,
             'mail_username' => 'u@test.com',
@@ -39,9 +40,9 @@ class SettingsPanelTest extends TestCase
 
     public function test_settings_page_exposes_checklist_and_webhook_url(): void
     {
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.settings'))
             ->assertInertia(fn (Assert $p) => $p
                 ->component('admin/settings')
@@ -54,17 +55,17 @@ class SettingsPanelTest extends TestCase
 
     public function test_buyer_cannot_open_settings(): void
     {
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->get(route('admin.settings'))->assertForbidden();
+        $this->actingAs($buyer)->get(route('admin.settings'))->assertRedirect(route('painel.login'));
     }
 
     public function test_organizer_can_send_test_email(): void
     {
         Mail::fake();
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER, 'email' => 'op@test.com']);
+        $organizer = PanelUser::factory()->create(['email' => 'op@test.com']);
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->postJson(route('admin.settings.test-mail'))
             ->assertOk()
             ->assertJson(['message' => 'E-mail de teste enviado para op@test.com.']);
@@ -72,8 +73,8 @@ class SettingsPanelTest extends TestCase
 
     public function test_buyer_cannot_send_test_email(): void
     {
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertForbidden();
+        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\Order;
+use App\Models\PanelUser;
 use App\Models\User;
 use App\Services\OrderService;
 use App\Services\SeatReservationService;
@@ -34,15 +35,15 @@ class OrdersPanelTest extends TestCase
     public function test_organizer_sees_orders_and_exports_attendees_csv(): void
     {
         $order = $this->aPaidOrder();
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
         $ticket = $order->tickets()->firstOrFail();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get(route('admin.orders'))
             ->assertOk()
             ->assertInertia(fn (Assert $p) => $p->component('admin/orders')->has('orders.data', 1));
 
-        $response = $this->actingAs($organizer)->get(route('admin.orders.export'));
+        $response = $this->actingAs($organizer, 'painel')->get(route('admin.orders.export'));
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
@@ -54,8 +55,8 @@ class OrdersPanelTest extends TestCase
 
     public function test_buyer_cannot_access_orders_panel(): void
     {
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->get(route('admin.orders'))->assertForbidden();
+        $this->actingAs($buyer)->get(route('admin.orders'))->assertRedirect(route('painel.login'));
     }
 }

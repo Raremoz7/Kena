@@ -88,7 +88,7 @@ class CheckInController extends Controller
         /** @var Ticket $ticket */
         $ticket = Ticket::findOrFail((int) $data['ticket_id']);
 
-        return response()->json($this->checkins->admit($ticket, $session, $request->user()));
+        return response()->json($this->checkins->admit($ticket, $session, $request->user('painel')));
     }
 
     public function scan(Request $request): JsonResponse
@@ -100,7 +100,7 @@ class CheckInController extends Controller
 
         /** @var EventSession $session */
         $session = EventSession::findOrFail((int) $data['session_id']);
-        $result = $this->checkins->check($data['token'], $session, $request->user());
+        $result = $this->checkins->check($data['token'], $session, $request->user('painel'));
 
         return response()->json($result);
     }

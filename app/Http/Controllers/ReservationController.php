@@ -53,7 +53,7 @@ class ReservationController extends Controller
         }
 
         try {
-            $reservation = $this->reservations->hold($session, $request->user(), $validated['seats']);
+            $reservation = $this->reservations->hold($session, $request->user('web'), $validated['seats']);
         } catch (SeatConflictException $e) {
             return back()->withErrors([
                 'seats' => $e->seatCodes === []

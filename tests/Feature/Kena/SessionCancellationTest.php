@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Mail\RefundConfirmedMail;
 use App\Models\Order;
+use App\Models\PanelUser;
 use App\Models\SessionSeat;
 use App\Models\User;
 use App\Services\OrderService;
@@ -34,8 +35,8 @@ class SessionCancellationTest extends TestCase
         }
         $this->assertSame(2, SessionSeat::where('status', SessionSeat::STATUS_SOLD)->count());
 
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
-        $this->actingAs($organizer)
+        $organizer = PanelUser::factory()->create();
+        $this->actingAs($organizer, 'painel')
             ->post(route('admin.sessions.cancel', $session))
             ->assertRedirect();
 
