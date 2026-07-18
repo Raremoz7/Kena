@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
-use App\Models\User;
+use App\Services\Payments\MercadoPagoDiagnostic;
 use App\Support\GoogleWalletSettings;
 use App\Support\MailSettings;
 use App\Support\MercadoPagoSettings;
@@ -40,6 +40,7 @@ class SettingsController extends Controller
             ],
             'webhookUrl' => route('webhooks.mercadopago'),
             'testMailUrl' => route('admin.settings.test-mail'),
+            'testMpUrl' => route('admin.settings.test-mp'),
             'setup' => [
                 'mpAccessToken' => filled(MercadoPagoSettings::accessToken()),
                 'mpPublicKey' => filled(MercadoPagoSettings::publicKey()),
@@ -104,12 +105,18 @@ class SettingsController extends Controller
     }
 
     /** Envia um e-mail de teste (síncrono) para o próprio organizador, com a config salva. */
+    /** Diagnostico da integracao com o Mercado Pago — so leitura, sem cobranca. */
+    public function testMercadoPago(MercadoPagoDiagnostic $diagnostic): JsonResponse
+    {
+        return response()->json($diagnostic->run());
+    }
+
     public function testMail(): JsonResponse
     {
         MailSettings::apply();
 
-        /** @var User $user */
-        $user = Auth::user();
+        // Guard explicito: o padrao e o do comprador, que nunca esta logado aqui.
+        $user = Auth::guard('painel')->user();
         $to = (string) $user->email;
 
         try {
