@@ -80,7 +80,7 @@ class TicketController extends Controller
         ]);
 
         try {
-            $transfers->transfer($ticket, $request->user(), $data['email']);
+            $transfers->transfer($ticket, $request->user('web'), $data['email']);
         } catch (TransferException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

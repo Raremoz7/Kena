@@ -103,6 +103,7 @@ export default function AdminVenues({ venues }: { venues: Paginator<VenueRow> })
                             preserveScroll: true,
                         });
                     }
+
                     setRemoving(null);
                 }}
             />

@@ -39,7 +39,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
+                // Comprador (guard web) e conta de painel (guard painel) sao
+                // independentes — os dois podem estar nulos ao mesmo tempo.
                 'user' => $request->user(),
+                'panelUser' => $request->user('painel'),
             ],
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [

@@ -7,15 +7,14 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Restringe o painel à equipe (organizer/staff ou admin).
+ * Restringe o painel a quem tem conta de painel (organizador ou staff).
+ * Comprador logado não passa: são guards distintos.
  */
 class EnsureCanManage
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        if (! $user || ! ($user->canManageEvents() || $user->is_admin)) {
+        if (! $request->user('painel')) {
             abort(403, 'Acesso restrito à equipe.');
         }
 

@@ -2,10 +2,10 @@
 
 namespace App\Support;
 
-use chillerlan\QRCode\QROptions;
 use chillerlan\QRCode\Data\QRMatrix;
 use chillerlan\QRCode\Output\QRCodeOutputException;
 use chillerlan\QRCode\Output\QRGdImagePNG;
+use chillerlan\QRCode\QROptions;
 use chillerlan\Settings\SettingsContainerInterface;
 
 /**
@@ -133,7 +133,7 @@ final class KenaQrRenderer extends QRGdImagePNG
         );
     }
 
-    public function dump(string|null $file = null, string|null $logo = null): string
+    public function dump(?string $file = null, ?string $logo = null): string
     {
         $logo ??= public_path(self::DEFAULT_LOGO_PATH);
 

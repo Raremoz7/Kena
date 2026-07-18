@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\Event;
+use App\Models\PanelUser;
 use App\Models\Seat;
 use App\Models\User;
 use App\Models\Venue;
@@ -19,16 +20,16 @@ class VenueSeatImportTest extends TestCase
         return Venue::create(['name' => 'Novo Teatro', 'city' => 'SP', 'state' => 'SP']);
     }
 
-    private function organizer(): User
+    private function organizer(): PanelUser
     {
-        return User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        return PanelUser::factory()->create();
     }
 
     public function test_generate_grid_creates_seats(): void
     {
         $venue = $this->venue();
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->post(route('admin.venues.seats.generate', $venue), ['rows' => 3, 'seats_per_row' => 4])
             ->assertRedirect();
 
@@ -46,7 +47,7 @@ class VenueSeatImportTest extends TestCase
         ]);
         $file = UploadedFile::fake()->createWithContent('map.json', (string) $json);
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->post(route('admin.venues.seats.import', $venue), ['file' => $file])
             ->assertRedirect();
 
@@ -62,7 +63,7 @@ class VenueSeatImportTest extends TestCase
             'kicker' => 'x', 'description' => 'd', 'status' => 'on_sale',
         ]);
 
-        $this->actingAs($this->organizer())
+        $this->actingAs($this->organizer(), 'painel')
             ->post(route('admin.venues.seats.generate', $venue), ['rows' => 2, 'seats_per_row' => 2])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -73,10 +74,9 @@ class VenueSeatImportTest extends TestCase
     public function test_buyer_cannot_import(): void
     {
         $venue = $this->venue();
-        $buyer = User::factory()->create(['role' => User::ROLE_BUYER]);
+        $buyer = User::factory()->create();
 
         $this->actingAs($buyer)
-            ->post(route('admin.venues.seats.generate', $venue), ['rows' => 2, 'seats_per_row' => 2])
-            ->assertForbidden();
+            ->post(route('admin.venues.seats.generate', $venue), ['rows' => 2, 'seats_per_row' => 2])->assertRedirect(route('painel.login'));
     }
 }

@@ -47,7 +47,6 @@ class TicketTransferService
             $recipient = User::create([
                 'email' => $email,
                 'name' => $this->nameFromEmail($email),
-                'role' => User::ROLE_BUYER,
                 'email_verified_at' => now(),
             ]);
         }

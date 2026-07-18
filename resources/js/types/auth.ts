@@ -10,8 +10,21 @@ export type User = {
     [key: string]: unknown;
 };
 
+/** Conta do painel (organizador/staff) — guard próprio, fora de `users`. */
+export type PanelUser = {
+    id: number;
+    name: string;
+    email: string;
+    role: 'organizer' | 'staff';
+    created_at: string;
+    updated_at: string;
+    [key: string]: unknown;
+};
+
+/** Comprador e painel são independentes: os dois podem ser nulos ao mesmo tempo. */
 export type Auth = {
-    user: User;
+    user: User | null;
+    panelUser: PanelUser | null;
 };
 
 /* @chisel-passkeys */

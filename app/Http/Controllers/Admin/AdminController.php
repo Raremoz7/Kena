@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionSeat;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +21,7 @@ class AdminController extends Controller
     public function overview(): Response|RedirectResponse
     {
         // Staff não vê receita/ocupação — vai direto pro check-in.
-        if (! Auth::user()->canManageOrganization()) {
+        if (! Auth::guard('painel')->user()?->canManageOrganization()) {
             return redirect()->route('admin.checkin');
         }
 
@@ -65,12 +66,12 @@ class AdminController extends Controller
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Event>|\Illuminate\Database\Eloquent\Collection<int, Event>  $events
+     * @param  Collection<int, Event>|\Illuminate\Database\Eloquent\Collection<int, Event>  $events
      * @return array<int, array<string, mixed>>
      */
     private function rowsFor($events): array
     {
-        $sessionIds = $events->flatMap(fn (Event $e): \Illuminate\Support\Collection => $e->sessions->pluck('id'));
+        $sessionIds = $events->flatMap(fn (Event $e): Collection => $e->sessions->pluck('id'));
 
         // Uma query agregada por status em vez de 2 counts por evento (evita N+1).
         $capacityBySession = SessionSeat::query()

@@ -38,7 +38,6 @@ class TicketTransferGuestTest extends TestCase
 
         $recipient = User::where('email', 'novo.titular@guest.test')->firstOrFail();
         $this->assertNull($recipient->password);
-        $this->assertSame(User::ROLE_BUYER, $recipient->role);
         $this->assertSame($recipient->id, $newTicket->user_id);
         $this->assertSame('Novo Titular', $newTicket->holder_name);
 

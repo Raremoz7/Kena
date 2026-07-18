@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\CheckIn;
+use App\Models\PanelUser;
 use App\Models\User;
 use App\Services\CheckInService;
 use App\Services\OrderService;
@@ -21,7 +22,7 @@ class CheckInTest extends TestCase
     {
         $session = $this->makeSession(1, 4500);
         $buyer = User::factory()->create();
-        $operator = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $operator = PanelUser::factory()->create();
 
         $reservation = app(SeatReservationService::class)
             ->hold($session, $buyer, $this->availableSeatIds($session, 1));

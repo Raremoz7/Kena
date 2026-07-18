@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Kena;
 
+use App\Models\PanelUser;
 use App\Models\Setting;
-use App\Models\User;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -38,15 +38,15 @@ class MercadoPagoSettingsTest extends TestCase
 
     public function test_panel_save_then_screen_reflects_value(): void
     {
-        $organizer = User::factory()->create(['role' => User::ROLE_ORGANIZER]);
+        $organizer = PanelUser::factory()->create();
 
-        $this->actingAs($organizer)->post('/painel/config', [
+        $this->actingAs($organizer, 'painel')->post('/painel/config', [
             'mp_public_key' => 'APP_USR-PANEL-KEY',
             'mp_access_token' => 'APP_USR-PANEL-TOKEN',
             'mp_pix_expiration' => 20,
         ])->assertRedirect();
 
-        $this->actingAs($organizer)
+        $this->actingAs($organizer, 'painel')
             ->get('/painel/config')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('mp.publicKey', 'APP_USR-PANEL-KEY')

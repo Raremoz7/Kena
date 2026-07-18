@@ -25,17 +25,21 @@ export function useFlashToasts(): void {
         }
 
         const key = `${flash.success ?? ''}|${flash.warning ?? ''}|${flash.error ?? ''}`;
+
         if (key === '|' || key === last.current) {
             return;
         }
+
         last.current = key;
 
         if (flash.success) {
             veludoToast.success(flash.success);
         }
+
         if (flash.warning) {
             veludoToast.warning(flash.warning);
         }
+
         if (flash.error) {
             veludoToast.error(flash.error);
         }

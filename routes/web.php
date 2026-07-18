@@ -16,6 +16,7 @@ use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dev\MailPreviewController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
@@ -53,8 +54,10 @@ Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::clas
 // Magic-link (login sem senha por e-mail, assinado)
 Route::get('/entrar/{user}', [MagicLoginController::class, 'login'])->name('magic-login')->middleware('signed');
 
-// Autenticado (Fortify ou conta leve do convidado) — checkout / ingressos
-Route::middleware(['auth'])->group(function () {
+// Autenticado como comprador — checkout / ingressos. O guard é explícito:
+// com dois guards no sistema, 'auth' sozinho resolveria o padrão e deixaria
+// uma conta de painel entrar aqui.
+Route::middleware(['auth:web'])->group(function () {
     Route::delete('/reservas/{reservation}', [ReservationController::class, 'release'])
         ->name('reservations.release');
 
@@ -76,8 +79,17 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/dev/mail-preview/{type}', [MailPreviewController::class, 'show'])
     ->name('dev.mail-preview');
 
+// Login do painel — guard próprio, independente do login do comprador.
+Route::middleware('guest:painel')->group(function () {
+    Route::get('/painel/login', [PanelLoginController::class, 'show'])->name('painel.login');
+    Route::post('/painel/login', [PanelLoginController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('painel.login.store');
+});
+Route::post('/painel/logout', [PanelLoginController::class, 'destroy'])->name('painel.logout');
+
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
-Route::middleware(['auth', 'can-manage'])->group(function () {
+Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
 
     // Check-in scanner (staff + organizer)
@@ -126,8 +138,8 @@ Route::middleware(['auth', 'can-manage'])->group(function () {
         // Equipe (organizadores e staff)
         Route::get('/painel/equipe', [TeamController::class, 'index'])->name('admin.team');
         Route::post('/painel/equipe', [TeamController::class, 'store'])->name('admin.team.store');
-        Route::put('/painel/equipe/{user}', [TeamController::class, 'update'])->name('admin.team.update');
-        Route::delete('/painel/equipe/{user}', [TeamController::class, 'destroy'])->name('admin.team.destroy');
+        Route::put('/painel/equipe/{panelUser}', [TeamController::class, 'update'])->name('admin.team.update');
+        Route::delete('/painel/equipe/{panelUser}', [TeamController::class, 'destroy'])->name('admin.team.destroy');
 
         Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
