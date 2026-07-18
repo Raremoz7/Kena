@@ -144,6 +144,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
         Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
+        Route::post('/painel/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('admin.settings.test-mp');
     });
 });
 
