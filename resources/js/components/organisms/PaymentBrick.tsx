@@ -11,6 +11,7 @@ export interface CardFields {
     exp: string;
     cvv: string;
     name: string;
+    document: string;
     installments: number;
 }
 
@@ -24,7 +25,42 @@ interface InstallmentOption {
     label: string;
 }
 
-export type CardErrors = Partial<Record<'number' | 'exp' | 'cvv' | 'name', string>>;
+export type CardErrors = Partial<
+    Record<'number' | 'exp' | 'cvv' | 'name' | 'document', string>
+>;
+
+/** Agrupa os dígitos do cartão em blocos de 4 (máx. 19 dígitos). */
+function maskCardNumber(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 19);
+
+    return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+/** Formata a validade como MM/AA, inserindo a barra sozinha. */
+function maskExpiry(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 4);
+
+    if (digits.length <= 2) {
+        return digits;
+    }
+
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
+/** Mantém só dígitos no CVV (3 ou 4). */
+function maskCvv(value: string): string {
+    return value.replace(/\D/g, '').slice(0, 4);
+}
+
+/** Formata o CPF como 000.000.000-00. */
+function maskCpf(value: string): string {
+    const d = value.replace(/\D/g, '').slice(0, 11);
+
+    return d
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
 
 interface PaymentBrickProps {
     method: PaymentMethod;
@@ -34,6 +70,8 @@ interface PaymentBrickProps {
     installmentOptions: InstallmentOption[];
     pix: PixData | null;
     errors?: CardErrors;
+    /** Pede o CPF do pagador (comprador sem CPF cadastrado). */
+    needsDocument?: boolean;
 }
 
 function TabBtn({
@@ -81,6 +119,7 @@ export function PaymentBrick({
     installmentOptions,
     pix,
     errors,
+    needsDocument,
 }: PaymentBrickProps) {
     return (
         <div>
@@ -116,7 +155,9 @@ export function PaymentBrick({
                                 placeholder="0000 0000 0000 0000"
                                 value={card.number}
                                 onChange={(e) =>
-                                    onCardChange({ number: e.target.value })
+                                    onCardChange({
+                                        number: maskCardNumber(e.target.value),
+                                    })
                                 }
                             />
                             <Icon
@@ -139,7 +180,9 @@ export function PaymentBrick({
                                 autoComplete="cc-exp"
                                 value={card.exp}
                                 onChange={(e) =>
-                                    onCardChange({ exp: e.target.value })
+                                    onCardChange({
+                                        exp: maskExpiry(e.target.value),
+                                    })
                                 }
                             />
                         </FormField>
@@ -155,7 +198,7 @@ export function PaymentBrick({
                                 autoComplete="cc-csc"
                                 value={card.cvv}
                                 onChange={(e) =>
-                                    onCardChange({ cvv: e.target.value })
+                                    onCardChange({ cvv: maskCvv(e.target.value) })
                                 }
                             />
                         </FormField>
@@ -175,6 +218,26 @@ export function PaymentBrick({
                             }
                         />
                     </FormField>
+                    {needsDocument && (
+                        <FormField
+                            label="CPF do titular"
+                            htmlFor="cc-doc"
+                            error={errors?.document}
+                            helper="Exigido pelo Mercado Pago para pagamento com cartão."
+                        >
+                            <Input
+                                id="cc-doc"
+                                inputMode="numeric"
+                                placeholder="000.000.000-00"
+                                value={card.document}
+                                onChange={(e) =>
+                                    onCardChange({
+                                        document: maskCpf(e.target.value),
+                                    })
+                                }
+                            />
+                        </FormField>
+                    )}
                     <FormField label="Parcelas" htmlFor="cc-inst">
                         <select
                             id="cc-inst"

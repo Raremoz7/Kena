@@ -6,7 +6,9 @@ use App\Exceptions\CouponExhaustedException;
 use App\Exceptions\PaymentException;
 use App\Models\Order;
 use App\Models\Reservation;
+use App\Rules\ValidCpf;
 use App\Services\CouponService;
+use App\Services\Payments\PaymentResult;
 use App\Services\PaymentService;
 use App\Services\PricingService;
 use App\Support\MercadoPagoSettings;
@@ -29,7 +31,7 @@ class CheckoutController extends Controller
 
     public function show(Reservation $reservation): Response|RedirectResponse
     {
-        $reservation->loadMissing('session.event');
+        $reservation->loadMissing('session.event', 'user');
 
         if ($reservation->user_id !== Auth::id()) {
             abort(403);
@@ -67,6 +69,9 @@ class CheckoutController extends Controller
             'releaseUrl' => route('reservations.release', $reservation),
             'mpPublicKey' => MercadoPagoSettings::publicKey(),
             'pendingPayment' => $pendingPayment,
+            // Comprador sem CPF cadastrado precisa informar no checkout —
+            // o Mercado Pago exige o documento do pagador no cartão.
+            'needsDocument' => blank($reservation->user->cpf),
         ]);
     }
 
@@ -94,6 +99,11 @@ class CheckoutController extends Controller
     public function pay(Request $request, Reservation $reservation): JsonResponse
     {
         $this->ensureOwnerActive($reservation);
+        $reservation->loadMissing('user');
+
+        // CPF é obrigatório no cartão quando o comprador ainda não tem um
+        // cadastrado — o Mercado Pago exige o documento do pagador.
+        $requiresCpf = ($request->input('method') === 'card') && blank($reservation->user->cpf);
 
         $data = $request->validate([
             'method' => ['required', Rule::in(['card', 'pix'])],
@@ -101,16 +111,16 @@ class CheckoutController extends Controller
             'token' => ['required_if:method,card', 'string'],
             'installments' => ['nullable', 'integer', 'min:1', 'max:12'],
             'payment_method_id' => ['nullable', 'string'],
+            'document' => [$requiresCpf ? 'required' : 'nullable', 'string', new ValidCpf],
         ]);
 
         try {
             $order = $this->payments->pay($reservation, $data);
         } catch (CouponExhaustedException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
-        } catch (PaymentException) {
-            return response()->json([
-                'message' => 'Não foi possível processar o pagamento. Confira os dados e tente novamente.',
-            ], 422);
+        } catch (PaymentException $e) {
+            // A mensagem do gateway já é segura e amigável (traduzida no adapter).
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         return response()->json($this->orderStatusPayload($order));
@@ -144,11 +154,19 @@ class CheckoutController extends Controller
             ];
         }
 
+        // Motivo amigável da recusa (cartão) pro comprador saber o que corrigir.
+        $failureReason = null;
+        if ($order->status === Order::STATUS_FAILED && is_array($payment?->payload)) {
+            $detail = $payment->payload['status_detail'] ?? null;
+            $failureReason = PaymentResult::friendlyStatusDetail(is_string($detail) ? $detail : null);
+        }
+
         return [
             'status' => $order->status, // pending | paid | failed | cancelled | refunded
             'orderReference' => $order->reference,
             'redirect' => $order->status === Order::STATUS_PAID ? route('tickets.index') : null,
             'pix' => $pix,
+            'failureReason' => $failureReason,
             // Prazo REAL da reserva (o Pix estende o hold) — o countdown do front usa isso.
             'reservationExpiresAt' => $order->reservation?->expires_at?->toIso8601String(),
         ];

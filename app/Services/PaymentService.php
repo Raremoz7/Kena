@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\SessionSeat;
+use App\Models\User;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
 use Carbon\CarbonInterface;
@@ -31,7 +32,7 @@ class PaymentService
     /**
      * Cria o pedido a partir da reserva e dispara o pagamento.
      *
-     * @param  array{method?: string, token?: string, installments?: int, payment_method_id?: string, coupon_code?: string}  $input
+     * @param  array{method?: string, token?: string, installments?: int, payment_method_id?: string, coupon_code?: string, document?: string}  $input
      */
     public function pay(Reservation $reservation, array $input): Order
     {
@@ -64,7 +65,7 @@ class PaymentService
 
         $order->loadMissing('user');
         $email = (string) $order->user->email;
-        $doc = $order->user->cpf;
+        $doc = $this->resolvePayerDocument($order, $input['document'] ?? null);
 
         $method = ($input['method'] ?? 'card') === Payment::METHOD_PIX
             ? Payment::METHOD_PIX
@@ -169,6 +170,34 @@ class PaymentService
                 ));
             }
         }
+    }
+
+    /**
+     * CPF do pagador: usa o que já está no cadastro; se faltar e o comprador
+     * informou um no checkout, persiste (o Mercado Pago exige CPF no cartão).
+     */
+    private function resolvePayerDocument(Order $order, ?string $informed): ?string
+    {
+        $existing = $order->user->cpf;
+        if ($existing !== null && $existing !== '') {
+            return $existing;
+        }
+
+        $digits = $informed !== null ? preg_replace('/\D/', '', $informed) : null;
+        if ($digits === null || strlen($digits) !== 11) {
+            return null;
+        }
+
+        // Não sobrescreve o CPF de outra conta (coluna única) — só grava se livre.
+        $takenByOther = User::query()
+            ->where('cpf', $digits)
+            ->whereKeyNot($order->user->getKey())
+            ->exists();
+        if (! $takenByOther) {
+            $order->user->forceFill(['cpf' => $digits])->save();
+        }
+
+        return $digits;
     }
 
     private function extendHold(Reservation $reservation, CarbonInterface $until): void
