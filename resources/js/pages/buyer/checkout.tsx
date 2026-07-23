@@ -13,9 +13,9 @@ import type {
     PixData,
 } from '@/components/organisms/PaymentBrick';
 import { api, ApiError } from '@/lib/veludo/api';
-import { createMercadoPago } from '@/lib/veludo/mercadopago';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { PriceLine, ReservationInfo } from '@/lib/veludo/types';
+import { useSecureCardFields } from '@/lib/veludo/useSecureCardFields';
 
 interface PriceSummary {
     lines: PriceLine[];
@@ -23,13 +23,7 @@ interface PriceSummary {
 }
 
 interface PayResponse {
-    status:
-        | 'pending'
-        | 'paid'
-        | 'failed'
-        | 'cancelled'
-        | 'refunded'
-        | 'none';
+    status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'none';
     orderReference?: string;
     redirect: string | null;
     pix: (PixData & { expiresAt?: string | null }) | null;
@@ -83,34 +77,12 @@ function isValidCpf(raw: string): boolean {
     return true;
 }
 
-/** Validação client-side dos campos de cartão antes de tokenizar no MP. */
+/**
+ * Validação dos campos NÃO sensíveis (nome/CPF). Número, validade e CVV são
+ * validados pelo próprio Mercado Pago dentro dos Secure Fields.
+ */
 function validateCard(card: CardFields, needsDocument: boolean): CardErrors {
     const errors: CardErrors = {};
-
-    const number = card.number.replace(/\D/g, '');
-
-    if (!number) {
-        errors.number = 'Informe o número do cartão.';
-    } else if (number.length < 13 || number.length > 19) {
-        errors.number = 'Número de cartão inválido.';
-    }
-
-    const exp = card.exp.trim();
-    const match = exp.match(/^(\d{2})\/(\d{2})$/);
-
-    if (!exp) {
-        errors.exp = 'Informe a validade.';
-    } else if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) {
-        errors.exp = 'Validade inválida (MM/AA).';
-    }
-
-    const cvv = card.cvv.replace(/\D/g, '');
-
-    if (!cvv) {
-        errors.cvv = 'Informe o CVV.';
-    } else if (cvv.length < 3 || cvv.length > 4) {
-        errors.cvv = 'CVV inválido.';
-    }
 
     if (!card.name.trim()) {
         errors.name = 'Informe o nome impresso no cartão.';
@@ -152,16 +124,16 @@ export default function CheckoutPage({
         restoredPix ? 'pix' : 'card',
     );
     const [card, setCard] = useState<CardFields>({
-        number: '',
-        exp: '',
-        cvv: '',
         name: '',
         document: '',
         installments: 1,
     });
     const [pix, setPix] = useState<PixData | null>(
         restoredPix
-            ? { qrBase64: restoredPix.qrBase64, copyPaste: restoredPix.copyPaste }
+            ? {
+                  qrBase64: restoredPix.qrBase64,
+                  copyPaste: restoredPix.copyPaste,
+              }
             : null,
     );
     const [cardErrors, setCardErrors] = useState<CardErrors>({});
@@ -172,6 +144,13 @@ export default function CheckoutPage({
     // Prazo real do hold — o back estende quando um Pix é gerado.
     const [deadline, setDeadline] = useState(
         pendingPayment?.reservationExpiresAt ?? reservation.expiresAt,
+    );
+
+    // Secure Fields do Mercado Pago (número/validade/CVV em iframes). Só monta
+    // enquanto a aba Cartão está ativa e não há pagamento em andamento.
+    const secureCard = useSecureCardFields(
+        mpPublicKey,
+        method === 'card' && !awaitingPayment,
     );
 
     const installmentOptions = useMemo(() => {
@@ -307,26 +286,50 @@ export default function CheckoutPage({
                 return;
             }
 
-            const mp = await createMercadoPago(mpPublicKey);
-            const [mm, yy] = card.exp.split('/').map((s) => s.trim());
-            const token = await mp.createCardToken({
-                cardNumber: card.number.replace(/\s/g, ''),
-                cardholderName: card.name,
-                cardExpirationMonth: mm ?? '',
-                cardExpirationYear: yy ? `20${yy}` : '',
-                securityCode: card.cvv,
-            });
-            const bin = card.number.replace(/\D/g, '').slice(0, 6);
-            const methods = await mp.getPaymentMethods({ bin });
+            // Campos seguros com erro de validade: destaca e não tokeniza.
+            if (Object.values(secureCard.errors).some(Boolean)) {
+                veludoToast.error(
+                    'Dados do cartão',
+                    'Confira os campos do cartão destacados.',
+                );
+                setSubmitting(false);
+
+                return;
+            }
+
+            const doc = card.document.replace(/\D/g, '');
+            let tokenId: string;
+
+            try {
+                tokenId = await secureCard.createToken({
+                    cardholderName: card.name,
+                    ...(needsDocument
+                        ? {
+                              identificationType: 'CPF',
+                              identificationNumber: doc,
+                          }
+                        : {}),
+                });
+            } catch (tokenError) {
+                veludoToast.error(
+                    'Dados do cartão',
+                    tokenError instanceof Error && tokenError.message
+                        ? tokenError.message
+                        : 'Não foi possível validar o cartão. Confira número, validade e CVV.',
+                );
+                setSubmitting(false);
+
+                return;
+            }
+
+            const paymentMethodId = await secureCard.resolvePaymentMethodId();
 
             const res = await api.post<PayResponse>(payUrl, {
                 method: 'card',
-                token: token.id,
-                payment_method_id: methods.results[0]?.id,
+                token: tokenId,
+                payment_method_id: paymentMethodId,
                 installments: card.installments,
-                document: needsDocument
-                    ? card.document.replace(/\D/g, '')
-                    : undefined,
+                document: needsDocument ? doc : undefined,
                 coupon_code: appliedCoupon ?? undefined,
             });
             handlePay(res);
@@ -425,7 +428,11 @@ export default function CheckoutPage({
                             </button>
                         )}
                         <div className="flex items-center gap-2 rounded-btn border border-border bg-bg px-3 py-1.5">
-                            <Icon name="alert" size={15} className="text-warning" />
+                            <Icon
+                                name="alert"
+                                size={15}
+                                className="text-warning"
+                            />
                             <Countdown
                                 expiresAt={deadline}
                                 onExpire={onExpire}
@@ -481,6 +488,9 @@ export default function CheckoutPage({
                                     installmentOptions={installmentOptions}
                                     pix={pix}
                                     errors={cardErrors}
+                                    secureErrors={secureCard.errors}
+                                    cardReady={secureCard.ready}
+                                    configured={mpPublicKey !== null}
                                     needsDocument={needsDocument}
                                 />
                             </div>

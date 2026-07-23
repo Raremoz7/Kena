@@ -3,13 +3,13 @@ import type { IconName } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { FormField } from '@/components/molecules/FormField';
 import { cn } from '@/lib/utils';
+import { SECURE_FIELD_IDS } from '@/lib/veludo/useSecureCardFields';
+import type { SecureFieldErrors } from '@/lib/veludo/useSecureCardFields';
 
 export type PaymentMethod = 'card' | 'pix';
 
+/** Campos NÃO sensíveis do cartão (os sensíveis vivem nos iframes do MP). */
 export interface CardFields {
-    number: string;
-    exp: string;
-    cvv: string;
     name: string;
     document: string;
     installments: number;
@@ -25,32 +25,7 @@ interface InstallmentOption {
     label: string;
 }
 
-export type CardErrors = Partial<
-    Record<'number' | 'exp' | 'cvv' | 'name' | 'document', string>
->;
-
-/** Agrupa os dígitos do cartão em blocos de 4 (máx. 19 dígitos). */
-function maskCardNumber(value: string): string {
-    const digits = value.replace(/\D/g, '').slice(0, 19);
-
-    return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-}
-
-/** Formata a validade como MM/AA, inserindo a barra sozinha. */
-function maskExpiry(value: string): string {
-    const digits = value.replace(/\D/g, '').slice(0, 4);
-
-    if (digits.length <= 2) {
-        return digits;
-    }
-
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-}
-
-/** Mantém só dígitos no CVV (3 ou 4). */
-function maskCvv(value: string): string {
-    return value.replace(/\D/g, '').slice(0, 4);
-}
+export type CardErrors = Partial<Record<'name' | 'document', string>>;
 
 /** Formata o CPF como 000.000.000-00. */
 function maskCpf(value: string): string {
@@ -69,7 +44,14 @@ interface PaymentBrickProps {
     onCardChange: (patch: Partial<CardFields>) => void;
     installmentOptions: InstallmentOption[];
     pix: PixData | null;
+    /** Erros dos campos não sensíveis (nome/CPF). */
     errors?: CardErrors;
+    /** Erros de validade dos campos seguros (número/validade/CVV). */
+    secureErrors?: SecureFieldErrors;
+    /** Os iframes seguros terminaram de carregar. */
+    cardReady?: boolean;
+    /** O Mercado Pago está configurado (public key presente). */
+    configured?: boolean;
     /** Pede o CPF do pagador (comprador sem CPF cadastrado). */
     needsDocument?: boolean;
 }
@@ -103,12 +85,30 @@ function TabBtn({
     );
 }
 
+/** Contêiner estilizado onde o iframe do campo seguro do MP é montado. */
+function SecureFieldBox({ id, invalid }: { id: string; invalid?: boolean }) {
+    return (
+        <div
+            id={id}
+            className={cn(
+                'h-[46px] w-full rounded-input border bg-bg px-[14px] transition-colors',
+                '[&>iframe]:h-full [&>iframe]:w-full',
+                'focus-within:ring-[3px]',
+                invalid
+                    ? 'border-danger focus-within:border-danger focus-within:ring-danger/20'
+                    : 'border-border-strong focus-within:border-accent focus-within:ring-accent/20',
+            )}
+        />
+    );
+}
+
 function copy(text: string) {
     void navigator.clipboard?.writeText(text);
 }
 
 /**
- * Pagamento (Mercado Pago). Cartão: campos controlados tokenizados no cliente.
+ * Pagamento (Mercado Pago). Cartão: Secure Fields (número/validade/CVV em
+ * iframes do SDK — PCI SAQ A) + nome/CPF/parcelas como campos comuns.
  * Pix: QR + copia-e-cola reais retornados pelo backend após confirmar.
  */
 export function PaymentBrick({
@@ -119,6 +119,9 @@ export function PaymentBrick({
     installmentOptions,
     pix,
     errors,
+    secureErrors,
+    cardReady,
+    configured = true,
     needsDocument,
 }: PaymentBrickProps) {
     return (
@@ -141,122 +144,103 @@ export function PaymentBrick({
             </div>
 
             {method === 'card' ? (
-                <div className="mt-5 flex flex-col gap-4">
-                    <FormField
-                        label="Número do cartão"
-                        htmlFor="cc-number"
-                        error={errors?.number}
-                    >
-                        <div className="relative">
-                            <Input
-                                id="cc-number"
-                                inputMode="numeric"
-                                autoComplete="cc-number"
-                                placeholder="0000 0000 0000 0000"
-                                value={card.number}
-                                onChange={(e) =>
-                                    onCardChange({
-                                        number: maskCardNumber(e.target.value),
-                                    })
-                                }
+                !configured ? (
+                    <p className="mt-5 rounded-card border border-dashed border-border bg-bg px-5 py-6 text-center font-body text-sm text-muted-foreground">
+                        A integração do Mercado Pago ainda não foi configurada.
+                    </p>
+                ) : (
+                    <div className="mt-5 flex flex-col gap-4">
+                        <FormField
+                            label="Número do cartão"
+                            error={secureErrors?.cardNumber}
+                        >
+                            <SecureFieldBox
+                                id={SECURE_FIELD_IDS.cardNumber}
+                                invalid={!!secureErrors?.cardNumber}
                             />
-                            <Icon
-                                name="credit-card"
-                                size={18}
-                                className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-faint"
-                            />
+                        </FormField>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                label="Validade"
+                                error={secureErrors?.expirationDate}
+                            >
+                                <SecureFieldBox
+                                    id={SECURE_FIELD_IDS.expirationDate}
+                                    invalid={!!secureErrors?.expirationDate}
+                                />
+                            </FormField>
+                            <FormField
+                                label="CVV"
+                                error={secureErrors?.securityCode}
+                            >
+                                <SecureFieldBox
+                                    id={SECURE_FIELD_IDS.securityCode}
+                                    invalid={!!secureErrors?.securityCode}
+                                />
+                            </FormField>
                         </div>
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-4">
                         <FormField
-                            label="Validade"
-                            htmlFor="cc-exp"
-                            error={errors?.exp}
+                            label="Nome impresso no cartão"
+                            htmlFor="cc-name"
+                            error={errors?.name}
                         >
                             <Input
-                                id="cc-exp"
-                                placeholder="MM/AA"
-                                inputMode="numeric"
-                                autoComplete="cc-exp"
-                                value={card.exp}
+                                id="cc-name"
+                                placeholder="Como está no cartão"
+                                autoComplete="cc-name"
+                                value={card.name}
+                                onChange={(e) =>
+                                    onCardChange({ name: e.target.value })
+                                }
+                            />
+                        </FormField>
+                        {needsDocument && (
+                            <FormField
+                                label="CPF do titular"
+                                htmlFor="cc-doc"
+                                error={errors?.document}
+                                helper="Exigido pelo Mercado Pago para pagamento com cartão."
+                            >
+                                <Input
+                                    id="cc-doc"
+                                    inputMode="numeric"
+                                    placeholder="000.000.000-00"
+                                    value={card.document}
+                                    onChange={(e) =>
+                                        onCardChange({
+                                            document: maskCpf(e.target.value),
+                                        })
+                                    }
+                                />
+                            </FormField>
+                        )}
+                        <FormField label="Parcelas" htmlFor="cc-inst">
+                            <select
+                                id="cc-inst"
+                                className="w-full rounded-input border border-border-strong bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20"
+                                value={card.installments}
                                 onChange={(e) =>
                                     onCardChange({
-                                        exp: maskExpiry(e.target.value),
+                                        installments: Number(e.target.value),
                                     })
                                 }
-                            />
+                            >
+                                {installmentOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
                         </FormField>
-                        <FormField
-                            label="CVV"
-                            htmlFor="cc-cvv"
-                            error={errors?.cvv}
-                        >
-                            <Input
-                                id="cc-cvv"
-                                placeholder="123"
-                                inputMode="numeric"
-                                autoComplete="cc-csc"
-                                value={card.cvv}
-                                onChange={(e) =>
-                                    onCardChange({ cvv: maskCvv(e.target.value) })
-                                }
-                            />
-                        </FormField>
+
+                        {!cardReady && (
+                            <p className="flex items-center gap-1.5 font-body text-xs text-faint">
+                                <Icon name="shield" size={13} />
+                                Carregando campos seguros do Mercado Pago…
+                            </p>
+                        )}
                     </div>
-                    <FormField
-                        label="Nome impresso no cartão"
-                        htmlFor="cc-name"
-                        error={errors?.name}
-                    >
-                        <Input
-                            id="cc-name"
-                            placeholder="Como está no cartão"
-                            autoComplete="cc-name"
-                            value={card.name}
-                            onChange={(e) =>
-                                onCardChange({ name: e.target.value })
-                            }
-                        />
-                    </FormField>
-                    {needsDocument && (
-                        <FormField
-                            label="CPF do titular"
-                            htmlFor="cc-doc"
-                            error={errors?.document}
-                            helper="Exigido pelo Mercado Pago para pagamento com cartão."
-                        >
-                            <Input
-                                id="cc-doc"
-                                inputMode="numeric"
-                                placeholder="000.000.000-00"
-                                value={card.document}
-                                onChange={(e) =>
-                                    onCardChange({
-                                        document: maskCpf(e.target.value),
-                                    })
-                                }
-                            />
-                        </FormField>
-                    )}
-                    <FormField label="Parcelas" htmlFor="cc-inst">
-                        <select
-                            id="cc-inst"
-                            className="w-full rounded-input border border-border-strong bg-bg px-[14px] py-3 font-body text-sm text-foreground outline-none focus-visible:border-accent focus-visible:ring-[3px] focus-visible:ring-accent/20"
-                            value={card.installments}
-                            onChange={(e) =>
-                                onCardChange({
-                                    installments: Number(e.target.value),
-                                })
-                            }
-                        >
-                            {installmentOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </FormField>
-                </div>
+                )
             ) : (
                 <div className="mt-5 flex flex-col items-center gap-4 rounded-card border border-border bg-bg px-5 py-7 text-center">
                     {pix?.qrBase64 ? (
@@ -295,8 +279,9 @@ export function PaymentBrick({
 
             <p className="mt-4 flex items-start gap-1.5 font-body text-[11px] text-faint">
                 <Icon name="shield" size={14} className="mt-px text-success" />
-                Pagamento criptografado. Os dados do cartão são tokenizados no
-                navegador e não passam pelo nosso servidor.
+                Pagamento criptografado. Os dados do cartão são capturados em
+                campos seguros do Mercado Pago (iframes) e não passam pelo nosso
+                servidor.
             </p>
         </div>
     );
