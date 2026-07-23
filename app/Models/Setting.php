@@ -29,6 +29,9 @@ class Setting extends Model
 
     public static function get(string $key, ?string $default = null): ?string
     {
+        // Mantém o nullsafe: first() pode retornar null em runtime, mesmo o
+        // PHPStan inferindo o contrário.
+        // @phpstan-ignore-next-line nullsafe.neverNull
         return static::query()->where('key', $key)->first()?->value ?? $default;
     }
 

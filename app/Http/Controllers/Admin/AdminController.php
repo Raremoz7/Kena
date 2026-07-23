@@ -58,6 +58,9 @@ class AdminController extends Controller
         // Substitui os itens pelas linhas mapeadas, preservando o envelope (data/links).
         // Não usamos through() porque rowsFor() agrega os assentos de todos os
         // eventos da página numa query só — precisa da coleção inteira de uma vez.
+        // O paginator troca os models Event por linhas-array do Inertia de
+        // propósito; o generics do PHPStan não expressa essa substituição.
+        // @phpstan-ignore-next-line argument.type
         $events->setCollection(collect($this->rowsFor($events->getCollection())));
 
         return Inertia::render('admin/events', [
@@ -98,6 +101,9 @@ class AdminController extends Controller
                     'slug' => $event->slug,
                     'title' => $event->title,
                     'status' => $event->status,
+                    // O PHPDoc da relação `venue` é não-nulável, mas ela pode
+                    // ser nula em runtime; o ternário é intencional.
+                    // @phpstan-ignore-next-line ternary.alwaysTrue
                     'venue' => $event->venue
                         ? trim($event->venue->name.', '.$event->venue->city, ', ')
                         : '—',
