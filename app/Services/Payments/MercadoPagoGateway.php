@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Exceptions\PaymentException;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Carbon;
@@ -30,10 +31,17 @@ class MercadoPagoGateway implements PaymentGateway
             'description' => 'Kena · '.$order->reference,
             'statement_descriptor' => MercadoPagoSettings::statementDescriptor(),
             'external_reference' => $order->reference,
-            'payer' => $this->payer($payerEmail, $payerDoc),
+            // Ingresso com assento: aprova/recusa na hora em vez de segurar o
+            // lugar num cartão "in_process".
+            'binary_mode' => true,
+            'payer' => $this->payer($order, $payerEmail, $payerDoc),
+            'additional_info' => $this->additionalInfo($order),
         ];
         if ($paymentMethodId !== null && $paymentMethodId !== '') {
             $body['payment_method_id'] = $paymentMethodId;
+        }
+        if (($url = $this->notificationUrl()) !== null) {
+            $body['notification_url'] = $url;
         }
 
         $data = $this->post('/v1/payments', $body, $order->reference.'-card');
@@ -51,8 +59,12 @@ class MercadoPagoGateway implements PaymentGateway
             'payment_method_id' => 'pix',
             'external_reference' => $order->reference,
             'date_of_expiration' => now()->addMinutes($minutes)->toIso8601String(),
-            'payer' => $this->payer($payerEmail, $payerDoc),
+            'payer' => $this->payer($order, $payerEmail, $payerDoc),
+            'additional_info' => $this->additionalInfo($order),
         ];
+        if (($url = $this->notificationUrl()) !== null) {
+            $body['notification_url'] = $url;
+        }
 
         $data = $this->post('/v1/payments', $body, $order->reference.'-pix');
 
@@ -99,14 +111,76 @@ class MercadoPagoGateway implements PaymentGateway
     }
 
     /** @return array<string, mixed> */
-    private function payer(string $email, ?string $doc): array
+    private function payer(Order $order, string $email, ?string $doc): array
     {
-        $payer = ['email' => $email];
+        $payer = ['email' => $email] + $this->splitName($order->user->name ?? null);
         if ($doc !== null && $doc !== '') {
             $payer['identification'] = ['type' => 'CPF', 'number' => preg_replace('/\D/', '', $doc)];
         }
 
         return $payer;
+    }
+
+    /**
+     * Nome/sobrenome do pagador — o motor antifraude do MP usa esses campos
+     * para melhorar a taxa de aprovação.
+     *
+     * @return array<string, string>
+     */
+    private function splitName(?string $full): array
+    {
+        $full = trim((string) $full);
+        if ($full === '') {
+            return [];
+        }
+
+        $parts = preg_split('/\s+/', $full) ?: [];
+        $first = (string) array_shift($parts);
+        $last = implode(' ', $parts);
+
+        return array_filter([
+            'first_name' => $first,
+            'last_name' => $last !== '' ? $last : null,
+        ]);
+    }
+
+    /**
+     * Detalhes do pedido (itens + pagador) que otimizam a análise de risco
+     * do Mercado Pago e elevam a taxa de aprovação.
+     *
+     * @return array<string, mixed>
+     */
+    private function additionalInfo(Order $order): array
+    {
+        $order->loadMissing('items', 'session.event');
+        $eventTitle = $order->session->event->title ?? 'Ingresso';
+
+        $items = $order->items
+            ->map(fn (OrderItem $item): array => [
+                'id' => (string) $item->session_seat_id,
+                'title' => $eventTitle,
+                'description' => $item->sector_name.' · '.$item->seat_code,
+                'category_id' => 'tickets',
+                'quantity' => 1,
+                'unit_price' => round($item->price_cents / 100, 2),
+            ])
+            ->all();
+
+        return array_filter([
+            'items' => $items !== [] ? $items : null,
+            'payer' => $this->splitName($order->user->name ?? null) ?: null,
+        ]);
+    }
+
+    /**
+     * URL pública de notificação (webhook). Só envia em HTTPS — em dev o
+     * APP_URL costuma ser http://localhost, que o MP não aceita.
+     */
+    private function notificationUrl(): ?string
+    {
+        $url = route('webhooks.mercadopago');
+
+        return str_starts_with($url, 'https://') ? $url : null;
     }
 
     /**
