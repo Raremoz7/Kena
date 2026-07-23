@@ -14,11 +14,18 @@ final class MailSettings
     /** Aplica as configurações salvas no painel ao config do mailer (se houver). */
     public static function apply(): void
     {
-        if (! Schema::hasTable('settings')) {
+        try {
+            // hasTable() toca o banco: no boot sem banco (ex.: package:discover
+            // antes das migrações) ele lança — cai para o .env.
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+
+            $map = Setting::map();
+        } catch (\Throwable) {
             return;
         }
 
-        $map = Setting::map();
         $host = $map['mail_host'] ?? null;
         if (blank($host)) {
             return; // nada configurado no painel → usa o .env
