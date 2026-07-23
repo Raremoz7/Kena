@@ -395,7 +395,7 @@ export default function CheckoutPage({
 
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
                 <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-                    <section className="order-2 flex flex-col gap-7 lg:order-1">
+                    <section className="order-1 flex flex-col gap-7">
                         <div>
                             <h2 className="kicker text-faint">
                                 Cupom de desconto
@@ -442,7 +442,7 @@ export default function CheckoutPage({
                         </div>
                     </section>
 
-                    <aside className="order-1 lg:sticky lg:top-20 lg:order-2 lg:self-start">
+                    <aside className="order-2 lg:sticky lg:top-20 lg:self-start">
                         <CheckoutPanel
                             reservation={reservation}
                             lines={summary.lines}
