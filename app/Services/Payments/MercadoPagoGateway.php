@@ -120,9 +120,17 @@ class MercadoPagoGateway implements PaymentGateway
             ->post($path, $body);
 
         if ($response->failed()) {
-            $message = $response->json('message') ?? $response->body();
+            // Loga o erro cru do MP (cause + message) pra diagnóstico, sem
+            // expor detalhe técnico ao comprador.
+            Log::warning('Mercado Pago recusou a requisição.', [
+                'path' => $path,
+                'status' => $response->status(),
+                'error' => $response->json('error'),
+                'message' => $response->json('message'),
+                'cause' => $response->json('cause'),
+            ]);
 
-            throw new PaymentException('Mercado Pago recusou a requisição: '.$message);
+            throw new PaymentException($this->friendlyApiError($response->json()));
         }
 
         /** @var array<string, mixed> $json */
@@ -145,7 +153,27 @@ class MercadoPagoGateway implements PaymentGateway
             pixQrBase64: is_array($poi) ? ($poi['qr_code_base64'] ?? null) : null,
             pixCopyPaste: is_array($poi) ? ($poi['qr_code'] ?? null) : null,
             pixExpiresAt: $expiration !== null ? Carbon::parse((string) $expiration) : null,
+            statusDetail: isset($data['status_detail']) ? (string) $data['status_detail'] : null,
         );
+    }
+
+    /**
+     * Converte o erro de API do Mercado Pago (4xx) numa mensagem clara pro
+     * comprador, mapeando as causas mais comuns.
+     *
+     * @param  array<string, mixed>|null  $body
+     */
+    private function friendlyApiError(?array $body): string
+    {
+        $causeCode = (string) ($body['cause'][0]['code'] ?? '');
+
+        // Erros de validação comuns na criação do pagamento.
+        return match ($causeCode) {
+            '2067', '3000', '3001', '3003' => 'Confira os dados do cartão e tente novamente.',
+            '2062', '2063', '2060' => 'Informe um CPF válido para concluir o pagamento.',
+            '4037', '4038' => 'Valor do pagamento inválido.',
+            default => 'Não foi possível processar o pagamento. Confira os dados e tente novamente.',
+        };
     }
 
     private function client(): PendingRequest

@@ -33,6 +33,8 @@ interface PayResponse {
     orderReference?: string;
     redirect: string | null;
     pix: (PixData & { expiresAt?: string | null }) | null;
+    /** Motivo amigável da recusa do cartão (status_detail traduzido). */
+    failureReason?: string | null;
     /** Prazo real da reserva — o Pix estende o hold no servidor. */
     reservationExpiresAt?: string | null;
 }
@@ -45,6 +47,8 @@ interface CheckoutPageProps {
     statusUrl: string;
     releaseUrl: string;
     mpPublicKey: string | null;
+    /** Comprador sem CPF cadastrado precisa informá-lo no checkout. */
+    needsDocument: boolean;
     /** Pagamento pendente vivo (ex.: refresh com Pix aguardando) — restaura QR e polling. */
     pendingPayment: PayResponse | null;
 }
@@ -54,8 +58,33 @@ const brl = new Intl.NumberFormat('pt-BR', {
     currency: 'BRL',
 });
 
+/** Valida o CPF (dígitos verificadores) no cliente. */
+function isValidCpf(raw: string): boolean {
+    const cpf = raw.replace(/\D/g, '');
+
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+        return false;
+    }
+
+    for (let t = 9; t < 11; t++) {
+        let sum = 0;
+
+        for (let i = 0; i < t; i++) {
+            sum += Number(cpf[i]) * (t + 1 - i);
+        }
+
+        const digit = ((10 * sum) % 11) % 10;
+
+        if (Number(cpf[t]) !== digit) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /** Validação client-side dos campos de cartão antes de tokenizar no MP. */
-function validateCard(card: CardFields): CardErrors {
+function validateCard(card: CardFields, needsDocument: boolean): CardErrors {
     const errors: CardErrors = {};
 
     const number = card.number.replace(/\D/g, '');
@@ -87,6 +116,14 @@ function validateCard(card: CardFields): CardErrors {
         errors.name = 'Informe o nome impresso no cartão.';
     }
 
+    if (needsDocument) {
+        if (!card.document.trim()) {
+            errors.document = 'Informe o CPF do titular.';
+        } else if (!isValidCpf(card.document)) {
+            errors.document = 'CPF inválido.';
+        }
+    }
+
     return errors;
 }
 
@@ -98,6 +135,7 @@ export default function CheckoutPage({
     statusUrl,
     releaseUrl,
     mpPublicKey,
+    needsDocument,
     pendingPayment,
 }: CheckoutPageProps) {
     const [summary, setSummary] = useState<PriceSummary>(priceSummary);
@@ -118,6 +156,7 @@ export default function CheckoutPage({
         exp: '',
         cvv: '',
         name: '',
+        document: '',
         installments: 1,
     });
     const [pix, setPix] = useState<PixData | null>(
@@ -195,7 +234,8 @@ export default function CheckoutPage({
         if (res.status === 'failed') {
             veludoToast.error(
                 'Pagamento recusado',
-                'O pagamento não foi aprovado. Tente outro meio.',
+                res.failureReason ??
+                    'O pagamento não foi aprovado. Tente outro meio.',
             );
             setSubmitting(false);
 
@@ -248,7 +288,7 @@ export default function CheckoutPage({
                 return;
             }
 
-            const fieldErrors = validateCard(card);
+            const fieldErrors = validateCard(card, needsDocument);
 
             if (Object.keys(fieldErrors).length > 0) {
                 setCardErrors(fieldErrors);
@@ -284,6 +324,9 @@ export default function CheckoutPage({
                 token: token.id,
                 payment_method_id: methods.results[0]?.id,
                 installments: card.installments,
+                document: needsDocument
+                    ? card.document.replace(/\D/g, '')
+                    : undefined,
                 coupon_code: appliedCoupon ?? undefined,
             });
             handlePay(res);
@@ -326,7 +369,8 @@ export default function CheckoutPage({
                     // Recusado: destrava para tentar outro meio (o hold segue vivo).
                     veludoToast.error(
                         'Pagamento não aprovado',
-                        'Tente novamente com outro meio de pagamento.',
+                        res.failureReason ??
+                            'Tente novamente com outro meio de pagamento.',
                     );
                     setAwaitingPayment(false);
                     setPix(null);
@@ -437,6 +481,7 @@ export default function CheckoutPage({
                                     installmentOptions={installmentOptions}
                                     pix={pix}
                                     errors={cardErrors}
+                                    needsDocument={needsDocument}
                                 />
                             </div>
                         </div>
