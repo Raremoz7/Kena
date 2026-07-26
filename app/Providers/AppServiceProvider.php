@@ -64,11 +64,14 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function overrideMercadoPagoConfig(): void
     {
-        if (! Schema::hasTable('settings')) {
-            return;
-        }
-
         try {
+            // hasTable() também toca o banco: no boot sem banco (ex.:
+            // package:discover antes das migrações) ele lança — mantém o
+            // fallback do .env em vez de derrubar a aplicação.
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+
             $settings = Setting::map();
         } catch (\Throwable) {
             return;

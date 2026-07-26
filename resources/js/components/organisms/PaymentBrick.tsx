@@ -283,6 +283,13 @@ export function PaymentBrick({
                 campos seguros do Mercado Pago (iframes) e não passam pelo nosso
                 servidor.
             </p>
+
+            <p className="mt-2 text-center font-body text-[11px] text-faint">
+                Processado com segurança por{' '}
+                <span className="font-semibold text-muted-foreground">
+                    Mercado&nbsp;Pago
+                </span>
+            </p>
         </div>
     );
 }

@@ -9,6 +9,7 @@ use App\Support\MercadoPagoSettings;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Adapter do Mercado Pago (API /v1/payments). Cartão tokenizado no cliente,
