@@ -53,13 +53,23 @@ class OrderService
                 'status' => Order::STATUS_PENDING,
             ]);
 
+            // Cortesia: os ingressos que saem de graça não contam no lote.
+            $courtesyIds = $coupon?->courtesyKeys(
+                $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
+            ) ?? [];
+
             foreach ($reservation->seats as $rs) {
+                $courtesy = in_array($rs->id, $courtesyIds, true);
+                $rs->update(['courtesy' => $courtesy]);
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'session_seat_id' => $rs->session_seat_id,
                     'seat_code' => $rs->sessionSeat->seat->code,
                     'sector_name' => $rs->sessionSeat->sector->name,
                     'price_cents' => $rs->price_cents,
+                    'lot_id' => $rs->lot_id,
+                    'courtesy' => $courtesy,
                 ]);
             }
 
