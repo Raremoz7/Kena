@@ -27,6 +27,9 @@ class MagicLoginController extends Controller
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
-        return redirect()->route('tickets.index');
+        // Link de retomada de compra traz o caminho de volta (assinado na URL).
+        $redirect = MagicLink::safeRedirect($request->query('redirect'));
+
+        return $redirect !== null ? redirect($redirect) : redirect()->route('tickets.index');
     }
 }

@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Exceptions\GuestAccountExistsException;
+use App\Exceptions\GuestAccountNeedsVerificationException;
 use App\Models\User;
 
 /**
- * Identidade do comprador convidado (checkout sem senha). Cria/reusa um usuário
- * leve por e-mail. Se o e-mail já tem conta com senha/login social, exige login
- * (evita sequestro de conta alheia).
+ * Identidade do comprador convidado (checkout sem senha). Cria um usuário leve
+ * por e-mail. Se o e-mail já tem conta, nunca loga direto nela — digitar o
+ * e-mail de outra pessoa não pode dar acesso aos ingressos dela:
+ * conta com senha/login social exige login; conta leve exige o magic-link.
  */
 class GuestIdentityService
 {
@@ -16,6 +18,7 @@ class GuestIdentityService
      * @param  array{email: string, name: string, cpf: string}  $data
      *
      * @throws GuestAccountExistsException
+     * @throws GuestAccountNeedsVerificationException
      */
     public function identify(array $data): User
     {
@@ -27,9 +30,8 @@ class GuestIdentityService
             if ($existing->password !== null || $existing->google_id !== null) {
                 throw new GuestAccountExistsException;
             }
-            $existing->update(['name' => $data['name'], 'cpf' => $cpf]);
 
-            return $existing;
+            throw new GuestAccountNeedsVerificationException($existing);
         }
 
         return User::create([
