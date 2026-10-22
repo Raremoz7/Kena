@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\GuestAccountExistsException;
+use App\Exceptions\GuestAccountNeedsVerificationException;
 use App\Exceptions\SeatConflictException;
+use App\Mail\GuestAccessLinkMail;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Rules\ValidCpf;
@@ -12,9 +14,15 @@ use App\Services\SeatReservationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 
 class ReservationController extends Controller
 {
+    private const ACCESS_LINKS_PER_WINDOW = 3;
+
+    private const ACCESS_LINK_WINDOW_SECONDS = 600;
+
     public function __construct(
         private readonly SeatReservationService $reservations,
         private readonly GuestIdentityService $guests,
@@ -47,6 +55,18 @@ class ReservationController extends Controller
             } catch (GuestAccountExistsException) {
                 return back()->withErrors([
                     'guest.email' => 'Esse e-mail já tem uma conta. Faça login para continuar a compra.',
+                ]);
+            } catch (GuestAccountNeedsVerificationException $e) {
+                // Limite por e-mail: ninguém usa o formulário para lotar a caixa de outra pessoa.
+                RateLimiter::attempt(
+                    'guest-access-link:'.$e->user->id,
+                    self::ACCESS_LINKS_PER_WINDOW,
+                    fn () => Mail::to($e->user)->send(new GuestAccessLinkMail($e->user, $session)),
+                    self::ACCESS_LINK_WINDOW_SECONDS,
+                );
+
+                return back()->withErrors([
+                    'guest.email' => 'Esse e-mail já tem uma conta Kena. Enviamos um link de acesso para ele — abra o link para continuar a compra.',
                 ]);
             }
             Auth::login($user);
