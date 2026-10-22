@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TicketsIssuedMail;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoDiagnostic;
 use App\Support\GoogleWalletSettings;
 use App\Support\MailSettings;
 use App\Support\MercadoPagoSettings;
+use App\Support\SampleTicketOrder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,11 +121,10 @@ class SettingsController extends Controller
         $user = Auth::guard('painel')->user();
         $to = (string) $user->email;
 
+        // Mesmo e-mail que o comprador recebe, com ingressos de exemplo (nada é salvo):
+        // testa o SMTP e mostra o design real. Síncrono, para o erro voltar aqui.
         try {
-            Mail::raw(
-                'Este é um e-mail de teste do Kena. Se você recebeu, o SMTP está configurado corretamente.',
-                fn ($message) => $message->to($to)->subject('Kena — e-mail de teste'),
-            );
+            Mail::to($to)->sendNow(new TicketsIssuedMail(SampleTicketOrder::make((string) $user->name), preview: true));
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Falha ao enviar: '.$e->getMessage()], 422);
         }
