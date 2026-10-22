@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dev\MailPreviewController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
@@ -26,6 +27,9 @@ use Illuminate\Support\Facades\Route;
 // Público — descoberta e seleção
 Route::get('/', [BuyerController::class, 'events'])->name('home');
 Route::get('/eventos', [BuyerController::class, 'events'])->name('events.index');
+Route::get('/ajuda', [LegalController::class, 'help'])->name('help');
+Route::get('/termos', [LegalController::class, 'terms'])->name('terms');
+Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy');
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');

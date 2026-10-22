@@ -316,6 +316,17 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                         </a>
                         .
                     </p>
+                    <p className="font-body text-xs text-faint">
+                        Ao continuar, você concorda com os{' '}
+                        <a href="/termos" target="_blank" className="text-accent-text hover:underline">
+                            Termos de uso
+                        </a>{' '}
+                        e a{' '}
+                        <a href="/privacidade" target="_blank" className="text-accent-text hover:underline">
+                            Política de privacidade
+                        </a>
+                        .
+                    </p>
                     <div className="flex justify-end gap-3">
                         <Button
                             type="button"
