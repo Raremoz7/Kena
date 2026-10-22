@@ -189,7 +189,7 @@ final class CatalogPresenter
         return ucfirst($dt->isoFormat('ddd, D [de] MMMM'));
     }
 
-    private static function timeLabel(CarbonInterface $dt): string
+    public static function timeLabel(CarbonInterface $dt): string
     {
         return $dt->format('H\\hi');
     }
