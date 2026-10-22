@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\User;
+use App\Services\SeatReservationService;
 use App\Support\GoogleWalletSettings;
 use App\Support\Presenters\CatalogPresenter;
 use App\Support\Presenters\TicketPresenter;
@@ -79,7 +80,7 @@ class BuyerController extends Controller
         ]);
     }
 
-    public function seats(string $slug, EventSession $session): Response|RedirectResponse
+    public function seats(string $slug, EventSession $session, SeatReservationService $reservations): Response|RedirectResponse
     {
         $session->load('event.venue');
         $event = $session->event;
@@ -97,6 +98,8 @@ class BuyerController extends Controller
             'seatMap' => CatalogPresenter::seatMap($session),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
+            // Quantos assentos este comprador ainda pode selecionar (limite por comprador).
+            'maxSeats' => $reservations->remainingFor($session, Auth::guard('web')->user()),
         ]);
     }
 

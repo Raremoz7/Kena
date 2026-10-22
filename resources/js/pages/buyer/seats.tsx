@@ -9,9 +9,10 @@ interface SeatsPageProps {
     seatMap: SeatMapData;
     reserveUrl: string;
     availabilityUrl: string;
+    maxSeats: number;
 }
 
-export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl }: SeatsPageProps) {
+export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl, maxSeats }: SeatsPageProps) {
     return (
         <>
             <Head title={`Assentos · ${event.title}`} />
@@ -33,6 +34,7 @@ export default function SeatsPage({ event, session, seatMap, reserveUrl, availab
                 seatMap={seatMap}
                 reserveUrl={reserveUrl}
                 availabilityUrl={availabilityUrl}
+                maxSeats={maxSeats}
                 className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8"
             />
         </>
