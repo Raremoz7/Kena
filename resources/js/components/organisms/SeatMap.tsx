@@ -18,7 +18,7 @@ const MIN_TAP_SCALE = 0.7;
 const MAX_SCALE = 2;
 
 const HACHURA =
-    'repeating-linear-gradient(45deg, oklch(0.245 0.016 48), oklch(0.245 0.016 48) 2px, oklch(0.2 0.013 48) 2px, oklch(0.2 0.013 48) 4px)';
+    'repeating-linear-gradient(45deg, var(--seat-hatch-a), var(--seat-hatch-a) 2px, var(--seat-hatch-b) 2px, var(--seat-hatch-b) 4px)';
 
 type Visual = 'available' | 'selected' | 'held' | 'sold' | 'blocked';
 
@@ -52,7 +52,7 @@ function SeatDot({
                 ? 'border-[1.5px] border-seat-pcd bg-transparent hover:z-10 hover:scale-[1.5] hover:shadow-[0_0_0_3px_oklch(0.52_0.14_230/0.3)] focus-visible:z-10 focus-visible:scale-[1.5] focus-visible:ring-2 focus-visible:ring-seat-pcd cursor-pointer'
                 : 'border-[1.5px] border-seat-available bg-transparent hover:z-10 hover:scale-[1.5] hover:shadow-[0_0_0_3px_oklch(0.52_0.14_155/0.3)] focus-visible:z-10 focus-visible:scale-[1.5] focus-visible:ring-2 focus-visible:ring-seat-available cursor-pointer',
             selected:
-                'bg-seat-selected text-white hover:z-10 hover:scale-[1.5] focus-visible:z-10 focus-visible:scale-[1.5] focus-visible:ring-2 focus-visible:ring-white cursor-pointer',
+                'bg-seat-selected text-white hover:z-10 hover:scale-[1.5] focus-visible:z-10 focus-visible:scale-[1.5] focus-visible:ring-2 focus-visible:ring-foreground cursor-pointer',
             held: 'border-[1.5px] border-dashed border-seat-held cursor-not-allowed',
             sold: 'bg-seat-sold cursor-not-allowed',
             blocked: 'cursor-not-allowed',
@@ -84,11 +84,11 @@ function SeatDot({
         >
             <span
                 className={cn('font-body text-[9px] leading-none font-semibold tabular', {
-                    available: accessible ? 'text-[oklch(0.66_0.13_230)]' : 'text-[oklch(0.66_0.13_155)]',
+                    available: accessible ? 'text-seat-pcd-text' : 'text-seat-available-text',
                     selected: 'text-white',
-                    held: 'text-[oklch(0.72_0.14_72)]',
-                    sold: 'text-[oklch(0.5_0.012_50)]',
-                    blocked: 'text-[oklch(0.45_0.01_50)]',
+                    held: 'text-seat-held-text',
+                    sold: 'text-seat-sold-text',
+                    blocked: 'text-seat-blocked-text',
                 }[visual])}
             >
                 {seat.number}
@@ -128,7 +128,7 @@ function ZoomButton({ label, onClick, children }: { label: string; onClick: () =
             type="button"
             aria-label={label}
             onClick={onClick}
-            className="flex size-7 items-center justify-center rounded-[9px] border border-border bg-surface-2/90 text-foreground/90 shadow-[0_2px_8px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-colors hover:bg-surface-2"
+            className="flex size-7 items-center justify-center rounded-[9px] border border-border bg-surface-2/90 text-foreground/90 shadow-[0_2px_8px_rgba(0,0,0,0.18)] backdrop-blur-sm transition-colors hover:bg-surface-2"
         >
             {children}
         </button>

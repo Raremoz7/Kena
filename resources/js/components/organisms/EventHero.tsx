@@ -6,7 +6,7 @@ import type { EventInfo } from '@/lib/veludo/types';
 export function EventHero({ event }: { event: EventInfo }) {
     return (
         <section
-            className="relative overflow-hidden border-b border-border"
+            className="dark relative overflow-hidden border-b border-border"
             style={{ background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})` }}
         >
             {event.bannerImage && (
