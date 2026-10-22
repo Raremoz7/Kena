@@ -77,6 +77,7 @@ class BuyerController extends Controller
             'seatMap' => $multi ? null : Inertia::defer(fn (): array => CatalogPresenter::seatMap($session)),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
+            'emailCodeUrl' => route('email-code.send'),
         ]);
     }
 
@@ -98,6 +99,7 @@ class BuyerController extends Controller
             'seatMap' => CatalogPresenter::seatMap($session),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
+            'emailCodeUrl' => route('email-code.send'),
             // Quantos assentos este comprador ainda pode selecionar (limite por comprador).
             'maxSeats' => $reservations->remainingFor($session, Auth::guard('web')->user()),
         ]);

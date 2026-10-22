@@ -2,20 +2,19 @@
 
 namespace Tests\Feature\Kena;
 
-use App\Mail\GuestAccessLinkMail;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\EmailVerificationCodeService;
 use App\Support\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Tests\Feature\Kena\Concerns\MakesKenaData;
 use Tests\TestCase;
 
 /**
  * Digitar no checkout de convidado o e-mail de uma conta leve já existente
- * não pode dar acesso a ela: o dono recebe um magic-link e só ele continua.
+ * não pode dar acesso a ela: só entra quem recebe o código no e-mail do dono.
  */
 class GuestAccountTakeoverTest extends TestCase
 {
@@ -37,7 +36,7 @@ class GuestAccountTakeoverTest extends TestCase
         ]);
     }
 
-    private function reserveAsGuest(EventSession $session, string $email): TestResponse
+    private function reserveAsGuest(EventSession $session, string $email, ?string $code): TestResponse
     {
         $session->loadMissing('event');
 
@@ -45,42 +44,68 @@ class GuestAccountTakeoverTest extends TestCase
             route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
             [
                 'seats' => $this->availableSeatIds($session, 1),
-                'guest' => ['name' => 'Outra Pessoa', 'email' => $email, 'cpf' => self::OTHER_CPF],
+                'guest' => ['name' => 'Outra Pessoa', 'email' => $email, 'cpf' => self::OTHER_CPF, 'code' => $code],
             ],
         );
     }
 
-    public function test_existing_light_account_is_not_logged_in_and_gets_access_link(): void
+    private function assertOwnerUntouched(User $owner): void
     {
-        Mail::fake();
-        $owner = $this->lightAccount();
-        $session = $this->makeSession(1);
-
-        $this->reserveAsGuest($session, 'MAE@guest.test ')->assertSessionHasErrors('guest.email');
-
-        $this->assertGuest();
-        $this->assertSame(0, Reservation::count());
-        Mail::assertQueued(GuestAccessLinkMail::class, fn (GuestAccessLinkMail $m): bool => $m->hasTo($owner->email));
-
-        // Dados do dono não são sobrescritos por quem digitou o e-mail.
         $owner->refresh();
         $this->assertSame('Maria Original', $owner->name);
         $this->assertSame(self::VALID_CPF, $owner->cpf);
     }
 
-    public function test_access_link_logs_owner_in_and_returns_to_seats(): void
+    public function test_existing_light_account_without_code_is_not_logged_in(): void
     {
         $owner = $this->lightAccount();
         $session = $this->makeSession(1);
-        $session->load('event');
-        $seatsPath = route('sessions.seats', ['slug' => $session->event->slug, 'session' => $session->id], false);
 
-        $html = (new GuestAccessLinkMail($owner, $session))->render();
-        preg_match('/href="([^"]*\/entrar\/[^"]+)"/', $html, $m);
-        $this->assertNotEmpty($m, 'e-mail deve conter o link de acesso');
+        $this->reserveAsGuest($session, 'MAE@guest.test ', null)->assertSessionHasErrors('guest.code');
 
-        $this->get(html_entity_decode($m[1]))->assertRedirect($seatsPath);
+        $this->assertGuest();
+        $this->assertSame(0, Reservation::count());
+        $this->assertOwnerUntouched($owner);
+    }
+
+    public function test_wrong_code_does_not_log_in(): void
+    {
+        $owner = $this->lightAccount();
+        $session = $this->makeSession(1);
+        $issued = app(EmailVerificationCodeService::class)->issue('mae@guest.test');
+        $wrong = $issued === '000000' ? '111111' : '000000';
+
+        $this->reserveAsGuest($session, 'mae@guest.test', $wrong)->assertSessionHasErrors('guest.code');
+
+        $this->assertGuest();
+        $this->assertSame(0, Reservation::count());
+        $this->assertOwnerUntouched($owner);
+    }
+
+    public function test_code_issued_for_another_email_does_not_unlock_the_account(): void
+    {
+        $owner = $this->lightAccount();
+        $session = $this->makeSession(1);
+        $attackerCode = app(EmailVerificationCodeService::class)->issue('atacante@guest.test');
+
+        $this->reserveAsGuest($session, 'mae@guest.test', $attackerCode)->assertSessionHasErrors('guest.code');
+
+        $this->assertGuest();
+        $this->assertOwnerUntouched($owner);
+    }
+
+    public function test_owner_with_valid_code_continues_without_losing_data(): void
+    {
+        $owner = $this->lightAccount();
+        $session = $this->makeSession(1);
+        $code = app(EmailVerificationCodeService::class)->issue('mae@guest.test');
+
+        $this->reserveAsGuest($session, 'mae@guest.test', $code)->assertRedirect();
+
         $this->assertAuthenticatedAs($owner);
+        $this->assertSame(1, Reservation::where('user_id', $owner->id)->count());
+        // Mesmo provando o e-mail, o formulário não reescreve o cadastro existente.
+        $this->assertOwnerUntouched($owner);
     }
 
     public function test_access_link_is_single_use(): void
@@ -122,18 +147,5 @@ class GuestAccountTakeoverTest extends TestCase
         $this->assertNull(MagicLink::safeRedirect('https://evil.test'));
         $this->assertNull(MagicLink::safeRedirect('/\\evil.test'));
         $this->assertNull(MagicLink::safeRedirect(null));
-    }
-
-    public function test_access_link_emails_are_rate_limited_per_account(): void
-    {
-        Mail::fake();
-        $this->lightAccount();
-        $session = $this->makeSession(1);
-
-        for ($i = 0; $i < 5; $i++) {
-            $this->reserveAsGuest($session, 'mae@guest.test')->assertSessionHasErrors('guest.email');
-        }
-
-        Mail::assertQueued(GuestAccessLinkMail::class, 3);
     }
 }

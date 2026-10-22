@@ -5,6 +5,7 @@ import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Price } from '@/components/atoms/Price';
 import { Spinner } from '@/components/atoms/Spinner';
+import { EmailCodeField } from '@/components/molecules/EmailCodeField';
 import { FormField } from '@/components/molecules/FormField';
 import { Modal } from '@/components/molecules/Modal';
 import { SeatSheet } from '@/components/molecules/SeatSheet';
@@ -102,13 +103,15 @@ interface SeatSelectionProps {
     availabilityUrl?: string;
     /** Máximo de assentos que este comprador ainda pode selecionar. */
     maxSeats?: number;
+    /** Rota POST que envia o código de confirmação do e-mail (convidado). */
+    emailCodeUrl: string;
 }
 
 /**
  * Seleção de assentos (mapa + painel + barra mobile). Reserva via POST Inertia e
  * mantém o mapa vivo por polling da disponibilidade.
  */
-export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl, maxSeats }: SeatSelectionProps) {
+export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl, maxSeats, emailCodeUrl }: SeatSelectionProps) {
     const [statuses, setStatuses] = useState<Record<number, SeatStatus>>(() =>
         Object.fromEntries(seatMap.seats.map((s) => [s.id, s.status])),
     );
@@ -119,7 +122,7 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
     const user = page.props.auth?.user ?? null;
     const currentUrl = page.props.ziggy?.location ?? page.url;
     const [guestOpen, setGuestOpen] = useState(false);
-    const [guest, setGuest] = useState({ name: '', email: '', cpf: '' });
+    const [guest, setGuest] = useState({ name: '', email: '', cpf: '', code: '' });
     const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
 
     const seats = useMemo(
@@ -321,6 +324,14 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                             required
                         />
                     </FormField>
+                    <EmailCodeField
+                        id="g-code"
+                        email={guest.email}
+                        sendUrl={emailCodeUrl}
+                        code={guest.code}
+                        onCodeChange={(code) => setGuest((g) => ({ ...g, code }))}
+                        error={guestErrors['guest.code']}
+                    />
                     <p className="font-body text-xs text-faint">
                         Já tem conta?{' '}
                         <a
@@ -351,7 +362,7 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                         >
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        <Button type="submit" disabled={submitting || guest.code.length !== 6}>
                             {submitting ? <Spinner /> : 'Continuar para o pagamento'}
                         </Button>
                     </div>

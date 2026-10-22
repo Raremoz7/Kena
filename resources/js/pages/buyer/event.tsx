@@ -39,6 +39,7 @@ interface EventPageProps {
     seatMap: SeatMapData | null;
     reserveUrl: string;
     availabilityUrl: string;
+    emailCodeUrl: string;
 }
 
 export default function EventPage({
@@ -50,6 +51,7 @@ export default function EventPage({
     seatMap,
     reserveUrl,
     availabilityUrl,
+    emailCodeUrl,
 }: EventPageProps) {
     const multi = sessions.length > 1;
 
@@ -145,6 +147,7 @@ export default function EventPage({
                                         seatMap={seatMap}
                                         reserveUrl={reserveUrl}
                                         availabilityUrl={availabilityUrl}
+                                        emailCodeUrl={emailCodeUrl}
                                         className="mt-6"
                                     />
                                 ) : null}
