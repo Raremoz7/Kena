@@ -21,6 +21,12 @@ final class Codes
         return 'KNA-ORDER-'.self::group().self::group();
     }
 
+    /** Código de cortesia: prefixo do evento + 6 caracteres. Ex.: QN-7Q2XJ1 */
+    public static function courtesy(string $prefix): string
+    {
+        return $prefix.'-'.self::group().substr(self::group(), 0, 2);
+    }
+
     private static function group(): string
     {
         $out = '';

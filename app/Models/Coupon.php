@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int|null $event_id
  * @property string $code
+ * @property string|null $beneficiary
+ * @property string|null $group_name
  * @property string $type
  * @property int $value
  * @property int|null $max_uses
@@ -42,6 +45,12 @@ class Coupon extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /** @return HasMany<CouponRedemption, $this> */
+    public function redemptions(): HasMany
+    {
+        return $this->hasMany(CouponRedemption::class);
     }
 
     public function isRedeemable(?int $eventId = null): bool

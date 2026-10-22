@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\LotController;
 use App\Http\Controllers\Admin\OrderController;
@@ -125,6 +126,9 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::post('/painel/sessoes/{session}/cancelar', [OrderController::class, 'cancelSession'])->name('admin.sessions.cancel');
 
         // Cupons de desconto
+        Route::get('/painel/cortesias', [CourtesyController::class, 'index'])->name('admin.courtesies');
+        Route::post('/painel/cortesias', [CourtesyController::class, 'store'])->name('admin.courtesies.store');
+        Route::get('/painel/cortesias/exportar', [CourtesyController::class, 'export'])->name('admin.courtesies.export');
         Route::get('/painel/cupons', [CouponController::class, 'index'])->name('admin.coupons');
         Route::get('/painel/cupons/novo', [CouponController::class, 'create'])->name('admin.coupons.create');
         Route::post('/painel/cupons', [CouponController::class, 'store'])->name('admin.coupons.store');
@@ -149,6 +153,8 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::put('/painel/lotes/{lot}', [LotController::class, 'update'])->name('admin.lots.update');
         Route::delete('/painel/lotes/{lot}', [LotController::class, 'destroy'])->name('admin.lots.destroy');
         Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
+        Route::post('/painel/sessoes/{session}/assentos/varios', [SeatController::class, 'bulk'])->name('admin.seats.bulk');
+        Route::post('/painel/sessoes/{session}/assentos/emitir', [SeatController::class, 'issue'])->name('admin.seats.issue');
 
         // Equipe (organizadores e staff)
         Route::get('/painel/equipe', [TeamController::class, 'index'])->name('admin.team');

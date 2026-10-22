@@ -41,6 +41,12 @@ const nav: NavItem[] = [
         organizerOnly: true,
     },
     {
+        label: 'Cortesias',
+        href: '/painel/cortesias',
+        icon: 'ticket',
+        organizerOnly: true,
+    },
+    {
         label: 'Locais',
         href: '/painel/locais',
         icon: 'map-pin',
