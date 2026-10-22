@@ -5,8 +5,8 @@ import { MobileTabBar } from '@/components/organisms/MobileTabBar';
 import { useFlashToasts } from '@/lib/veludo/use-flash-toasts';
 
 /**
- * Shell das telas do comprador: header fixo, conteúdo, footer (desktop) e
- * tab bar (mobile).
+ * Shell das telas do comprador: header fixo, conteúdo, footer e tab bar
+ * (mobile). A folga para a tab bar fica no próprio footer.
  */
 export default function BuyerLayout({ children }: { children: ReactNode }) {
     useFlashToasts();
@@ -14,7 +14,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
     return (
         <div className="flex min-h-dvh flex-col bg-bg">
             <Header />
-            <main className="flex-1 pb-24 md:pb-0">{children}</main>
+            <main className="flex-1">{children}</main>
             <Footer />
             <MobileTabBar />
         </div>
