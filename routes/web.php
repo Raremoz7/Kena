@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dev\MailPreviewController;
+use App\Http\Controllers\EmailCodeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Painel\PanelLoginController;
@@ -51,6 +52,11 @@ Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 // Reserva (hold) — pública: aceita convidado (cria conta leve) ou usuário logado
+// Código de confirmação do e-mail (convidado e cadastro com senha).
+Route::post('/codigo-email', [EmailCodeController::class, 'send'])
+    ->middleware('throttle:10,1')
+    ->name('email-code.send');
+
 Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::class, 'reserve'])
     ->middleware('throttle:20,1')
     ->name('sessions.reserve');

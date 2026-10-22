@@ -3,30 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\GuestAccountExistsException;
-use App\Exceptions\GuestAccountNeedsVerificationException;
 use App\Exceptions\SeatConflictException;
 use App\Exceptions\SeatLimitException;
-use App\Mail\GuestAccessLinkMail;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Rules\ValidCpf;
+use App\Services\EmailVerificationCodeService;
 use App\Services\GuestIdentityService;
 use App\Services\SeatReservationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\RateLimiter;
 
 class ReservationController extends Controller
 {
-    private const ACCESS_LINKS_PER_WINDOW = 3;
-
-    private const ACCESS_LINK_WINDOW_SECONDS = 600;
-
     public function __construct(
         private readonly SeatReservationService $reservations,
         private readonly GuestIdentityService $guests,
+        private readonly EmailVerificationCodeService $codes,
     ) {}
 
     /** Cria o hold a partir da seleção e leva ao checkout. Aceita convidado (sem conta). */
@@ -46,31 +40,28 @@ class ReservationController extends Controller
                 'guest.email' => ['required', 'email', 'max:255'],
                 'guest.name' => ['required', 'string', 'max:120'],
                 'guest.cpf' => ['required', 'string', new ValidCpf],
+                'guest.code' => ['required', 'digits:6'],
             ];
         }
         $validated = $request->validate($rules, [
             'seats.max' => "Cada comprador pode levar até {$max} ingressos.",
+            'guest.code.required' => 'Digite o código que enviamos para o seu e-mail.',
+            'guest.code.digits' => 'O código tem 6 números.',
         ]);
 
-        // Convidado: cria/reusa conta leve e autentica antes de seguir.
+        // Convidado: confirma o e-mail pelo código, cria/reusa a conta leve e autentica.
         if (! Auth::check()) {
+            if (! $this->codes->verify($validated['guest']['email'], $validated['guest']['code'])) {
+                return back()->withErrors([
+                    'guest.code' => 'Código inválido ou expirado. Confira o e-mail ou peça um novo código.',
+                ]);
+            }
+
             try {
                 $user = $this->guests->identify($validated['guest']);
             } catch (GuestAccountExistsException) {
                 return back()->withErrors([
                     'guest.email' => 'Esse e-mail já tem uma conta. Faça login para continuar a compra.',
-                ]);
-            } catch (GuestAccountNeedsVerificationException $e) {
-                // Limite por e-mail: ninguém usa o formulário para lotar a caixa de outra pessoa.
-                RateLimiter::attempt(
-                    'guest-access-link:'.$e->user->id,
-                    self::ACCESS_LINKS_PER_WINDOW,
-                    fn () => Mail::to($e->user)->send(new GuestAccessLinkMail($e->user, $session)),
-                    self::ACCESS_LINK_WINDOW_SECONDS,
-                );
-
-                return back()->withErrors([
-                    'guest.email' => 'Esse e-mail já tem uma conta Kena. Enviamos um link de acesso para ele — abra o link para continuar a compra.',
                 ]);
             }
             Auth::login($user);

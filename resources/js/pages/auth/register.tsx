@@ -1,9 +1,11 @@
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
 import MaskedInput from '@/components/masked-input';
+import { EmailCodeField } from '@/components/molecules/EmailCodeField';
 import { FormField } from '@/components/molecules/FormField';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -13,9 +15,14 @@ import { store } from '@/routes/register';
 
 type Props = {
     passwordRules: string;
+    /** Rota POST que envia o código de confirmação do e-mail. */
+    emailCodeUrl: string;
 };
 
-export default function Register({ passwordRules }: Props) {
+export default function Register({ passwordRules, emailCodeUrl }: Props) {
+    const [email, setEmail] = useState('');
+    const [code, setCode] = useState('');
+
     return (
         <>
             <Head title="Criar conta" />
@@ -58,12 +65,26 @@ export default function Register({ passwordRules }: Props) {
                                         id="email"
                                         type="email"
                                         name="email"
+                                        value={email}
+                                        onChange={(e) =>
+                                            setEmail(e.target.value)
+                                        }
                                         required
                                         tabIndex={2}
                                         autoComplete="email"
                                         placeholder="voce@email.com"
                                     />
                                 </FormField>
+
+                                <EmailCodeField
+                                    id="code"
+                                    name="code"
+                                    email={email}
+                                    sendUrl={emailCodeUrl}
+                                    code={code}
+                                    onCodeChange={setCode}
+                                    error={errors.code}
+                                />
 
                                 <FormField
                                     label="Telefone / WhatsApp"
@@ -118,6 +139,7 @@ export default function Register({ passwordRules }: Props) {
                                     block
                                     className="mt-2"
                                     tabIndex={6}
+                                    disabled={processing || code.length !== 6}
                                     data-test="register-user-button"
                                 >
                                     {processing && <Spinner />}
