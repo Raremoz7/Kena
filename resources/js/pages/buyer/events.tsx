@@ -50,7 +50,7 @@ function EventCard({ event }: { event: ListedEvent }) {
     return (
         <Link
             href={`/e/${event.slug}`}
-            className="group block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-[oklch(0.42_0.05_22)]"
+            className="group block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent/50"
         >
             <div
                 className="relative h-40 overflow-hidden"

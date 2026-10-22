@@ -277,9 +277,9 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
             : 0;
     const tint =
         result?.result === 'ok'
-            ? 'border-success/50 bg-[oklch(0.16_0.04_155)]'
+            ? 'border-success/50 bg-success/10'
             : result?.result === 'denied'
-              ? 'border-danger/50 bg-[oklch(0.17_0.025_27)]'
+              ? 'border-danger/50 bg-danger/10'
               : 'border-border bg-surface';
 
     return (
