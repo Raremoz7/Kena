@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\LotsSoldOutException;
 use App\Exceptions\SeatConflictException;
 use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SeatReservationService
 {
+    public function __construct(private readonly TicketLotService $lots) {}
+
     public function holdMinutes(): int
     {
         return (int) config('kena.hold_minutes', 10);
@@ -52,6 +55,7 @@ class SeatReservationService
      *
      * @throws SeatConflictException
      * @throws SeatLimitException
+     * @throws LotsSoldOutException
      */
     public function hold(EventSession $session, User $user, array $sessionSeatIds): Reservation
     {
@@ -96,6 +100,9 @@ class SeatReservationService
                 throw new SeatConflictException(array_values(array_unique($conflicts)));
             }
 
+            // Com lotes, o preço de cada ingresso vem do lote em que ele cai.
+            $allocation = $this->lots->allocate($session, $seats->count());
+
             $reservation = Reservation::create([
                 'session_id' => $session->id,
                 'user_id' => $user->id,
@@ -103,17 +110,23 @@ class SeatReservationService
                 'expires_at' => now()->addMinutes($this->holdMinutes()),
             ]);
 
-            foreach ($seats as $seat) {
+            foreach ($seats->values() as $i => $seat) {
+                $lot = $allocation[$i] ?? null;
+                $price = $lot !== null ? $lot->price_cents : $seat->price_cents;
+
                 $seat->update([
                     'status' => SessionSeat::STATUS_HELD,
                     'hold_expires_at' => $reservation->expires_at,
                     'held_by_reservation_id' => $reservation->id,
+                    // O assento guarda o preço em que foi vendido (receita do painel).
+                    'price_cents' => $price,
                 ]);
 
                 ReservationSeat::create([
                     'reservation_id' => $reservation->id,
                     'session_seat_id' => $seat->id,
-                    'price_cents' => $seat->price_cents,
+                    'price_cents' => $price,
+                    'lot_id' => $lot?->id,
                 ]);
             }
 

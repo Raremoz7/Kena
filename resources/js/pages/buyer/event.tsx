@@ -2,6 +2,8 @@ import { Deferred, Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/atoms/Button';
 import { Icon  } from '@/components/atoms/Icon';
 import type {IconName} from '@/components/atoms/Icon';
+import { LotBanner } from '@/components/molecules/LotBanner';
+import type { LotInfo } from '@/components/molecules/LotBanner';
 import { EventHero } from '@/components/organisms/EventHero';
 import { SeatSelection } from '@/components/organisms/SeatSelection';
 import { SeatSelectionSkeleton } from '@/components/organisms/SeatSelectionSkeleton';
@@ -40,6 +42,8 @@ interface EventPageProps {
     reserveUrl: string;
     availabilityUrl: string;
     emailCodeUrl: string;
+    /** Lote vendendo agora (sessão única com lotes). */
+    lot: LotInfo | null;
 }
 
 export default function EventPage({
@@ -52,6 +56,7 @@ export default function EventPage({
     reserveUrl,
     availabilityUrl,
     emailCodeUrl,
+    lot,
 }: EventPageProps) {
     const multi = sessions.length > 1;
 
@@ -138,6 +143,7 @@ export default function EventPage({
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
                                 {sessionLabel} · {event.venue.name}, {event.venue.city}
                             </p>
+                            <LotBanner lot={lot} className="mt-3" />
                             <Deferred
                                 data="seatMap"
                                 fallback={<SeatSelectionSkeleton className="mt-6" />}

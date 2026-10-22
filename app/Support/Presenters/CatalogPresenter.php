@@ -5,6 +5,7 @@ namespace App\Support\Presenters;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionSeat;
+use App\Services\TicketLotService;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,7 +24,8 @@ final class CatalogPresenter
     public static function listItem(Event $event): array
     {
         $session = $event->sessions->first();
-        $priceFrom = $event->sectors->min('price_cents') ?? 0;
+        $priceFrom = ($session ? self::lots()->currentPriceCents($session) : null)
+            ?? $event->sectors->min('price_cents') ?? 0;
 
         return [
             'id' => $event->id,
@@ -80,10 +82,12 @@ final class CatalogPresenter
             ->groupBy('sector_id')
             ->pluck('total', 'sector_id');
 
+        $lotPrice = self::lots()->currentPriceCents($session);
+
         return $event->sectors->map(fn ($sector): array => [
             'id' => $sector->id,
             'name' => $sector->name,
-            'price' => Money::toReais($sector->price_cents),
+            'price' => Money::toReais($lotPrice ?? $sector->price_cents),
             'availableCount' => (int) ($available[$sector->id] ?? 0),
             'soldOut' => (int) ($available[$sector->id] ?? 0) === 0,
         ])->all();
@@ -98,6 +102,8 @@ final class CatalogPresenter
     {
         /** @var Collection<int, SessionSeat> $seats */
         $seats = $session->sessionSeats()->with(['seat', 'sector'])->get();
+        // Com lotes, todo lugar livre custa o preço do lote atual.
+        $lotPrice = self::lots()->currentPriceCents($session);
 
         $mapped = $seats->map(fn (SessionSeat $ss): array => [
             'id' => $ss->id,
@@ -109,7 +115,7 @@ final class CatalogPresenter
             'sectorName' => $ss->sector->name,
             'status' => $ss->isEffectivelyAvailable() ? 'available' : $ss->status,
             'kind' => $ss->seat->kind,
-            'price' => Money::toReais($ss->price_cents),
+            'price' => Money::toReais($lotPrice ?? $ss->price_cents),
             'visibility' => self::visibilityForRow($ss->seat->line),
         ]);
 
@@ -160,6 +166,37 @@ final class CatalogPresenter
                 'availableCount' => (int) ($available[$s->id] ?? 0),
                 'seatsUrl' => route('sessions.seats', ['slug' => $event->slug, 'session' => $s->id]),
             ])->values()->all();
+    }
+
+    private static function lots(): TicketLotService
+    {
+        return app(TicketLotService::class);
+    }
+
+    /**
+     * Lote vendendo agora e o próximo, para o site mostrar "1º lote · R$ 45".
+     *
+     * @return array{current: array{name: string, price: float, remaining: int|null}|null, next: array{name: string, price: float}|null, soldOut: bool}|null
+     */
+    public static function lotInfo(EventSession $session): ?array
+    {
+        $summary = self::lots()->summary($session);
+        if ($summary === []) {
+            return null;
+        }
+
+        $current = collect($summary)->firstWhere('state', 'current');
+        $next = collect($summary)->firstWhere('state', 'next');
+
+        return [
+            'current' => $current ? [
+                'name' => $current['name'],
+                'price' => Money::toReais($current['priceCents']),
+                'remaining' => $current['remaining'],
+            ] : null,
+            'next' => $next ? ['name' => $next['name'], 'price' => Money::toReais($next['priceCents'])] : null,
+            'soldOut' => $current === null,
+        ];
     }
 
     /** @return array<string, mixed> */

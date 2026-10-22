@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon|null $reminded_at
  * @property-read Event $event
+ * @property-read Collection<int, TicketLot> $lots
  */
 class EventSession extends Model
 {
@@ -37,6 +39,12 @@ class EventSession extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /** @return HasMany<TicketLot, $this> */
+    public function lots(): HasMany
+    {
+        return $this->hasMany(TicketLot::class, 'session_id')->orderBy('position')->orderBy('id');
     }
 
     /** @return HasMany<SessionSeat, $this> */

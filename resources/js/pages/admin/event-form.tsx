@@ -305,6 +305,19 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                     size="sm"
                                                 >
                                                     <Link
+                                                        href={`/painel/sessoes/${s.id}/lotes`}
+                                                        title="Lotes de venda (preço e quantidade)"
+                                                    >
+                                                        <Icon name="ticket" size={16} />
+                                                    </Link>
+                                                </Button>
+                                                <Button
+                                                    asChild
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                >
+                                                    <Link
                                                         href={`/painel/pedidos?session=${s.id}`}
                                                         title="Ver pedidos desta sessão"
                                                     >

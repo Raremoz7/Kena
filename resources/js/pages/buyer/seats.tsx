@@ -1,5 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { Icon } from '@/components/atoms/Icon';
+import { LotBanner } from '@/components/molecules/LotBanner';
+import type { LotInfo } from '@/components/molecules/LotBanner';
 import { SeatSelection } from '@/components/organisms/SeatSelection';
 import type { SeatMapData } from '@/lib/veludo/types';
 
@@ -11,9 +13,10 @@ interface SeatsPageProps {
     availabilityUrl: string;
     maxSeats: number;
     emailCodeUrl: string;
+    lot: LotInfo | null;
 }
 
-export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl, maxSeats, emailCodeUrl }: SeatsPageProps) {
+export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl, maxSeats, emailCodeUrl, lot }: SeatsPageProps) {
     return (
         <>
             <Head title={`Assentos · ${event.title}`} />
@@ -30,6 +33,12 @@ export default function SeatsPage({ event, session, seatMap, reserveUrl, availab
                     <span className="font-body text-xs text-faint">{session.label}</span>
                 </div>
             </div>
+
+            {lot && (
+                <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+                    <LotBanner lot={lot} />
+                </div>
+            )}
 
             <SeatSelection
                 seatMap={seatMap}

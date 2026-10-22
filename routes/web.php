@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\Admin\LotController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\SeatController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -143,6 +144,10 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
 
         // Gestão de assentos (bloquear/liberar cortesias e lugares interditados)
         Route::get('/painel/sessoes/{session}/assentos', [SeatController::class, 'show'])->name('admin.seats');
+        Route::get('/painel/sessoes/{session}/lotes', [LotController::class, 'index'])->name('admin.lots');
+        Route::post('/painel/sessoes/{session}/lotes', [LotController::class, 'store'])->name('admin.lots.store');
+        Route::put('/painel/lotes/{lot}', [LotController::class, 'update'])->name('admin.lots.update');
+        Route::delete('/painel/lotes/{lot}', [LotController::class, 'destroy'])->name('admin.lots.destroy');
         Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
 
         // Equipe (organizadores e staff)

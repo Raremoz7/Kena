@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\GuestAccountExistsException;
+use App\Exceptions\LotsSoldOutException;
 use App\Exceptions\SeatConflictException;
 use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
@@ -74,6 +75,12 @@ class ReservationController extends Controller
                 'seats' => $e->seatCodes === []
                     ? 'Selecione ao menos um assento disponível.'
                     : 'Estes assentos acabaram de ser reservados: '.implode(', ', $e->seatCodes).'. Escolha outros.',
+            ]);
+        } catch (LotsSoldOutException $e) {
+            return back()->withErrors([
+                'seats' => $e->remaining === 0
+                    ? 'Os ingressos desta sessão esgotaram.'
+                    : "Só restam {$e->remaining} ingressos à venda. Selecione menos assentos.",
             ]);
         } catch (SeatLimitException $e) {
             return back()->withErrors([

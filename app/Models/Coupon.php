@@ -24,6 +24,9 @@ class Coupon extends Model
 
     public const TYPE_FIXED = 'fixed';
 
+    /** Cortesia: `value` ingressos saem de graça (os mais caros do pedido). */
+    public const TYPE_TICKETS = 'tickets';
+
     protected $guarded = [];
 
     /** @return array<string, string> */
@@ -57,6 +60,53 @@ class Coupon extends Model
         }
 
         return true;
+    }
+
+    public function isCourtesy(): bool
+    {
+        return $this->type === self::TYPE_TICKETS;
+    }
+
+    /**
+     * Desconto em centavos para os ingressos do pedido (preço de cada um).
+     *
+     * @param  array<int, int>  $prices
+     */
+    public function discountForPrices(array $prices): int
+    {
+        if ($this->isCourtesy()) {
+            return array_sum(array_slice(self::sortedDesc($prices), 0, max(0, $this->value)));
+        }
+
+        return $this->discountFor(array_sum($prices));
+    }
+
+    /**
+     * Quais posições de `$prices` saem como cortesia (as mais caras).
+     *
+     * @param  array<int, int>  $prices
+     * @return array<int, int> chaves de `$prices`
+     */
+    public function courtesyKeys(array $prices): array
+    {
+        if (! $this->isCourtesy()) {
+            return [];
+        }
+
+        arsort($prices);
+
+        return array_slice(array_keys($prices), 0, max(0, $this->value));
+    }
+
+    /**
+     * @param  array<int, int>  $prices
+     * @return array<int, int>
+     */
+    private static function sortedDesc(array $prices): array
+    {
+        rsort($prices);
+
+        return $prices;
     }
 
     /** Desconto em centavos sobre um subtotal (também em centavos). */
