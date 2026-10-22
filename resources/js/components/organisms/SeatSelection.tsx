@@ -100,13 +100,15 @@ interface SeatSelectionProps {
     reserveUrl: string;
     /** Rota GET de disponibilidade (polling). Opcional. */
     availabilityUrl?: string;
+    /** Máximo de assentos que este comprador ainda pode selecionar. */
+    maxSeats?: number;
 }
 
 /**
  * Seleção de assentos (mapa + painel + barra mobile). Reserva via POST Inertia e
  * mantém o mapa vivo por polling da disponibilidade.
  */
-export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl }: SeatSelectionProps) {
+export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl, maxSeats }: SeatSelectionProps) {
     const [statuses, setStatuses] = useState<Record<number, SeatStatus>>(() =>
         Object.fromEntries(seatMap.seats.map((s) => [s.id, s.status])),
     );
@@ -181,6 +183,19 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
 
     function toggle(seat: Seat) {
         if ((statuses[seat.id] ?? seat.status) !== 'available') {
+            return;
+        }
+
+        const isSelected = selected.some((s) => s.id === seat.id);
+
+        if (!isSelected && maxSeats !== undefined && selected.length >= maxSeats) {
+            veludoToast.warning(
+                'Limite de ingressos',
+                maxSeats === 0
+                    ? 'Você já atingiu o máximo de ingressos para esta sessão.'
+                    : `Cada comprador pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'}.`,
+            );
+
             return;
         }
 

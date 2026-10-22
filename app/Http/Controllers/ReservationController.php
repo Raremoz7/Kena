@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\GuestAccountExistsException;
 use App\Exceptions\GuestAccountNeedsVerificationException;
 use App\Exceptions\SeatConflictException;
+use App\Exceptions\SeatLimitException;
 use App\Mail\GuestAccessLinkMail;
 use App\Models\EventSession;
 use App\Models\Reservation;
@@ -35,8 +36,9 @@ class ReservationController extends Controller
         abort_if($session->event->slug !== $slug, 404);
         abort_unless($session->isSellable(), 410, 'As vendas desta sessão estão encerradas.');
 
+        $max = $this->reservations->maxTicketsPerBuyer();
         $rules = [
-            'seats' => ['required', 'array', 'min:1'],
+            'seats' => ['required', 'array', 'min:1', 'max:'.$max],
             'seats.*' => ['integer'],
         ];
         if (! Auth::check()) {
@@ -46,7 +48,9 @@ class ReservationController extends Controller
                 'guest.cpf' => ['required', 'string', new ValidCpf],
             ];
         }
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'seats.max' => "Cada comprador pode levar até {$max} ingressos.",
+        ]);
 
         // Convidado: cria/reusa conta leve e autentica antes de seguir.
         if (! Auth::check()) {
@@ -79,6 +83,12 @@ class ReservationController extends Controller
                 'seats' => $e->seatCodes === []
                     ? 'Selecione ao menos um assento disponível.'
                     : 'Estes assentos acabaram de ser reservados: '.implode(', ', $e->seatCodes).'. Escolha outros.',
+            ]);
+        } catch (SeatLimitException $e) {
+            return back()->withErrors([
+                'seats' => $e->remaining === 0
+                    ? "Você já tem {$e->max} ingressos para esta sessão, o máximo por comprador."
+                    : "Cada comprador pode levar até {$e->max} ingressos. Você ainda pode escolher {$e->remaining}.",
             ]);
         }
 

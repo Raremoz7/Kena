@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Exceptions\SeatConflictException;
+use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Models\ReservationSeat;
 use App\Models\SessionSeat;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,18 +24,47 @@ class SeatReservationService
         return (int) config('kena.hold_minutes', 10);
     }
 
+    public function maxTicketsPerBuyer(): int
+    {
+        return max(1, (int) config('kena.max_tickets_per_buyer', 10));
+    }
+
+    /** Quantos ingressos o comprador ainda pode pegar nesta sessão. */
+    public function remainingFor(EventSession $session, ?User $user): int
+    {
+        if ($user === null) {
+            return $this->maxTicketsPerBuyer();
+        }
+
+        $owned = Ticket::query()
+            ->where('session_id', $session->id)
+            ->where('user_id', $user->id)
+            ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED])
+            ->count();
+
+        return max(0, $this->maxTicketsPerBuyer() - $owned);
+    }
+
     /**
      * Segura os assentos para o usuário, criando uma reserva ativa.
      *
      * @param  array<int, int>  $sessionSeatIds
      *
      * @throws SeatConflictException
+     * @throws SeatLimitException
      */
     public function hold(EventSession $session, User $user, array $sessionSeatIds): Reservation
     {
         $ids = array_values(array_unique(array_map('intval', $sessionSeatIds)));
         if ($ids === []) {
             throw new SeatConflictException([]);
+        }
+
+        // A reserva anterior do mesmo comprador é substituída, então só os
+        // ingressos já comprados contam contra o limite.
+        $remaining = $this->remainingFor($session, $user);
+        if (count($ids) > $remaining) {
+            throw new SeatLimitException($this->maxTicketsPerBuyer(), $remaining);
         }
 
         return DB::transaction(function () use ($session, $user, $ids): Reservation {
