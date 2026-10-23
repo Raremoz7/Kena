@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Services\CourtesyService;
+use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -91,7 +92,7 @@ class CourtesyController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
             fputcsv($out, ['Nome', 'Grupo', 'Código', 'Ingressos', 'Situação', 'Retirado por', 'E-mail', 'Telefone', 'Pedido', 'Assentos', 'Retirado em', 'Prazo'], ';');
             foreach ($rows as $r) {
-                fputcsv($out, [
+                Csv::put($out, [
                     $r['beneficiary'] ?? '',
                     $r['group'] ?? '',
                     $r['code'],
