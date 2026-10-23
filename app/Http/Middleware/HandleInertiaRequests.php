@@ -41,8 +41,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 // Comprador (guard web) e conta de painel (guard painel) sao
                 // independentes — os dois podem estar nulos ao mesmo tempo.
-                'user' => $request->user(),
-                'panelUser' => $request->user('painel'),
+                // So os campos que o front usa: isto vai em toda pagina.
+                'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at']),
+                'panelUser' => $request->user('painel')?->only(['id', 'name', 'email', 'role']),
             ],
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [

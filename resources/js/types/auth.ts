@@ -1,13 +1,9 @@
+/** Comprador logado, como sai do share() (só os campos que as telas usam). */
 export type User = {
     id: number;
     name: string;
     email: string;
-    avatar?: string;
     email_verified_at: string | null;
-    two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
 };
 
 /** Conta do painel (organizador/staff) — guard próprio, fora de `users`. */
@@ -16,9 +12,6 @@ export type PanelUser = {
     name: string;
     email: string;
     role: 'organizer' | 'staff';
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
 };
 
 /** Comprador e painel são independentes: os dois podem ser nulos ao mesmo tempo. */

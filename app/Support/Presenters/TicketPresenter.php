@@ -9,12 +9,18 @@ use App\Models\User;
 /** Converte os ingressos do usuário em TicketInfo (resources/js/lib/veludo/types.ts). */
 final class TicketPresenter
 {
+    /** Ingresso nestes estados trava o reembolso do pedido inteiro. */
+    private const LOCKING_STATUSES = [Ticket::STATUS_TRANSFERRED, Ticket::STATUS_USED];
+
     /** @return array<int, array<string, mixed>> */
     public static function forUser(User $user): array
     {
         $tickets = Ticket::query()
             ->where('user_id', $user->id)
-            ->with(['session.event.venue', 'order'])
+            // O "tem ingresso transferido/usado?" vem junto, em vez de 1 query por ingresso.
+            ->with(['session.event.venue', 'order' => fn ($q) => $q->withExists([
+                'tickets as has_locked_tickets' => fn ($t) => $t->whereIn('status', self::LOCKING_STATUSES),
+            ])])
             ->latest('id')
             ->get();
 
@@ -31,9 +37,7 @@ final class TicketPresenter
             && $ticket->order->status === Order::STATUS_PAID
             && $ticket->order->user_id === $ticket->user_id // destinatário de transferência não reembolsa pedido alheio
             && now()->lessThan($session->refundLocksAt())
-            && ! $ticket->order->tickets()
-                ->whereIn('status', [Ticket::STATUS_TRANSFERRED, Ticket::STATUS_USED])
-                ->exists();
+            && ! self::orderHasLockedTickets($ticket->order);
 
         return [
             'id' => $ticket->id,
@@ -54,6 +58,16 @@ final class TicketPresenter
             'calendarUrl' => route('tickets.calendar', $ticket),
             'googleWalletUrl' => route('tickets.google-wallet', $ticket),
         ];
+    }
+
+    private static function orderHasLockedTickets(Order $order): bool
+    {
+        // Carregado em lote por forUser(); quem chama item() avulso cai na query.
+        if (array_key_exists('has_locked_tickets', $order->getAttributes())) {
+            return (bool) $order->getAttribute('has_locked_tickets');
+        }
+
+        return $order->tickets()->whereIn('status', self::LOCKING_STATUSES)->exists();
     }
 
     private static function statusLabel(string $status): string
