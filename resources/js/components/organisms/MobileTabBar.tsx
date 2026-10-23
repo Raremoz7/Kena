@@ -14,7 +14,7 @@ export function MobileTabBar() {
     const { url } = usePage();
 
     return (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md md:hidden">
+        <nav aria-label="Navegação inferior" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md md:hidden">
             <div className="mx-auto flex max-w-md items-stretch justify-around px-2 py-1.5">
                 {items.map((it) => {
                     const active = url === it.href || url.startsWith(it.href);

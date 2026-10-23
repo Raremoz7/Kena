@@ -92,7 +92,7 @@ export function AdminNavList({ onNavigate }: { onNavigate?: () => void } = {}) {
 
     return (
         <>
-            <nav className="flex flex-1 flex-col gap-1 p-3">
+            <nav aria-label="Painel" className="flex flex-1 flex-col gap-1 p-3">
                 {items.map((item) => {
                     if (item.soon || !item.href) {
                         return (

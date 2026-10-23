@@ -134,6 +134,41 @@ class SeatReservationService
         });
     }
 
+    /** Minutos a mais que o comprador pode pedir no checkout (uma vez). */
+    public const EXTENSION_MINUTES = 5;
+
+    /**
+     * "Preciso de mais tempo" (WCAG 2.2.1): estende a reserva ativa uma única vez.
+     * Reserva já estendida (inclusive pelo Pix) ou vencida não estende de novo.
+     *
+     * @return bool se estendeu
+     */
+    public function extend(Reservation $reservation): bool
+    {
+        return DB::transaction(function () use ($reservation): bool {
+            /** @var Reservation $fresh */
+            $fresh = Reservation::whereKey($reservation->id)->lockForUpdate()->firstOrFail();
+
+            $alreadyExtended = $fresh->expires_at->greaterThan(
+                $fresh->created_at->copy()->addMinutes($this->holdMinutes() + 1),
+            );
+            if (! $fresh->isActive() || $alreadyExtended) {
+                return false;
+            }
+
+            $until = $fresh->expires_at->copy()->addMinutes(self::EXTENSION_MINUTES);
+            $fresh->update(['expires_at' => $until]);
+            SessionSeat::query()
+                ->where('held_by_reservation_id', $fresh->id)
+                ->where('status', SessionSeat::STATUS_HELD)
+                ->update(['hold_expires_at' => $until]);
+
+            $reservation->setRawAttributes($fresh->getAttributes(), true);
+
+            return true;
+        });
+    }
+
     /** Libera a reserva (volta assentos a disponível) e marca como cancelada. */
     public function release(Reservation $reservation): void
     {

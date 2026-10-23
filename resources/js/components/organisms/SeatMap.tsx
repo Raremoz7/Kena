@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent, ReactElement } from 'react';
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch';
 import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { Icon } from '@/components/atoms/Icon';
@@ -15,6 +15,44 @@ const STAGE_H = 40;
 // Acima desta escala (assento ≈ 14px) os assentos ficam tocáveis; abaixo, o
 // toque/arraste só navega o mapa (evita seleção acidental num alvo minúsculo).
 const MIN_TAP_SCALE = 0.7;
+
+const NAV_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+
+/**
+ * Próximo lugar clicável na direção da tecla. Esquerda/direita andam na fileira;
+ * cima/baixo vão para a fileira vizinha, no lugar mais próximo na horizontal;
+ * Home/End vão para a ponta da fileira. Sem vizinho, fica onde está.
+ */
+function neighborSeat(rows: Seat[][], from: Seat, key: string): Seat | null {
+    const r = rows.findIndex((row) => row.some((s) => s.id === from.id));
+
+    if (r < 0) {
+        return null;
+    }
+
+    const row = rows[r];
+    const i = row.findIndex((s) => s.id === from.id);
+
+    switch (key) {
+        case 'ArrowLeft':
+            return row[i - 1] ?? null;
+        case 'ArrowRight':
+            return row[i + 1] ?? null;
+        case 'Home':
+            return row[0];
+        case 'End':
+            return row[row.length - 1];
+        default: {
+            const target = rows[key === 'ArrowUp' ? r - 1 : r + 1];
+
+            if (!target) {
+                return null;
+            }
+
+            return target.reduce((best, s) => (Math.abs(s.x - from.x) < Math.abs(best.x - from.x) ? s : best));
+        }
+    }
+}
 const MAX_SCALE = 2;
 
 const HACHURA =
@@ -31,6 +69,8 @@ function SeatDot({
     left,
     top,
     interactiveStatuses,
+    tabbable,
+    buttonRef,
 }: {
     seat: Seat;
     selected: boolean;
@@ -40,6 +80,9 @@ function SeatDot({
     left: number;
     top: number;
     interactiveStatuses: SeatStatus[];
+    /** Tabindex móvel: só um lugar do mapa fica no Tab; as setas andam entre eles. */
+    tabbable: boolean;
+    buttonRef: (el: HTMLButtonElement | null) => void;
 }) {
     const visual: Visual = selected ? 'selected' : (seat.status as Visual);
     const interactive = interactiveStatuses.includes(seat.status);
@@ -65,12 +108,13 @@ function SeatDot({
     ];
 
     return (
-        // Assentos vendidos/bloqueados são botões inativos (disabled). WCAG 1.4.3 e
-        // 1.4.11 isentam componentes de UI inativos do mínimo de contraste — por isso
-        // o número esmaecido e o preenchimento apagado são conformes, e intencionais:
-        // é o que comunica "indisponível". Os assentos ativos passam (6.4–7.7:1).
+        // Assentos vendidos/bloqueados são botões inativos (disabled). A WCAG isenta
+        // componentes inativos do contraste, mas "este lugar está ocupado" é informação
+        // de que o comprador precisa: o ocupado tem 3:1 sobre o fundo e o número 4.5:1+.
         <button
+            ref={buttonRef}
             type="button"
+            tabIndex={tabbable ? 0 : -1}
             disabled={!interactive}
             aria-pressed={interactive ? selected : undefined}
             aria-label={`Fila ${seat.row}, assento ${seat.number}. ${statusLabel}${seat.kind === 'accessible' ? ', cadeirante' : seat.kind === 'companion' ? ', acompanhante' : ''}.`}
@@ -164,6 +208,58 @@ export function SeatMap({
 
     const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
 
+    // Teclado: só os lugares clicáveis, agrupados por fileira (de cima para baixo)
+    // e ordenados na fileira (da esquerda para a direita).
+    const buttons = useRef(new Map<number, HTMLButtonElement>());
+    const keysHintId = useId();
+    const navRows = useMemo(() => {
+        const byRow = new Map<string, Seat[]>();
+
+        for (const s of seats) {
+            if (interactiveStatuses.includes(s.status)) {
+                byRow.set(s.row, [...(byRow.get(s.row) ?? []), s]);
+            }
+        }
+
+        return [...byRow.values()]
+            .map((row) => row.sort((a, b) => a.x - b.x))
+            .sort((a, b) => a[0].y - b[0].y);
+    }, [seats, interactiveStatuses]);
+    const [activeId, setActiveId] = useState<number | null>(null);
+    const navSeats = navRows.flat();
+    // O lugar no Tab: o escolhido pelas setas, senão o 1º selecionado, senão o 1º livre.
+    const tabSeatId =
+        (navSeats.some((s) => s.id === activeId) ? activeId : null) ??
+        navSeats.find((s) => selected.has(s.id))?.id ??
+        navSeats[0]?.id ??
+        null;
+
+    function onMapKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+        if (!NAV_KEYS.includes(e.key)) {
+            return;
+        }
+
+        const from = navSeats.find((s) => s.id === tabSeatId);
+        const next = from ? neighborSeat(navRows, from, e.key) : null;
+        e.preventDefault();
+
+        if (!next) {
+            return;
+        }
+
+        setActiveId(next.id);
+        const el = buttons.current.get(next.id);
+        el?.focus({ preventScroll: true });
+
+        // Lugar fora da área visível do mapa: leva o mapa até ele.
+        const view = viewportRef.current?.getBoundingClientRect();
+        const box = el?.getBoundingClientRect();
+
+        if (el && view && box && (box.left < view.left || box.right > view.right || box.top < view.top || box.bottom > view.bottom)) {
+            wrapperRef.current?.zoomToElement(el, Math.max(scale, MIN_TAP_SCALE), 150);
+        }
+    }
+
     const contentW = bounds.maxX - bounds.minX + SEAT;
     const contentH = bounds.maxY - bounds.minY + SEAT;
     const boardW = GUTTER + PAD + contentW + PAD;
@@ -244,6 +340,10 @@ export function SeatMap({
                     >
                         <TransformComponent wrapperClass="!h-full !w-full">
                             <div
+                                role="group"
+                                aria-label="Mapa de assentos"
+                                aria-describedby={keysHintId}
+                                onKeyDown={onMapKeyDown}
                                 className="relative"
                                 style={{ width: boardW, height: boardH, pointerEvents: tappable ? 'auto' : 'none' }}
                             >
@@ -273,6 +373,14 @@ export function SeatMap({
                                         left={GUTTER + PAD + (s.x - bounds.minX) - SEAT / 2}
                                         top={PAD + (s.y - bounds.minY) - SEAT / 2}
                                         interactiveStatuses={interactiveStatuses}
+                                        tabbable={s.id === tabSeatId}
+                                        buttonRef={(el) => {
+                                            if (el) {
+                                                buttons.current.set(s.id, el);
+                                            } else {
+                                                buttons.current.delete(s.id);
+                                            }
+                                        }}
                                     />
                                 ))}
 
@@ -287,6 +395,10 @@ export function SeatMap({
                         </TransformComponent>
                     </TransformWrapper>
                 )}
+
+                <p id={keysHintId} className="sr-only">
+                    Use as setas para andar entre os lugares livres e Enter ou Espaço para escolher.
+                </p>
 
                 {/* sombra interna: sinaliza que há mais mapa fora da viewport */}
                 <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_26px_6px_var(--bg)]" />

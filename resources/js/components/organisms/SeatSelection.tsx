@@ -272,7 +272,11 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
             <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
                 <SeatMap seats={seats} bounds={seatMap.bounds} selectedIds={selectedIds} onToggle={toggle} />
 
-                <aside className="hidden rounded-card border border-border bg-surface p-6 lg:sticky lg:top-20 lg:block lg:self-start">
+                {/* section, não aside: dentro do <main> um complementar vira landmark duplicado. */}
+                <section
+                    aria-label="Sua seleção"
+                    className="hidden rounded-card border border-border bg-surface p-6 lg:sticky lg:top-20 lg:block lg:self-start"
+                >
                     <SelectionPanel
                         seats={selected}
                         total={total}
@@ -281,8 +285,17 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                         onCheckout={reserve}
                         submitting={submitting}
                     />
-                </aside>
+                </section>
             </div>
+
+            {/* Anúncio da seleção para leitor de tela (WCAG 4.1.3). */}
+            <p role="status" aria-live="polite" className="sr-only">
+                {selected.length === 0
+                    ? ''
+                    : `${selected.length} ${selected.length === 1 ? 'lugar selecionado' : 'lugares selecionados'}: ${selected
+                          .map((s) => s.code)
+                          .join(', ')}. Subtotal ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`}
+            </p>
 
             {/* folga p/ a legenda do mapa não ficar sob a barra fixa + tab bar no mobile */}
             <div aria-hidden="true" className="h-36 lg:hidden" />
@@ -312,6 +325,7 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                     <FormField label="Nome completo" htmlFor="g-name" error={guestErrors['guest.name']}>
                         <Input
                             id="g-name"
+                            autoComplete="name"
                             value={guest.name}
                             onChange={(e) => setGuest({ ...guest, name: e.target.value })}
                             placeholder="Como no documento"
@@ -327,6 +341,7 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                         <Input
                             id="g-email"
                             type="email"
+                            autoComplete="email"
                             value={guest.email}
                             onChange={(e) => setGuest({ ...guest, email: e.target.value })}
                             placeholder="nome@email.com"
