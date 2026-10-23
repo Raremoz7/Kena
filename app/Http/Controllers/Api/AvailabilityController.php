@@ -13,8 +13,10 @@ class AvailabilityController extends Controller
 
     public function show(EventSession $session): JsonResponse
     {
+        // Só os ocupados (o front trata o resto como livre). A chave continua
+        // `seats` para a aba aberta com o JS antigo seguir funcionando.
         return response()->json([
-            'seats' => $this->availability->snapshot($session),
+            'seats' => (object) $this->availability->unavailable($session),
         ]);
     }
 }

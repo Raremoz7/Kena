@@ -13,6 +13,9 @@ import { SeatMap } from '@/components/organisms/SeatMap';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { Seat, SeatMapData, SeatStatus } from '@/lib/veludo/types';
 
+/** Intervalo do polling do mapa. O hold no servidor é a garantia; isto só atualiza a tela. */
+const POLL_INTERVAL_MS = 10_000;
+
 function SelectionPanel({
     seats,
     total,
@@ -132,7 +135,8 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
     const selectedIds = useMemo(() => selected.map((s) => s.id), [selected]);
     const total = selected.reduce((sum, s) => sum + s.price, 0);
 
-    // Polling da disponibilidade.
+    // Polling da disponibilidade: só os lugares ocupados vêm na resposta (o resto
+    // está livre). Pausa com a aba em segundo plano e confere de novo ao voltar.
     useEffect(() => {
         if (!availabilityUrl) {
             return;
@@ -140,6 +144,10 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
 
         let active = true;
         async function poll() {
+            if (document.hidden) {
+                return;
+            }
+
             try {
                 const res = await fetch(availabilityUrl as string, {
                     headers: { Accept: 'application/json' },
@@ -150,18 +158,29 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                 }
 
                 const data = (await res.json()) as { seats: Record<number, SeatStatus> };
-                setStatuses(data.seats);
+                setStatuses(
+                    Object.fromEntries(
+                        seatMap.seats.map((s) => [s.id, data.seats[s.id] ?? 'available']),
+                    ),
+                );
             } catch {
                 /* silencioso — tenta de novo no próximo tick */
             }
         }
-        const id = window.setInterval(poll, 4000);
+        const onVisible = () => {
+            if (!document.hidden) {
+                void poll();
+            }
+        };
+        const id = window.setInterval(poll, POLL_INTERVAL_MS);
+        document.addEventListener('visibilitychange', onVisible);
 
         return () => {
             active = false;
             window.clearInterval(id);
+            document.removeEventListener('visibilitychange', onVisible);
         };
-    }, [availabilityUrl]);
+    }, [availabilityUrl, seatMap.seats]);
 
     // Remove da seleção assentos que deixaram de estar disponíveis, avisando
     // o comprador (senão o assento some do resumo em silêncio).

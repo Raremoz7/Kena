@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\User;
+use App\Services\LotSnapshot;
 use App\Services\SeatReservationService;
+use App\Services\TicketLotService;
 use App\Support\GoogleWalletSettings;
 use App\Support\Presenters\CatalogPresenter;
 use App\Support\Presenters\TicketPresenter;
@@ -68,13 +70,20 @@ class BuyerController extends Controller
         // payload inicial e chega numa segunda requisição.
         $multi = count($sessions) > 1;
 
+        // Um retrato dos lotes para a página toda (preço dos setores e lote atual).
+        // Em closure: o carregamento adiado do mapa (partial reload) não recalcula.
+        $lots = null;
+        $snapshot = function () use (&$lots, $session): LotSnapshot {
+            return $lots ??= app(TicketLotService::class)->snapshot($session);
+        };
+
         return Inertia::render('buyer/event', [
             'event' => CatalogPresenter::detail($event),
-            'sectors' => CatalogPresenter::sectors($event, $session),
+            'sectors' => fn (): array => CatalogPresenter::sectors($event, $session, $snapshot()),
             'sessionId' => $session->id,
             'sessionLabel' => CatalogPresenter::sessionLabel($session),
             'sessions' => $sessions,
-            'lot' => $multi ? null : CatalogPresenter::lotInfo($session),
+            'lot' => fn (): ?array => $multi ? null : CatalogPresenter::lotInfo($session, $snapshot()),
             'seatMap' => $multi ? null : Inertia::defer(fn (): array => CatalogPresenter::seatMap($session)),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
@@ -94,11 +103,13 @@ class BuyerController extends Controller
             return redirect()->route('events.index');
         }
 
+        $lots = app(TicketLotService::class)->snapshot($session);
+
         return Inertia::render('buyer/seats', [
             'event' => ['slug' => $event->slug, 'title' => $event->title],
             'session' => ['id' => $session->id, 'label' => CatalogPresenter::sessionLabel($session)],
-            'seatMap' => CatalogPresenter::seatMap($session),
-            'lot' => CatalogPresenter::lotInfo($session),
+            'seatMap' => CatalogPresenter::seatMap($session, $lots),
+            'lot' => CatalogPresenter::lotInfo($session, $lots),
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
             'emailCodeUrl' => route('email-code.send'),

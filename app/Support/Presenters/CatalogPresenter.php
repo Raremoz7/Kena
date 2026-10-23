@@ -5,6 +5,7 @@ namespace App\Support\Presenters;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionSeat;
+use App\Services\LotSnapshot;
 use App\Services\TicketLotService;
 use App\Support\Money;
 use Carbon\CarbonInterface;
@@ -24,7 +25,7 @@ final class CatalogPresenter
     public static function listItem(Event $event): array
     {
         $session = $event->sessions->first();
-        $priceFrom = ($session ? self::lots()->currentPriceCents($session) : null)
+        $priceFrom = ($session ? self::lots()->snapshot($session)->currentPriceCents() : null)
             ?? $event->sectors->min('price_cents') ?? 0;
 
         return [
@@ -74,7 +75,7 @@ final class CatalogPresenter
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function sectors(Event $event, EventSession $session): array
+    public static function sectors(Event $event, EventSession $session, ?LotSnapshot $lots = null): array
     {
         $available = $session->sessionSeats()
             ->where('status', SessionSeat::STATUS_AVAILABLE)
@@ -82,7 +83,7 @@ final class CatalogPresenter
             ->groupBy('sector_id')
             ->pluck('total', 'sector_id');
 
-        $lotPrice = self::lots()->currentPriceCents($session);
+        $lotPrice = ($lots ?? self::lots()->snapshot($session))->currentPriceCents();
 
         return $event->sectors->map(fn ($sector): array => [
             'id' => $sector->id,
@@ -98,12 +99,12 @@ final class CatalogPresenter
      *
      * @return array<string, mixed>
      */
-    public static function seatMap(EventSession $session): array
+    public static function seatMap(EventSession $session, ?LotSnapshot $lots = null): array
     {
         /** @var Collection<int, SessionSeat> $seats */
         $seats = $session->sessionSeats()->with(['seat', 'sector'])->get();
         // Com lotes, todo lugar livre custa o preço do lote atual.
-        $lotPrice = self::lots()->currentPriceCents($session);
+        $lotPrice = ($lots ?? self::lots()->snapshot($session))->currentPriceCents();
 
         $mapped = $seats->map(fn (SessionSeat $ss): array => [
             'id' => $ss->id,
@@ -178,9 +179,9 @@ final class CatalogPresenter
      *
      * @return array{current: array{name: string, price: float, remaining: int|null}|null, next: array{name: string, price: float}|null, soldOut: bool}|null
      */
-    public static function lotInfo(EventSession $session): ?array
+    public static function lotInfo(EventSession $session, ?LotSnapshot $lots = null): ?array
     {
-        $summary = self::lots()->summary($session);
+        $summary = ($lots ?? self::lots()->snapshot($session))->summary();
         if ($summary === []) {
             return null;
         }
