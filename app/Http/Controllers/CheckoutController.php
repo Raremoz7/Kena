@@ -81,7 +81,7 @@ class CheckoutController extends Controller
         $this->ensureOwnerActive($reservation);
 
         $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
-        $coupon = $this->coupons->resolve($data['code'], $reservation->session->event_id);
+        $coupon = $this->coupons->resolveForReservation($data['code'], $reservation);
 
         if ($coupon === null) {
             return response()->json(['message' => 'Cupom inválido ou expirado.'], 422);

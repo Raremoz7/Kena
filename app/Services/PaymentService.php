@@ -42,7 +42,7 @@ class PaymentService
             throw new PaymentException('Esta sessão foi cancelada e não aceita mais pagamentos.');
         }
 
-        $coupon = $this->coupons->resolve($input['coupon_code'] ?? null, $reservation->session->event_id);
+        $coupon = $this->coupons->resolveForReservation($input['coupon_code'] ?? null, $reservation);
         $order = $this->orders->createFromReservation($reservation, $coupon);
 
         if ($order->status === Order::STATUS_PAID) {

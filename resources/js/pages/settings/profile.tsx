@@ -1,11 +1,13 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
+import { EmailCodeField } from '@/components/molecules/EmailCodeField';
 import { FormField } from '@/components/molecules/FormField';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
@@ -14,18 +16,23 @@ type PageProps = {
     auth: Auth;
 };
 
-export default function Profile(
-    {
-        mustVerifyEmail,
-        status,
-    }: {
-        mustVerifyEmail: boolean;
-        status?: string;
-    },
-) {
+export default function Profile({
+    mustVerifyEmail,
+    status,
+    emailCodeUrl,
+}: {
+    mustVerifyEmail: boolean;
+    status?: string;
+    emailCodeUrl: string;
+}) {
     const { auth } = usePage<PageProps>().props;
     // Rota autenticada (auth:web): o comprador sempre existe aqui.
     const user = auth.user!;
+    const [email, setEmail] = useState(user.email);
+    const [code, setCode] = useState('');
+    // E-mail novo só é salvo com o código enviado para ele.
+    const emailChanged =
+        email.trim().toLowerCase() !== user.email.trim().toLowerCase();
 
     return (
         <>
@@ -72,7 +79,8 @@ export default function Profile(
                                 <Input
                                     id="email"
                                     type="email"
-                                    defaultValue={user.email}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     name="email"
                                     required
                                     autoComplete="username"
@@ -80,12 +88,23 @@ export default function Profile(
                                 />
                             </FormField>
 
+                            {emailChanged && (
+                                <EmailCodeField
+                                    id="code"
+                                    name="code"
+                                    email={email}
+                                    sendUrl={emailCodeUrl}
+                                    code={code}
+                                    onCodeChange={setCode}
+                                    error={errors.code}
+                                />
+                            )}
+
                             {mustVerifyEmail &&
                                 user.email_verified_at === null && (
                                     <div>
                                         <p className="-mt-4 text-sm text-muted-foreground">
-                                            Seu e-mail ainda não foi
-                                            verificado.{' '}
+                                            Seu e-mail ainda não foi verificado.{' '}
                                             <Link
                                                 href={send()}
                                                 as="button"
@@ -108,7 +127,10 @@ export default function Profile(
 
                             <div className="flex items-center gap-4">
                                 <Button
-                                    disabled={processing}
+                                    disabled={
+                                        processing ||
+                                        (emailChanged && code.length !== 6)
+                                    }
                                     data-test="update-profile-button"
                                 >
                                     {processing && <Spinner />}
@@ -124,4 +146,3 @@ export default function Profile(
         </>
     );
 }
-

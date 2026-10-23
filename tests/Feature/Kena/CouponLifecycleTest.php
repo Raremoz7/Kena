@@ -123,6 +123,43 @@ class CouponLifecycleTest extends TestCase
         $this->assertContains($pix->gateway_payment_id, $this->gateway->cancellations, 'Pix do pedido substituído deve morrer no gateway');
     }
 
+    public function test_retrying_payment_keeps_single_use_coupon_already_redeemed_by_this_order(): void
+    {
+        $session = $this->makeSession(2, 4500);
+        $coupon = $this->makeCoupon(maxUses: 1);
+        $user = User::factory()->create();
+        $reservation = app(SeatReservationService::class)
+            ->hold($session, $user, $this->availableSeatIds($session, 1));
+
+        // Pix com o cupom consome o único uso...
+        $pending = app(PaymentService::class)->pay($reservation, ['method' => 'pix', 'coupon_code' => 'teste10']);
+        $this->assertSame(1, $coupon->refresh()->used);
+
+        // ...e trocar para cartão com o MESMO código não pode cair para preço cheio.
+        $paid = app(PaymentService::class)->pay($reservation->refresh(), [
+            'method' => 'card', 'token' => 'tok', 'coupon_code' => 'TESTE10',
+        ]);
+
+        $this->assertSame(Order::STATUS_PAID, $paid->status);
+        $this->assertSame($pending->id, $paid->id, 'o pedido com o cupom é reaproveitado');
+        $this->assertSame($pending->discount_cents, $paid->discount_cents);
+        $this->assertGreaterThan(0, $paid->discount_cents);
+        $this->assertSame(1, $coupon->refresh()->used);
+    }
+
+    public function test_single_use_coupon_redeemed_by_another_reservation_stays_exhausted(): void
+    {
+        $session = $this->makeSession(2, 4500);
+        $this->makeCoupon(maxUses: 1);
+        $holds = app(SeatReservationService::class);
+        $first = $holds->hold($session, User::factory()->create(), $this->availableSeatIds($session, 1));
+        app(PaymentService::class)->pay($first, ['method' => 'pix', 'coupon_code' => 'TESTE10']);
+
+        $second = $holds->hold($session, User::factory()->create(), $this->availableSeatIds($session, 1));
+
+        $this->assertNull(app(CouponService::class)->resolveForReservation('TESTE10', $second));
+    }
+
     public function test_repeating_pix_with_same_coupon_still_reuses_payment(): void
     {
         $session = $this->makeSession(2, 4500);
