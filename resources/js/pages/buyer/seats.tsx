@@ -20,10 +20,11 @@ export default function SeatsPage({ event, session, seatMap, reserveUrl, availab
     return (
         <>
             <Head title={`Assentos · ${event.title}`} />
+            <h1 className="sr-only">Escolha seus assentos · {event.title}</h1>
 
             <div className="border-b border-border bg-surface/60">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                    <nav className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground">
+                    <nav aria-label="Caminho" className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground">
                         <Link href={`/e/${event.slug}`} className="truncate hover:text-foreground">
                             {event.title}
                         </Link>

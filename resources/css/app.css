@@ -148,13 +148,13 @@
     --seat-available: oklch(0.52 0.14 155);
     --seat-selected: oklch(0.52 0.14 155);
     --seat-held: oklch(0.6 0.13 72);
-    --seat-sold: oklch(0.86 0.01 60);
+    --seat-sold: oklch(0.64 0.01 60); /* 3.1:1 sobre o fundo (WCAG 1.4.11) */
     --seat-blocked: oklch(0.86 0.01 60);
     --seat-pcd: oklch(0.52 0.14 230);
     --seat-available-text: oklch(0.47 0.12 155);
     --seat-pcd-text: oklch(0.48 0.13 230);
     --seat-held-text: oklch(0.5 0.12 72);
-    --seat-sold-text: oklch(0.5 0.012 50);
+    --seat-sold-text: oklch(0.21 0.015 48); /* 5.3:1 sobre o ocupado */
     --seat-blocked-text: oklch(0.55 0.01 50);
     --seat-hatch-a: oklch(0.88 0.01 60);
     --seat-hatch-b: oklch(0.93 0.008 60);
@@ -230,13 +230,13 @@
     --seat-available: oklch(0.52 0.14 155);
     --seat-selected: oklch(0.52 0.14 155);
     --seat-held: oklch(0.58 0.14 72);
-    --seat-sold: oklch(0.245 0.016 48);
+    --seat-sold: oklch(0.5 0.01 60); /* 3.2:1 sobre o fundo */
     --seat-blocked: oklch(0.245 0.016 48);
     --seat-pcd: oklch(0.52 0.14 230);
     --seat-available-text: oklch(0.66 0.13 155);
     --seat-pcd-text: oklch(0.66 0.13 230);
     --seat-held-text: oklch(0.72 0.14 72);
-    --seat-sold-text: oklch(0.5 0.012 50);
+    --seat-sold-text: oklch(0.97 0.006 75); /* 6:1 sobre o ocupado */
     --seat-blocked-text: oklch(0.45 0.01 50);
     --seat-hatch-a: oklch(0.245 0.016 48);
     --seat-hatch-b: oklch(0.2 0.013 48);

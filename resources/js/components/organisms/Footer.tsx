@@ -16,7 +16,7 @@ export function Footer() {
                  * O padding vertical (com margem negativa compensando) leva a área
                  * clicável ao mínimo de 24px da WCAG 2.5.8 sem alterar o layout.
                  */}
-                <nav className="flex gap-6">
+                <nav aria-label="Rodapé" className="flex gap-6">
                     <Link href="/eventos" className={footerLink}>
                         Eventos
                     </Link>
