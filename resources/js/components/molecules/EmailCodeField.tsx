@@ -43,6 +43,8 @@ export function EmailCodeField({
     const [message, setMessage] = useState<string | null>(null);
     const [sendError, setSendError] = useState<string | null>(null);
     const [cooldown, setCooldown] = useState(0);
+    // Anúncio para leitor de tela (WCAG 4.1.3): "código enviado" e erros de envio.
+    const [announcement, setAnnouncement] = useState('');
 
     const normalized = email.trim().toLowerCase();
     const sent = sentTo !== null && sentTo === normalized;
@@ -59,11 +61,11 @@ export function EmailCodeField({
 
     async function send() {
         if (sending || !looksLikeEmail(email)) {
-            setSendError(
-                looksLikeEmail(email)
-                    ? null
-                    : 'Digite um e-mail válido para receber o código.',
-            );
+            const invalid = looksLikeEmail(email)
+                ? null
+                : 'Digite um e-mail válido para receber o código.';
+            setSendError(invalid);
+            setAnnouncement(invalid ?? '');
 
             return;
         }
@@ -75,78 +77,97 @@ export function EmailCodeField({
             const res = await api.post<{ message: string }>(sendUrl, { email });
             setSentTo(normalized);
             setMessage(res.message);
+            setAnnouncement(
+                `${res.message} Digite os 6 números no campo do código.`,
+            );
             setCooldown(RESEND_COOLDOWN_SECONDS);
             onCodeChange('');
         } catch (e) {
-            setSendError(
+            const msg =
                 e instanceof ApiError
                     ? e.message
-                    : 'Não foi possível enviar o código. Tente novamente.',
-            );
+                    : 'Não foi possível enviar o código. Tente novamente.';
+            setSendError(msg);
+            setAnnouncement(msg);
         } finally {
             setSending(false);
         }
     }
 
+    // Fica sempre no mesmo lugar da árvore: a região viva já existe antes da mensagem.
+    const liveRegion = (
+        <p role="status" aria-live="polite" className="sr-only">
+            {announcement}
+        </p>
+    );
+
     if (!sent) {
         return (
-            <div className="flex flex-col gap-1.5">
-                <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={send}
-                    disabled={sending}
-                >
-                    {sending ? <Spinner /> : 'Enviar código de confirmação'}
-                </Button>
-                <p
-                    className={
-                        sendError || error
-                            ? 'font-body text-xs text-danger-text'
-                            : 'font-body text-xs text-faint'
-                    }
-                >
-                    {sendError ??
-                        error ??
-                        'Enviamos um código para o seu e-mail para confirmar que ele está certo.'}
-                </p>
-            </div>
+            <>
+                {liveRegion}
+                <div className="flex flex-col gap-1.5">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={send}
+                        disabled={sending}
+                    >
+                        {sending ? <Spinner /> : 'Enviar código de confirmação'}
+                    </Button>
+                    <p
+                        className={
+                            sendError || error
+                                ? 'font-body text-xs text-danger-text'
+                                : 'font-body text-xs text-faint'
+                        }
+                    >
+                        {sendError ??
+                            error ??
+                            'Enviamos um código para o seu e-mail para confirmar que ele está certo.'}
+                    </p>
+                </div>
+            </>
         );
     }
 
     return (
-        <FormField
-            label="Código de confirmação"
-            htmlFor={id}
-            error={sendError ?? error}
-            helper={message ?? undefined}
-            action={
-                <button
-                    type="button"
-                    onClick={send}
-                    disabled={sending || cooldown > 0}
-                    className="font-body text-xs text-accent-text hover:underline disabled:text-faint disabled:no-underline"
-                >
-                    {cooldown > 0
-                        ? `Reenviar em ${cooldown}s`
-                        : 'Reenviar código'}
-                </button>
-            }
-        >
-            <Input
-                id={id}
-                name={name}
-                value={code}
-                onChange={(e) =>
-                    onCodeChange(e.target.value.replace(/\D/g, '').slice(0, 6))
+        <>
+            {liveRegion}
+            <FormField
+                label="Código de confirmação"
+                htmlFor={id}
+                error={sendError ?? error}
+                helper={message ?? undefined}
+                action={
+                    <button
+                        type="button"
+                        onClick={send}
+                        disabled={sending || cooldown > 0}
+                        className="font-body text-xs text-accent-text hover:underline disabled:text-faint disabled:no-underline"
+                    >
+                        {cooldown > 0
+                            ? `Reenviar em ${cooldown}s`
+                            : 'Reenviar código'}
+                    </button>
                 }
-                placeholder="000000"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                required
-                autoFocus
-            />
-        </FormField>
+            >
+                <Input
+                    id={id}
+                    name={name}
+                    value={code}
+                    onChange={(e) =>
+                        onCodeChange(
+                            e.target.value.replace(/\D/g, '').slice(0, 6),
+                        )
+                    }
+                    placeholder="000000"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    required
+                    autoFocus
+                />
+            </FormField>
+        </>
     );
 }

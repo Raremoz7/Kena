@@ -11,6 +11,7 @@ use App\Services\CouponService;
 use App\Services\Payments\PaymentResult;
 use App\Services\PaymentService;
 use App\Services\PricingService;
+use App\Services\SeatReservationService;
 use App\Support\MercadoPagoSettings;
 use App\Support\Presenters\CheckoutPresenter;
 use Illuminate\Http\JsonResponse;
@@ -67,6 +68,7 @@ class CheckoutController extends Controller
             'payUrl' => route('checkout.pay', $reservation),
             'statusUrl' => route('checkout.status', $reservation),
             'releaseUrl' => route('reservations.release', $reservation),
+            'extendUrl' => route('checkout.extend', $reservation),
             'mpPublicKey' => MercadoPagoSettings::publicKey(),
             'pendingPayment' => $pendingPayment,
             // Comprador sem CPF cadastrado precisa informar no checkout —
@@ -124,6 +126,20 @@ class CheckoutController extends Controller
         }
 
         return response()->json($this->orderStatusPayload($order));
+    }
+
+    /** "Preciso de mais tempo": estende a reserva uma vez. */
+    public function extend(Reservation $reservation, SeatReservationService $reservations): JsonResponse
+    {
+        abort_unless($reservation->user_id === Auth::id(), 403);
+
+        if (! $reservations->extend($reservation)) {
+            return response()->json([
+                'message' => 'Não dá para estender esta reserva de novo. Conclua o pagamento ou escolha os lugares outra vez.',
+            ], 422);
+        }
+
+        return response()->json(['reservationExpiresAt' => $reservation->expires_at->toIso8601String()]);
     }
 
     /** Status do pedido da reserva (polling do Pix). */

@@ -15,6 +15,7 @@ import type {
 import { api, ApiError } from '@/lib/veludo/api';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { PriceLine, ReservationInfo } from '@/lib/veludo/types';
+import { useCountdown } from '@/lib/veludo/useCountdown';
 import { useSecureCardFields } from '@/lib/veludo/useSecureCardFields';
 
 interface PriceSummary {
@@ -40,6 +41,8 @@ interface CheckoutPageProps {
     payUrl: string;
     statusUrl: string;
     releaseUrl: string;
+    /** "Preciso de mais tempo": estende a reserva uma vez. */
+    extendUrl: string;
     mpPublicKey: string | null;
     /** Comprador sem CPF cadastrado precisa informá-lo no checkout. */
     needsDocument: boolean;
@@ -106,6 +109,7 @@ export default function CheckoutPage({
     payUrl,
     statusUrl,
     releaseUrl,
+    extendUrl,
     mpPublicKey,
     needsDocument,
     pendingPayment,
@@ -159,6 +163,36 @@ export default function CheckoutPage({
             label: `${n}× de ${brl.format(summary.total / n)} sem juros`,
         }));
     }, [summary.total]);
+
+    // Aviso antes de a reserva acabar, com opção de mais tempo (WCAG 2.2.1).
+    const { total: secondsLeft } = useCountdown(deadline);
+    const [extended, setExtended] = useState(false);
+    const [extending, setExtending] = useState(false);
+    const showTimeWarning =
+        !extended && !awaitingPayment && secondsLeft > 0 && secondsLeft <= 60;
+
+    async function askMoreTime() {
+        setExtending(true);
+
+        try {
+            const res = await api.post<{ reservationExpiresAt: string }>(
+                extendUrl,
+            );
+            setDeadline(res.reservationExpiresAt);
+            veludoToast.success(
+                'Mais tempo',
+                'Sua reserva ganhou mais 5 minutos.',
+            );
+        } catch (e) {
+            veludoToast.error(
+                'Não foi possível estender',
+                e instanceof ApiError ? e.message : 'Tente novamente.',
+            );
+        } finally {
+            setExtended(true);
+            setExtending(false);
+        }
+    }
 
     function onExpire() {
         veludoToast.warning('Reserva expirada', 'Os assentos foram liberados.');
@@ -403,10 +437,35 @@ export default function CheckoutPage({
     return (
         <>
             <Head title="Checkout" />
+            <h1 className="sr-only">Pagamento</h1>
+
+            {showTimeWarning && (
+                <div
+                    role="alert"
+                    className="border-b border-warning bg-warning/15 px-4 py-3"
+                >
+                    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 sm:px-2">
+                        <p className="font-body text-sm text-foreground">
+                            Sua reserva acaba em menos de 1 minuto.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={askMoreTime}
+                            disabled={extending}
+                            className="rounded-btn bg-accent px-4 py-2 font-body text-sm font-semibold text-accent-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-60"
+                        >
+                            Preciso de mais tempo
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="border-b border-border bg-surface/60">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                    <nav className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground">
+                    <nav
+                        aria-label="Caminho"
+                        className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground"
+                    >
                         <Link href="/eventos" className="hover:text-foreground">
                             Eventos
                         </Link>

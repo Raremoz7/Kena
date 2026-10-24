@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon';
+import { SkipLink } from '@/components/atoms/SkipLink';
 import { Drawer } from '@/components/molecules/Drawer';
 import {
     AdminBrand,
@@ -19,6 +20,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex min-h-dvh bg-bg">
+            <SkipLink />
             <AdminSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
                 <header className="flex h-14 items-center gap-2.5 border-b border-border px-4 md:hidden">
@@ -45,7 +47,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     </div>
                 </Drawer>
 
-                <main className="min-w-0 flex-1">{children}</main>
+                <main
+                    id="conteudo"
+                    tabIndex={-1}
+                    className="min-w-0 flex-1 outline-none"
+                >
+                    {children}
+                </main>
             </div>
         </div>
     );

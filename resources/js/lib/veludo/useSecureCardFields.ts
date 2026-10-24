@@ -25,6 +25,16 @@ const PLACEHOLDERS: Record<SecureFieldType, string> = {
     securityCode: 'CVV',
 };
 
+/**
+ * Nome acessível de cada iframe (WCAG 4.1.2). O rótulo visível do formulário
+ * não alcança o campo dentro do iframe; sem `title`, o leitor de tela diz só "frame".
+ */
+const FIELD_TITLES: Record<SecureFieldType, string> = {
+    cardNumber: 'Número do cartão',
+    expirationDate: 'Validade do cartão (MM/AA)',
+    securityCode: 'Código de segurança (CVV)',
+};
+
 /** Mensagem por campo quando o MP sinaliza invalidez. */
 const FIELD_ERROR: Record<SecureFieldType, string> = {
     cardNumber: 'Número de cartão inválido.',
@@ -107,6 +117,11 @@ export function useSecureCardFields(
                     });
 
                     field.on('ready', () => {
+                        document
+                            .getElementById(id)
+                            ?.querySelector('iframe')
+                            ?.setAttribute('title', FIELD_TITLES[type]);
+
                         readyCount += 1;
 
                         if (readyCount >= types.length && !cancelled) {

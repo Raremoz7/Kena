@@ -76,6 +76,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/checkout/{reservation}', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout/{reservation}/cupom', [CheckoutController::class, 'coupon'])->name('checkout.coupon');
     Route::post('/checkout/{reservation}/pagar', [CheckoutController::class, 'pay'])->name('checkout.pay');
+    Route::post('/checkout/{reservation}/mais-tempo', [CheckoutController::class, 'extend'])->name('checkout.extend');
     Route::get('/checkout/{reservation}/status', [CheckoutController::class, 'status'])->name('checkout.status');
 
     Route::get('/meus-ingressos', [BuyerController::class, 'tickets'])->name('tickets.index');

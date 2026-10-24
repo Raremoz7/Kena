@@ -49,7 +49,7 @@ export function Header() {
                 </Link>
 
                 {/* nav central em pill (desktop) — no mobile o tab bar resolve */}
-                <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-surface-2 p-1 md:flex">
+                <nav aria-label="Principal" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-surface-2 p-1 md:flex">
                     <PillLink href="/eventos">Eventos</PillLink>
                     <PillLink href="/meus-ingressos">Meus ingressos</PillLink>
                 </nav>
