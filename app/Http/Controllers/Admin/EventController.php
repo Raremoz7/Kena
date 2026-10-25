@@ -9,10 +9,10 @@ use App\Models\Sector;
 use App\Models\SessionSeat;
 use App\Models\Venue;
 use App\Services\SessionSeatGenerator;
+use App\Support\BannerImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -229,19 +229,14 @@ class EventController extends Controller
         }
     }
 
-    /** Salva a imagem do banner (se enviada) e devolve a URL pública, ou null. */
+    /** Salva a imagem do banner (se enviada), já comprimida, e devolve o caminho público, ou null. */
     private function storeBanner(Request $request): ?string
     {
         if (! $request->hasFile('banner_image')) {
             return null;
         }
 
-        $path = $request->file('banner_image')->store('banners', 'public');
-        if ($path === false) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($path);
+        return BannerImage::store($request->file('banner_image'));
     }
 
     /** @return array<int, array<string, mixed>> */
