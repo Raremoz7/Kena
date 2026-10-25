@@ -1,40 +1,31 @@
 import { Badge } from '@/components/atoms/Badge';
 import { Icon } from '@/components/atoms/Icon';
 import { Tag } from '@/components/atoms/Tag';
+import { bannerGradient } from '@/lib/veludo/banner';
 import type { EventInfo } from '@/lib/veludo/types';
 
 export function EventHero({ event }: { event: EventInfo }) {
     return (
-        <section
-            className="dark relative overflow-hidden border-b border-border"
-            style={{ background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})` }}
-        >
+        <section className="dark relative overflow-hidden border-b border-border bg-[#0d0806]">
             {event.bannerImage && (
-                <>
-                    <img
-                        src={event.bannerImage}
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 size-full object-cover"
-                    />
-                    {/* Degradê do evento por cima da foto, na opacidade escolhida no painel. */}
-                    {event.bannerOpacity > 0 && (
-                        <div
-                            aria-hidden="true"
-                            className="absolute inset-0"
-                            style={{
-                                background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})`,
-                                opacity: event.bannerOpacity / 100,
-                            }}
-                        />
-                    )}
-                </>
+                <img
+                    src={event.bannerImage}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 size-full object-cover"
+                />
             )}
+            {/* Degradê horizontal do evento (cores e opacidades escolhidas no painel). */}
             <div
+                aria-hidden="true"
                 className="absolute inset-0"
                 style={{
-                    background:
-                        'linear-gradient(100deg, oklch(0.14 0.012 48 / 0.94) 0%, oklch(0.14 0.012 48 / 0.7) 48%, oklch(0.14 0.012 48 / 0.35) 100%)',
+                    background: bannerGradient({
+                        from: event.bannerFrom,
+                        fromOpacity: event.bannerFromOpacity,
+                        to: event.bannerTo,
+                        toOpacity: event.bannerToOpacity,
+                    }),
                 }}
             />
             <div className="relative mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">

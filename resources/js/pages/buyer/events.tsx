@@ -19,9 +19,6 @@ interface ListedEvent {
     venue: VenueInfo;
     dateLabel: string;
     timeLabel: string;
-    bannerFrom: string;
-    bannerOpacity: number;
-    bannerTo: string;
     bannerImage?: string;
     priceFrom: number;
 }
@@ -53,10 +50,8 @@ function EventCard({ event }: { event: ListedEvent }) {
             href={`/e/${event.slug}`}
             className="group block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent/50"
         >
-            <div
-                className="relative h-40 overflow-hidden"
-                style={{ background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})` }}
-            >
+            {/* Na lista, o banner é só a foto: o degradê fica no topo da página do evento. */}
+            <div className="relative h-40 overflow-hidden bg-surface-2">
                 {event.bannerImage && (
                     <img
                         src={event.bannerImage}
@@ -65,17 +60,6 @@ function EventCard({ event }: { event: ListedEvent }) {
                         className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 )}
-                {event.bannerImage && event.bannerOpacity > 0 && (
-                    <div
-                        aria-hidden="true"
-                        className="absolute inset-0"
-                        style={{
-                            background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})`,
-                            opacity: event.bannerOpacity / 100,
-                        }}
-                    />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                 <span className="absolute top-4 left-4">
                     <Badge tone={event.status.tone as BadgeProps['tone']}>{event.status.label}</Badge>
                 </span>

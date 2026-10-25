@@ -7,6 +7,7 @@ import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
 import { FormField } from '@/components/molecules/FormField';
+import { bannerGradient } from '@/lib/veludo/banner';
 
 interface Venue {
     id: number;
@@ -29,7 +30,8 @@ interface EventData {
     duration_label: string | null;
     banner_from: string;
     banner_to: string;
-    banner_opacity: number;
+    banner_from_opacity: number;
+    banner_to_opacity: number;
     banner_image: string | null;
     sector_name: string;
     price: number;
@@ -37,7 +39,10 @@ interface EventData {
 }
 
 // Atalhos de degradê (hex, para o seletor de cor do navegador).
+// Atalhos: a cor da esquerda; a direita fica no escuro padrão. O 1º é o visual
+// clássico (escuro forte à esquerda, para o título, sumindo para a direita).
 const presets = [
+    { label: 'Escuro', from: '#0d0806', to: '#0d0806' },
     { label: 'Roxo', from: '#2f2b59', to: '#0d0806' },
     { label: 'Vinho', from: '#4f1a1b', to: '#0d0806' },
     { label: 'Azul', from: '#0f253b', to: '#0d0806' },
@@ -65,7 +70,8 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
         duration_label: event?.duration_label ?? '',
         banner_from: event?.banner_from ?? presets[0].from,
         banner_to: event?.banner_to ?? presets[0].to,
-        banner_opacity: event?.banner_opacity ?? 0,
+        banner_from_opacity: event?.banner_from_opacity ?? 94,
+        banner_to_opacity: event?.banner_to_opacity ?? 35,
         banner_image: null as File | null,
         sector_name: event?.sector_name ?? 'Plateia',
         price: event ? String(event.price) : '',
@@ -186,89 +192,111 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                             </FormField>
                         </div>
 
-                        <FormField label="Banner" error={form.errors.banner_image ?? form.errors.banner_from ?? form.errors.banner_to}>
-                            <div className="flex flex-col gap-3">
-                                {/* Prévia: imagem por baixo, degradê por cima na opacidade escolhida. */}
-                                <span
-                                    className="relative h-24 w-full overflow-hidden rounded-btn border border-border"
-                                    style={{ background: `linear-gradient(160deg, ${form.data.banner_from}, ${form.data.banner_to})` }}
-                                >
+                        <FormField
+                            label="Banner do evento"
+                            error={
+                                form.errors.banner_image ??
+                                form.errors.banner_from ??
+                                form.errors.banner_to ??
+                                form.errors.banner_from_opacity ??
+                                form.errors.banner_to_opacity
+                            }
+                        >
+                            <div className="flex flex-col gap-4">
+                                {/* Prévia do topo do evento: foto por baixo, degradê horizontal por cima. */}
+                                <span className="relative block h-28 w-full overflow-hidden rounded-btn border border-border bg-[#0d0806]">
                                     {(bannerPreview ?? event?.banner_image) && (
-                                        <>
-                                            <img
-                                                src={bannerPreview ?? event?.banner_image ?? ''}
-                                                alt=""
-                                                className="absolute inset-0 size-full object-cover"
-                                            />
-                                            <span
-                                                className="absolute inset-0"
-                                                style={{
-                                                    background: `linear-gradient(160deg, ${form.data.banner_from}, ${form.data.banner_to})`,
-                                                    opacity: form.data.banner_opacity / 100,
-                                                }}
-                                            />
-                                        </>
+                                        <img
+                                            src={bannerPreview ?? event?.banner_image ?? ''}
+                                            alt=""
+                                            className="absolute inset-0 size-full object-cover"
+                                        />
                                     )}
+                                    <span
+                                        className="absolute inset-0"
+                                        style={{
+                                            background: bannerGradient({
+                                                from: form.data.banner_from,
+                                                fromOpacity: form.data.banner_from_opacity,
+                                                to: form.data.banner_to,
+                                                toOpacity: form.data.banner_to_opacity,
+                                            }),
+                                        }}
+                                    />
+                                    <span className="absolute bottom-2 left-3 font-display text-sm font-bold text-white uppercase">
+                                        {form.data.title || 'Título do evento'}
+                                    </span>
                                 </span>
 
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
-                                        <input
-                                            type="color"
-                                            aria-label="Cor inicial do degradê"
-                                            value={asHex(form.data.banner_from)}
-                                            onChange={(e) => form.setData('banner_from', e.target.value)}
-                                            className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
-                                        />
-                                        Início
-                                    </label>
-                                    <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
-                                        <input
-                                            type="color"
-                                            aria-label="Cor final do degradê"
-                                            value={asHex(form.data.banner_to)}
-                                            onChange={(e) => form.setData('banner_to', e.target.value)}
-                                            className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
-                                        />
-                                        Fim
-                                    </label>
-                                    <span className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
-                                    <div className="flex gap-2">
-                                        {presets.map((p) => (
-                                            <button
-                                                key={p.label}
-                                                type="button"
-                                                aria-label={`Degradê ${p.label}`}
-                                                title={p.label}
-                                                onClick={() => {
-                                                    form.setData('banner_from', p.from);
-                                                    form.setData('banner_to', p.to);
-                                                }}
-                                                className="size-8 rounded-btn border border-border"
-                                                style={{ background: `linear-gradient(160deg, ${p.from}, ${p.to})` }}
-                                            />
-                                        ))}
-                                    </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {(
+                                        [
+                                            ['banner_from', 'banner_from_opacity', 'Esquerda'],
+                                            ['banner_to', 'banner_to_opacity', 'Direita'],
+                                        ] as const
+                                    ).map(([colorKey, opacityKey, side]) => (
+                                        <div key={colorKey} className="flex flex-col gap-2 rounded-btn border border-border p-3">
+                                            <span className="font-body text-xs font-semibold text-foreground">{side}</span>
+                                            <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                                                <input
+                                                    type="color"
+                                                    aria-label={`Cor da ${side.toLowerCase()} do degradê`}
+                                                    value={asHex(form.data[colorKey])}
+                                                    onChange={(e) => form.setData(colorKey, e.target.value)}
+                                                    className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
+                                                />
+                                                <span className="font-mono text-xs uppercase">{asHex(form.data[colorKey])}</span>
+                                            </label>
+                                            <label className="flex flex-col gap-1 font-body text-xs text-muted-foreground">
+                                                <span className="flex items-center justify-between">
+                                                    Opacidade
+                                                    <span className="text-foreground tabular-nums">{form.data[opacityKey]}%</span>
+                                                </span>
+                                                <input
+                                                    type="range"
+                                                    min={0}
+                                                    max={100}
+                                                    step={1}
+                                                    aria-label={`Opacidade da ${side.toLowerCase()} do degradê`}
+                                                    value={form.data[opacityKey]}
+                                                    onChange={(e) => form.setData(opacityKey, Number(e.target.value))}
+                                                    className="w-full accent-[var(--accent)]"
+                                                />
+                                            </label>
+                                        </div>
+                                    ))}
                                 </div>
 
-                                <label className="flex flex-col gap-1.5 font-body text-sm text-muted-foreground">
-                                    <span className="flex items-center justify-between">
-                                        Opacidade do degradê sobre a imagem
-                                        <span className="tabular-nums text-foreground">{form.data.banner_opacity}%</span>
-                                    </span>
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={100}
-                                        step={5}
-                                        value={form.data.banner_opacity}
-                                        onChange={(e) => form.setData('banner_opacity', Number(e.target.value))}
-                                        className="w-full accent-[var(--accent)]"
-                                    />
-                                    <span className="text-[11px] text-faint">
-                                        0% mostra a foto pura; 100% cobre a foto com o degradê. Sem imagem, o degradê aparece inteiro.
-                                    </span>
-                                </label>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-body text-xs text-faint">Atalhos:</span>
+                                    {presets.map((p) => (
+                                        <button
+                                            key={p.label}
+                                            type="button"
+                                            aria-label={`Degradê ${p.label}`}
+                                            title={p.label}
+                                            onClick={() => {
+                                                form.setData('banner_from', p.from);
+                                                form.setData('banner_to', p.to);
+                                            }}
+                                            className="h-8 w-12 rounded-btn border border-border"
+                                            style={{
+                                                background: bannerGradient({
+                                                    from: p.from,
+                                                    fromOpacity: 100,
+                                                    to: p.to,
+                                                    toOpacity: 100,
+                                                }),
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+
+                                <p className="font-body text-[11px] text-faint">
+                                    O degradê aparece só no topo da página do evento, da esquerda para a direita, por cima
+                                    da foto. Na lista de eventos o cartão mostra só a foto. Deixe a esquerda mais forte
+                                    para o título continuar legível.
+                                </p>
 
                                 <label className="flex cursor-pointer items-center gap-2 rounded-btn border border-dashed border-border px-3 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-accent hover:text-foreground">
                                     <Icon name="image" size={16} />
@@ -289,7 +317,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                     />
                                 </label>
                                 <p className="font-body text-[11px] text-faint">
-                                    A imagem (JPG/PNG/WebP, até 4MB) cobre o gradiente nas telas do evento.
+                                    Foto do banner: JPG, PNG ou WebP, até 4 MB. Aparece no topo do evento e no cartão da lista.
                                 </p>
                             </div>
                         </FormField>
