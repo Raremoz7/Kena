@@ -14,6 +14,7 @@ use App\Models\SessionSeat;
 use App\Models\Ticket;
 use App\Models\TicketLot;
 use App\Models\User;
+use App\Services\Payments\PaymentGateway;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +28,7 @@ class SeatReservationService
         private readonly TicketLotService $lots,
         private readonly CourtesyReserveService $reserve,
         private readonly CouponService $coupons,
+        private readonly PaymentGateway $gateway,
     ) {}
 
     public function holdMinutes(): int
@@ -231,9 +233,15 @@ class SeatReservationService
         });
     }
 
-    /** Libera a reserva (volta assentos a disponível) e marca como cancelada. */
+    /**
+     * Libera a reserva (volta assentos a disponível) e marca como cancelada.
+     * Quem desiste (cancelar, trocar de lugares) não pode continuar com um Pix
+     * pagável: o pagamento vivo é cancelado no gateway antes, e o pedido junto.
+     */
     public function release(Reservation $reservation): void
     {
+        $this->cancelLivePayments($reservation);
+
         DB::transaction(function () use ($reservation): void {
             SessionSeat::query()
                 ->where('held_by_reservation_id', $reservation->id)
@@ -303,6 +311,22 @@ class SeatReservationService
         foreach ($orders as $order) {
             $order->update(['status' => Order::STATUS_CANCELLED]);
             $this->coupons->release($order);
+        }
+    }
+
+    private function cancelLivePayments(Reservation $reservation): void
+    {
+        $live = Payment::query()
+            ->whereIn('order_id', Order::where('reservation_id', $reservation->id)
+                ->where('status', Order::STATUS_PENDING)
+                ->select('id'))
+            ->where('status', Payment::STATUS_PENDING)
+            ->whereNotNull('gateway_payment_id')
+            ->get();
+
+        foreach ($live as $payment) {
+            $this->gateway->cancelPayment((string) $payment->gateway_payment_id);
+            $payment->update(['status' => Payment::STATUS_CANCELLED]);
         }
     }
 

@@ -76,7 +76,7 @@ class SeatLimitTest extends TestCase
         $this->actingAs($user);
 
         $this->reserve($session, $this->availableSeatIds($session, 2))
-            ->assertSessionHasErrors(['seats' => 'Cada CPF pode levar até 3 ingressos por sessão. Você ainda pode escolher 1.']);
+            ->assertSessionHasErrors(['seats' => 'Cada pessoa pode levar até 3 ingressos por sessão. Você ainda pode escolher 1.']);
 
         $this->reserve($session, $this->availableSeatIds($session, 1))->assertSessionHasNoErrors();
     }

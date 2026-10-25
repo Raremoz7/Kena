@@ -105,8 +105,8 @@ class ReservationController extends Controller
         } catch (SeatLimitException $e) {
             return back()->withErrors([
                 'seats' => $e->remaining === 0
-                    ? "Este CPF já tem {$e->max} ingressos para esta sessão, o máximo permitido."
-                    : "Cada CPF pode levar até {$e->max} ingressos por sessão. Você ainda pode escolher {$e->remaining}.",
+                    ? "Você já tem {$e->max} ingressos para esta sessão, o máximo permitido."
+                    : "Cada pessoa pode levar até {$e->max} ingressos por sessão. Você ainda pode escolher {$e->remaining}.",
             ]);
         }
 

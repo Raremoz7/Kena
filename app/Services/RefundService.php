@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Mail;
 /** Reembolso total de um pedido pago: estorna no gateway e libera os assentos. */
 class RefundService
 {
-    public function __construct(private readonly PaymentGateway $gateway) {}
+    public function __construct(
+        private readonly PaymentGateway $gateway,
+        private readonly CouponService $coupons,
+    ) {}
 
     public function refundOrder(Order $order, ?string $reason = null): Refund
     {
@@ -76,6 +79,10 @@ class RefundService
             if ($payment !== null) {
                 $payment->update(['status' => 'refunded']);
             }
+
+            // Cupom/cortesia volta a valer: o pai que estornou a cortesia para
+            // trocar de lugar consegue usar o mesmo código de novo.
+            $this->coupons->release($order);
 
             return $refund;
         });

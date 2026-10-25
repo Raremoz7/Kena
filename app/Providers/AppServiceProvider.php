@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as Events;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -73,16 +72,9 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function overrideMercadoPagoConfig(): void
     {
-        try {
-            // hasTable() também toca o banco: no boot sem banco (ex.:
-            // package:discover antes das migrações) ele lança — mantém o
-            // fallback do .env em vez de derrubar a aplicação.
-            if (! Schema::hasTable('settings')) {
-                return;
-            }
-
-            $settings = Setting::map();
-        } catch (\Throwable) {
+        // Sem banco/tabela mantém o fallback do .env.
+        $settings = Setting::forBoot();
+        if ($settings === null) {
             return;
         }
 
