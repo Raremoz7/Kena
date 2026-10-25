@@ -85,10 +85,11 @@ class GuestCheckoutTest extends TestCase
 
     public function test_magic_link_logs_in_and_redirects_to_tickets(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['password' => null]);
         $url = MagicLink::generate($user, now()->addDays(10));
 
-        $this->get($url)->assertRedirect(route('tickets.index'));
+        $this->get($url)->assertOk();
+        $this->post($url)->assertRedirect(route('tickets.index'));
         $this->assertAuthenticatedAs($user);
     }
 }
