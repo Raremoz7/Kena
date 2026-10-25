@@ -5,10 +5,11 @@ return [
     'hold_minutes' => (int) env('KENA_HOLD_MINUTES', 10),
 
     /**
-     * Máximo de ingressos por comprador em uma sessão (reserva atual + já comprados).
-     * Impede que uma pessoa (ou robô) segure a plateia inteira.
+     * Máximo de ingressos por CPF em uma sessão (reserva atual + já emitidos,
+     * cortesias incluídas). O CPF é único por conta, então contar pela conta é
+     * contar pelo CPF. Impede que uma pessoa (ou robô) segure a plateia inteira.
      */
-    'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 10),
+    'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 8),
 
     /** Taxa de serviço (% sobre subtotal já com desconto). */
     'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 10),

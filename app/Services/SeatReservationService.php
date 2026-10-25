@@ -33,7 +33,7 @@ class SeatReservationService
 
     public function maxTicketsPerBuyer(): int
     {
-        return max(1, (int) config('kena.max_tickets_per_buyer', 10));
+        return max(1, (int) config('kena.max_tickets_per_buyer', 8));
     }
 
     /** Quantos ingressos o comprador ainda pode pegar nesta sessão. */

@@ -10,13 +10,22 @@ interface CheckoutPanelProps {
     lines: PriceLine[];
     total: number;
     onConfirm: () => void;
+    /** Texto do CTA (ex.: "Continuar" na etapa do cupom). */
+    confirmLabel?: string;
     submitting?: boolean;
 }
 
 /**
  * Resumo do pedido no checkout: assentos, descontos/taxas e CTA de pagamento.
  */
-export function CheckoutPanel({ reservation, lines, total, onConfirm, submitting }: CheckoutPanelProps) {
+export function CheckoutPanel({
+    reservation,
+    lines,
+    total,
+    onConfirm,
+    confirmLabel = 'Confirmar pagamento',
+    submitting,
+}: CheckoutPanelProps) {
     return (
         <div className="overflow-hidden rounded-card border border-border bg-surface">
             <div className="h-1 w-full bg-accent" />
@@ -48,7 +57,7 @@ export function CheckoutPanel({ reservation, lines, total, onConfirm, submitting
                         <Spinner />
                     ) : (
                         <>
-                            Confirmar pagamento
+                            {confirmLabel}
                             <Icon name="arrow-right" size={18} />
                         </>
                     )}

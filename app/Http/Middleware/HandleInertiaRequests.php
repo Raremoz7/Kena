@@ -42,7 +42,10 @@ class HandleInertiaRequests extends Middleware
                 // Comprador (guard web) e conta de painel (guard painel) sao
                 // independentes — os dois podem estar nulos ao mesmo tempo.
                 // So os campos que o front usa: isto vai em toda pagina.
-                'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at']),
+                // hasCpf: o mapa pede o CPF antes de reservar (limite por CPF), sem expor o número.
+                'user' => $request->user() !== null
+                    ? [...$request->user()->only(['id', 'name', 'email', 'email_verified_at']), 'hasCpf' => filled($request->user()->cpf)]
+                    : null,
                 'panelUser' => $request->user('painel')?->only(['id', 'name', 'email', 'role']),
             ],
             // Mensagens flash viram toast no front (useFlashToasts).

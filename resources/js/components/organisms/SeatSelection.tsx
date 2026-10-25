@@ -121,12 +121,15 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
     const [selected, setSelected] = useState<Seat[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
-    const page = usePage<{ auth: { user: { id: number } | null }; ziggy?: { location?: string } }>();
+    const page = usePage<{ auth: { user: { id: number; hasCpf?: boolean } | null }; ziggy?: { location?: string } }>();
     const user = page.props.auth?.user ?? null;
     const currentUrl = page.props.ziggy?.location ?? page.url;
     const [guestOpen, setGuestOpen] = useState(false);
     const [guest, setGuest] = useState({ name: '', email: '', cpf: '', code: '' });
     const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
+    // Conta sem CPF (ex.: Google): o limite é por CPF, então pede antes de reservar.
+    const [cpfOpen, setCpfOpen] = useState(false);
+    const [cpf, setCpf] = useState('');
 
     const seats = useMemo(
         () => seatMap.seats.map((s) => ({ ...s, status: statuses[s.id] ?? s.status })),
@@ -215,7 +218,7 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                 'Limite de ingressos',
                 maxSeats === 0
                     ? 'Você já atingiu o máximo de ingressos para esta sessão.'
-                    : `Cada comprador pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'}.`,
+                    : `Cada CPF pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'} por sessão.`,
             );
 
             return;
@@ -250,8 +253,12 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
             return;
         }
 
-        // Logado segue direto; convidado preenche dados (cria conta leve no backend).
-        if (user) {
+        // Logado segue direto (pedindo o CPF se a conta não tem); convidado
+        // preenche dados (cria conta leve no backend).
+        if (user && user.hasCpf === false) {
+            setGuestErrors({});
+            setCpfOpen(true);
+        } else if (user) {
             doReserve({});
         } else {
             setGuestErrors({});
@@ -308,6 +315,43 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl,
                 onCheckout={reserve}
                 submitting={submitting}
             />
+
+            <Modal
+                open={cpfOpen}
+                onOpenChange={(o) => !o && !submitting && setCpfOpen(false)}
+                title="Informe seu CPF"
+                description="Cada CPF pode levar um número limitado de ingressos por sessão. Pedimos só uma vez."
+            >
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+
+                        if (!submitting) {
+                            doReserve({ cpf });
+                        }
+                    }}
+                    className="flex flex-col gap-4"
+                >
+                    <FormField label="CPF" htmlFor="u-cpf" error={guestErrors.cpf}>
+                        <Input
+                            id="u-cpf"
+                            value={cpf}
+                            onChange={(e) => setCpf(e.target.value)}
+                            placeholder="000.000.000-00"
+                            inputMode="numeric"
+                            required
+                        />
+                    </FormField>
+                    <div className="flex justify-end gap-3">
+                        <Button type="button" variant="secondary" onClick={() => setCpfOpen(false)} disabled={submitting}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" disabled={submitting || cpf.replace(/\D/g, '').length !== 11}>
+                            {submitting ? <Spinner /> : 'Continuar para o pagamento'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 open={guestOpen}

@@ -51,8 +51,8 @@ export default function Terms({
                 </p>
                 {policy.maxTickets !== null && (
                     <p>
-                        Cada comprador pode adquirir até {policy.maxTickets}{' '}
-                        ingressos por sessão.
+                        Cada CPF pode adquirir até {policy.maxTickets}{' '}
+                        ingressos por sessão, cortesias incluídas.
                     </p>
                 )}
             </LegalSection>

@@ -194,4 +194,22 @@ class CourtesyReserveTest extends TestCase
             ->assertStatus(422);
         $this->assertStringContainsString('cota de cortesia', (string) $response->json('message'));
     }
+
+    public function test_zero_total_confirms_without_payment_step(): void
+    {
+        $session = $this->makeSession(4);
+        $coupon = $this->courtesy($session, 'Maria Silva');
+        $parent = User::factory()->create();
+        $reservation = $this->hold($session, 2, $parent);
+
+        // Sem cupom, "confirmar sem pagar" é recusado.
+        $this->actingAs($parent)
+            ->postJson(route('checkout.pay', $reservation), ['method' => 'free'])
+            ->assertStatus(422);
+
+        $this->actingAs($parent)
+            ->postJson(route('checkout.pay', $reservation), ['method' => 'free', 'coupon_code' => $coupon->code])
+            ->assertOk()
+            ->assertJsonPath('status', Order::STATUS_PAID);
+    }
 }

@@ -49,6 +49,11 @@ class PaymentService
             return $order;
         }
 
+        // "Confirmar ingressos" sem pagamento só vale se o total zerou mesmo.
+        if (($input['method'] ?? null) === Payment::METHOD_FREE && $order->total_cents > 0) {
+            throw new PaymentException('O valor do pedido não está zerado. Escolha uma forma de pagamento.');
+        }
+
         // Pedido gratuito (cupom 100%): não há o que cobrar — emite direto.
         if ($order->total_cents === 0) {
             Payment::create([

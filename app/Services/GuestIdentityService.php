@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CpfInUseException;
 use App\Exceptions\GuestAccountExistsException;
 use App\Models\User;
 
@@ -17,6 +18,7 @@ class GuestIdentityService
      * @param  array{email: string, name: string, cpf: string}  $data
      *
      * @throws GuestAccountExistsException
+     * @throws CpfInUseException
      */
     public function identify(array $data): User
     {
@@ -31,10 +33,16 @@ class GuestIdentityService
             return $existing;
         }
 
+        // Limite de ingressos é por CPF: outro e-mail com o mesmo CPF não abre conta nova.
+        $cpf = (string) preg_replace('/\D/', '', $data['cpf']);
+        if (User::where('cpf', $cpf)->exists()) {
+            throw new CpfInUseException;
+        }
+
         $user = User::create([
             'email' => $email,
             'name' => $data['name'],
-            'cpf' => (string) preg_replace('/\D/', '', $data['cpf']),
+            'cpf' => $cpf,
         ]);
 
         // email_verified_at não é fillable: grava à parte, já que o código confirmou o e-mail.
