@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
@@ -29,6 +29,7 @@ export function SeatSheet({
     submitting,
 }: SeatSheetProps) {
     const [open, setOpen] = useState(false);
+    const reduceMotion = useReducedMotion();
     const count = seats.length;
     const codes = seats.map((s) => s.code).join(', ');
 
@@ -36,7 +37,7 @@ export function SeatSheet({
         <div className="lg:hidden">
             {/* scrim + folha expandida */}
             <AnimatePresence>
-                {open && (
+                {open && count > 0 && (
                     <>
                         <motion.div
                             className="fixed inset-0 z-50 bg-black/45"
@@ -96,7 +97,13 @@ export function SeatSheet({
                                             <button
                                                 type="button"
                                                 aria-label={`Remover ${s.code}`}
-                                                onClick={() => onRemove(s)}
+                                                onClick={() => {
+                                                    if (count === 1) {
+                                                        setOpen(false);
+                                                    }
+
+                                                    onRemove(s);
+                                                }}
                                                 className="text-faint transition-colors hover:text-danger-text"
                                             >
                                                 <Icon name="close" size={15} />
@@ -142,7 +149,10 @@ export function SeatSheet({
                                     variant="ghost"
                                     block
                                     size="sm"
-                                    onClick={onClear}
+                                    onClick={() => {
+                                        setOpen(false);
+                                        onClear();
+                                    }}
                                     disabled={submitting}
                                 >
                                     Limpar seleção
@@ -153,49 +163,61 @@ export function SeatSheet({
                 )}
             </AnimatePresence>
 
-            {/* barra recolhida (peek), presa ao rodapé da tela */}
-            <div className="fixed inset-x-0 bottom-0 z-40 rounded-t-[18px] border-t border-border bg-surface px-4 pt-2 pb-[max(1.125rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
-                <button
-                    type="button"
-                    aria-label={count > 0 ? 'Abrir seleção' : undefined}
-                    disabled={count === 0}
-                    onClick={() => count > 0 && setOpen(true)}
-                    className="mx-auto mb-2 block h-1 w-9 rounded-full bg-border disabled:opacity-50"
-                />
-                <div className="flex items-center justify-between gap-3">
-                    <button
-                        type="button"
-                        disabled={count === 0}
-                        onClick={() => count > 0 && setOpen(true)}
-                        className="min-w-0 text-left"
+            {/* barra recolhida (peek): só aparece com assento escolhido, sobe e desce animada */}
+            <AnimatePresence>
+                {count > 0 && (
+                    <motion.div
+                        key="peek"
+                        className="fixed inset-x-0 bottom-0 z-40 rounded-t-[18px] border-t border-border bg-surface px-4 pt-2 pb-[max(1.125rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.4)]"
+                        initial={{ y: '110%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '110%' }}
+                        transition={
+                            reduceMotion
+                                ? { duration: 0 }
+                                : {
+                                      type: 'spring',
+                                      stiffness: 420,
+                                      damping: 36,
+                                  }
+                        }
                     >
-                        <span className="block truncate font-body text-xs text-muted-foreground">
-                            {count === 0
-                                ? 'Nenhum assento'
-                                : `${count} ${count === 1 ? 'assento' : 'assentos'} · ${codes}`}
-                        </span>
-                        <Price
-                            value={total}
-                            className="text-lg text-foreground"
+                        <button
+                            type="button"
+                            aria-label="Abrir seleção"
+                            onClick={() => setOpen(true)}
+                            className="mx-auto mb-2 block h-1 w-9 rounded-full bg-border"
                         />
-                    </button>
+                        <div className="flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setOpen(true)}
+                                className="min-w-0 text-left"
+                            >
+                                <span className="block truncate font-body text-xs text-muted-foreground">
+                                    {`${count} ${count === 1 ? 'assento' : 'assentos'} · ${codes}`}
+                                </span>
+                                <Price
+                                    value={total}
+                                    className="text-lg text-foreground"
+                                />
+                            </button>
 
-                    {count > 0 ? (
-                        <Button variant="success" onClick={() => setOpen(true)}>
-                            Continuar
-                            <Icon
-                                name="chevron-right"
-                                size={16}
-                                className="-rotate-90"
-                            />
-                        </Button>
-                    ) : (
-                        <Button variant="success" disabled>
-                            Continuar
-                        </Button>
-                    )}
-                </div>
-            </div>
+                            <Button
+                                variant="success"
+                                onClick={() => setOpen(true)}
+                            >
+                                Continuar
+                                <Icon
+                                    name="chevron-right"
+                                    size={16}
+                                    className="-rotate-90"
+                                />
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
