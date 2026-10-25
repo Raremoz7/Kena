@@ -38,10 +38,7 @@ final class CatalogPresenter
             'venue' => self::venue($event),
             'dateLabel' => $session ? self::dateLabel($session->starts_at) : '',
             'timeLabel' => $session ? self::timeLabel($session->starts_at) : '',
-            'bannerFrom' => $event->banner_from,
-            'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
-            'bannerOpacity' => (int) $event->banner_opacity,
             'priceFrom' => Money::toReais((int) $priceFrom),
         ];
     }
@@ -69,7 +66,9 @@ final class CatalogPresenter
             'bannerFrom' => $event->banner_from,
             'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
-            'bannerOpacity' => (int) $event->banner_opacity,
+            // Degradê horizontal por cima da foto, só no topo do evento.
+            'bannerFromOpacity' => (int) $event->banner_from_opacity,
+            'bannerToOpacity' => (int) $event->banner_to_opacity,
         ];
     }
 

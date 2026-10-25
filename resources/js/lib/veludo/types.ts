@@ -64,8 +64,9 @@ export interface EventInfo {
     timeLabel: string;
     durationLabel: string;
     bannerFrom: string;
-    /** 0–100: opacidade do degradê por cima da imagem do banner. */
-    bannerOpacity: number;
+    /** 0–100: opacidade de cada ponta do degradê horizontal do topo do evento. */
+    bannerFromOpacity: number;
+    bannerToOpacity: number;
     bannerTo: string;
     bannerImage?: string;
 }

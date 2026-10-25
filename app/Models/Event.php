@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $duration_label
  * @property string $banner_from
  * @property string $banner_to
- * @property int $banner_opacity
+ * @property int $banner_from_opacity
+ * @property int $banner_to_opacity
  * @property string|null $banner_image
  * @property-read Venue $venue
  */

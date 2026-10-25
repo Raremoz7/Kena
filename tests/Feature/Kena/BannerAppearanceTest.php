@@ -10,7 +10,7 @@ use App\Support\Presenters\CatalogPresenter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** Cores do degradê (hex do seletor) e opacidade do degradê sobre a foto do banner. */
+/** Degradê horizontal do topo do evento: cor e opacidade de cada ponta; a lista não tem degradê. */
 class BannerAppearanceTest extends TestCase
 {
     use RefreshDatabase;
@@ -26,7 +26,8 @@ class BannerAppearanceTest extends TestCase
             'status' => 'on_sale',
             'banner_from' => '#7a1f3d',
             'banner_to' => '#0d0806',
-            'banner_opacity' => 40,
+            'banner_from_opacity' => 90,
+            'banner_to_opacity' => 20,
             'sector_name' => 'Plateia',
             'price' => 45,
             'sessions' => [['starts_at' => now()->addDays(10)->format('Y-m-d\TH:i')]],
@@ -50,15 +51,16 @@ class BannerAppearanceTest extends TestCase
 
         $event = Event::firstOrFail();
         $this->assertSame('#7a1f3d', $event->banner_from);
-        $this->assertSame(40, (int) $event->banner_opacity);
+        $this->assertSame(90, (int) $event->banner_from_opacity);
+        $this->assertSame(20, (int) $event->banner_to_opacity);
 
         $this->actingAs($organizer, 'painel')
-            ->put("/painel/eventos/{$event->id}", $this->payload($venue, ['banner_from' => '#112233', 'banner_opacity' => 85]))
+            ->put("/painel/eventos/{$event->id}", $this->payload($venue, ['banner_from' => '#112233', 'banner_to_opacity' => 60]))
             ->assertSessionHasNoErrors();
 
         $event->refresh();
         $this->assertSame('#112233', $event->banner_from);
-        $this->assertSame(85, (int) $event->banner_opacity);
+        $this->assertSame(60, (int) $event->banner_to_opacity);
     }
 
     public function test_invalid_color_and_opacity_are_rejected(): void
@@ -68,27 +70,33 @@ class BannerAppearanceTest extends TestCase
 
         // Cor vai direto para o style do banner: só hex é aceito.
         $this->actingAs($organizer, 'painel')
-            ->post('/painel/eventos', $this->payload($venue, ['banner_from' => 'red;background:url(x)', 'banner_opacity' => 150]))
-            ->assertSessionHasErrors(['banner_from', 'banner_opacity']);
+            ->post('/painel/eventos', $this->payload($venue, ['banner_from' => 'red;background:url(x)', 'banner_from_opacity' => 150]))
+            ->assertSessionHasErrors(['banner_from', 'banner_from_opacity']);
 
         $this->assertSame(0, Event::count());
     }
 
-    public function test_opacity_defaults_to_zero_and_reaches_the_site(): void
+    public function test_defaults_keep_the_classic_dark_shade_and_only_the_event_page_gets_it(): void
     {
         $organizer = PanelUser::factory()->create();
         $venue = $this->venue();
 
         $this->actingAs($organizer, 'painel')
-            ->post('/painel/eventos', $this->payload($venue, ['banner_opacity' => null]))
+            ->post('/painel/eventos', $this->payload($venue, ['banner_from_opacity' => null, 'banner_to_opacity' => null]))
             ->assertSessionHasNoErrors();
 
         $event = Event::with(['venue', 'sectors', 'sessions'])->firstOrFail();
-        $this->assertSame(0, (int) $event->banner_opacity);
+        // Padrão = a faixa escura de antes (94% → 35%).
+        $this->assertSame(94, (int) $event->banner_from_opacity);
+        $this->assertSame(35, (int) $event->banner_to_opacity);
 
-        $event->update(['banner_opacity' => 60]);
-        $event->refresh()->load(['venue', 'sectors', 'sessions']);
-        $this->assertSame(60, CatalogPresenter::detail($event)['bannerOpacity']);
-        $this->assertSame(60, CatalogPresenter::listItem($event)['bannerOpacity']);
+        $detail = CatalogPresenter::detail($event);
+        $this->assertSame(94, $detail['bannerFromOpacity']);
+        $this->assertSame(35, $detail['bannerToOpacity']);
+
+        // O cartão da lista não leva degradê.
+        $card = CatalogPresenter::listItem($event);
+        $this->assertArrayNotHasKey('bannerFrom', $card);
+        $this->assertArrayNotHasKey('bannerFromOpacity', $card);
     }
 }
