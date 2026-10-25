@@ -50,9 +50,19 @@ class TicketsIssuedMail extends Mailable implements ShouldQueue
         );
     }
 
-    /** Magic-link de uso único (rotaciona o anterior) — ver App\Support\MagicLink. */
+    /**
+     * Link dos ingressos no e-mail. Só conta sem senha e sem Google (convidado,
+     * quem recebeu transferência) ganha o magic-link de uso único; as outras
+     * entram pelo login normal — o e-mail não pode virar acesso à conta.
+     */
     public static function magicLink(int $userId, CarbonInterface $sessionStart): string
     {
-        return MagicLink::generate(User::findOrFail($userId), $sessionStart);
+        $user = User::findOrFail($userId);
+
+        if ($user->password !== null || $user->google_id !== null) {
+            return route('tickets.index');
+        }
+
+        return MagicLink::generate($user, $sessionStart);
     }
 }
