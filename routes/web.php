@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\Admin\LotController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\SeatController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -15,6 +17,8 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Dev\MailPreviewController;
+use App\Http\Controllers\EmailCodeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
@@ -26,6 +30,9 @@ use Illuminate\Support\Facades\Route;
 // Público — descoberta e seleção
 Route::get('/', [BuyerController::class, 'events'])->name('home');
 Route::get('/eventos', [BuyerController::class, 'events'])->name('events.index');
+Route::get('/ajuda', [LegalController::class, 'help'])->name('help');
+Route::get('/termos', [LegalController::class, 'terms'])->name('terms');
+Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy');
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');
@@ -47,8 +54,13 @@ Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 // Reserva (hold) — pública: aceita convidado (cria conta leve) ou usuário logado
+// Código de confirmação do e-mail (convidado e cadastro com senha).
+Route::post('/codigo-email', [EmailCodeController::class, 'send'])
+    ->middleware('throttle:email-code')
+    ->name('email-code.send');
+
 Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::class, 'reserve'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:reserve')
     ->name('sessions.reserve');
 
 // Magic-link (login sem senha por e-mail, assinado)
@@ -62,8 +74,14 @@ Route::middleware(['auth:web'])->group(function () {
         ->name('reservations.release');
 
     Route::get('/checkout/{reservation}', [CheckoutController::class, 'show'])->name('checkout');
-    Route::post('/checkout/{reservation}/cupom', [CheckoutController::class, 'coupon'])->name('checkout.coupon');
-    Route::post('/checkout/{reservation}/pagar', [CheckoutController::class, 'pay'])->name('checkout.pay');
+    // Cortesia é nome da criança + 3 caracteres: limita tentativas para não adivinharem o final.
+    Route::post('/checkout/{reservation}/cupom', [CheckoutController::class, 'coupon'])
+        ->middleware('throttle:10,1')
+        ->name('checkout.coupon');
+    Route::post('/checkout/{reservation}/pagar', [CheckoutController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('checkout.pay');
+    Route::post('/checkout/{reservation}/mais-tempo', [CheckoutController::class, 'extend'])->name('checkout.extend');
     Route::get('/checkout/{reservation}/status', [CheckoutController::class, 'status'])->name('checkout.status');
 
     Route::get('/meus-ingressos', [BuyerController::class, 'tickets'])->name('tickets.index');
@@ -114,6 +132,9 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::post('/painel/sessoes/{session}/cancelar', [OrderController::class, 'cancelSession'])->name('admin.sessions.cancel');
 
         // Cupons de desconto
+        Route::get('/painel/cortesias', [CourtesyController::class, 'index'])->name('admin.courtesies');
+        Route::post('/painel/cortesias', [CourtesyController::class, 'store'])->name('admin.courtesies.store');
+        Route::get('/painel/cortesias/exportar', [CourtesyController::class, 'export'])->name('admin.courtesies.export');
         Route::get('/painel/cupons', [CouponController::class, 'index'])->name('admin.coupons');
         Route::get('/painel/cupons/novo', [CouponController::class, 'create'])->name('admin.coupons.create');
         Route::post('/painel/cupons', [CouponController::class, 'store'])->name('admin.coupons.store');
@@ -133,7 +154,14 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
 
         // Gestão de assentos (bloquear/liberar cortesias e lugares interditados)
         Route::get('/painel/sessoes/{session}/assentos', [SeatController::class, 'show'])->name('admin.seats');
+        Route::get('/painel/sessoes/{session}/lotes', [LotController::class, 'index'])->name('admin.lots');
+        Route::post('/painel/sessoes/{session}/lotes', [LotController::class, 'store'])->name('admin.lots.store');
+        Route::put('/painel/lotes/{lot}', [LotController::class, 'update'])->name('admin.lots.update');
+        Route::delete('/painel/lotes/{lot}', [LotController::class, 'destroy'])->name('admin.lots.destroy');
+        Route::put('/painel/sessoes/{session}/cota-cortesia', [LotController::class, 'reserve'])->name('admin.lots.reserve');
         Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
+        Route::post('/painel/sessoes/{session}/assentos/varios', [SeatController::class, 'bulk'])->name('admin.seats.bulk');
+        Route::post('/painel/sessoes/{session}/assentos/emitir', [SeatController::class, 'issue'])->name('admin.seats.issue');
 
         // Equipe (organizadores e staff)
         Route::get('/painel/equipe', [TeamController::class, 'index'])->name('admin.team');

@@ -1,21 +1,26 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Countdown } from '@/components/atoms/Countdown';
 import { Icon } from '@/components/atoms/Icon';
 import { CouponInput } from '@/components/molecules/CouponInput';
 import type { CouponFeedback } from '@/components/molecules/CouponInput';
 import { CheckoutPanel } from '@/components/organisms/CheckoutPanel';
-import { PaymentBrick } from '@/components/organisms/PaymentBrick';
+import {
+    PaymentBrick,
+    PaymentMethodPicker,
+} from '@/components/organisms/PaymentBrick';
 import type {
     CardErrors,
     CardFields,
     PaymentMethod,
     PixData,
 } from '@/components/organisms/PaymentBrick';
+import { cn } from '@/lib/utils';
 import { api, ApiError } from '@/lib/veludo/api';
-import { createMercadoPago } from '@/lib/veludo/mercadopago';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { PriceLine, ReservationInfo } from '@/lib/veludo/types';
+import { useCountdown } from '@/lib/veludo/useCountdown';
+import { useSecureCardFields } from '@/lib/veludo/useSecureCardFields';
 
 interface PriceSummary {
     lines: PriceLine[];
@@ -23,16 +28,12 @@ interface PriceSummary {
 }
 
 interface PayResponse {
-    status:
-        | 'pending'
-        | 'paid'
-        | 'failed'
-        | 'cancelled'
-        | 'refunded'
-        | 'none';
+    status: 'pending' | 'paid' | 'failed' | 'cancelled' | 'refunded' | 'none';
     orderReference?: string;
     redirect: string | null;
     pix: (PixData & { expiresAt?: string | null }) | null;
+    /** Motivo amigável da recusa do cartão (status_detail traduzido). */
+    failureReason?: string | null;
     /** Prazo real da reserva — o Pix estende o hold no servidor. */
     reservationExpiresAt?: string | null;
 }
@@ -44,9 +45,15 @@ interface CheckoutPageProps {
     payUrl: string;
     statusUrl: string;
     releaseUrl: string;
+    /** "Preciso de mais tempo": estende a reserva uma vez. */
+    extendUrl: string;
     mpPublicKey: string | null;
+    /** Comprador sem CPF cadastrado precisa informá-lo no checkout. */
+    needsDocument: boolean;
     /** Pagamento pendente vivo (ex.: refresh com Pix aguardando) — restaura QR e polling. */
     pendingPayment: PayResponse | null;
+    /** Lugares escolhidos depois que a venda paga esgotou: só fecham com código de cortesia. */
+    courtesyRequired: number;
 }
 
 const brl = new Intl.NumberFormat('pt-BR', {
@@ -54,40 +61,76 @@ const brl = new Intl.NumberFormat('pt-BR', {
     currency: 'BRL',
 });
 
-/** Validação client-side dos campos de cartão antes de tokenizar no MP. */
-function validateCard(card: CardFields): CardErrors {
+/** Valida o CPF (dígitos verificadores) no cliente. */
+function isValidCpf(raw: string): boolean {
+    const cpf = raw.replace(/\D/g, '');
+
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+        return false;
+    }
+
+    for (let t = 9; t < 11; t++) {
+        let sum = 0;
+
+        for (let i = 0; i < t; i++) {
+            sum += Number(cpf[i]) * (t + 1 - i);
+        }
+
+        const digit = ((10 * sum) % 11) % 10;
+
+        if (Number(cpf[t]) !== digit) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Validação dos campos NÃO sensíveis (nome/CPF). Número, validade e CVV são
+ * validados pelo próprio Mercado Pago dentro dos Secure Fields.
+ */
+function validateCard(card: CardFields, needsDocument: boolean): CardErrors {
     const errors: CardErrors = {};
-
-    const number = card.number.replace(/\D/g, '');
-
-    if (!number) {
-        errors.number = 'Informe o número do cartão.';
-    } else if (number.length < 13 || number.length > 19) {
-        errors.number = 'Número de cartão inválido.';
-    }
-
-    const exp = card.exp.trim();
-    const match = exp.match(/^(\d{2})\/(\d{2})$/);
-
-    if (!exp) {
-        errors.exp = 'Informe a validade.';
-    } else if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) {
-        errors.exp = 'Validade inválida (MM/AA).';
-    }
-
-    const cvv = card.cvv.replace(/\D/g, '');
-
-    if (!cvv) {
-        errors.cvv = 'Informe o CVV.';
-    } else if (cvv.length < 3 || cvv.length > 4) {
-        errors.cvv = 'CVV inválido.';
-    }
 
     if (!card.name.trim()) {
         errors.name = 'Informe o nome impresso no cartão.';
     }
 
+    if (needsDocument) {
+        if (!card.document.trim()) {
+            errors.document = 'Informe o CPF do titular.';
+        } else if (!isValidCpf(card.document)) {
+            errors.document = 'CPF inválido.';
+        }
+    }
+
     return errors;
+}
+
+/** Volta uma etapa (some com pagamento em andamento). */
+function BackLink({
+    onClick,
+    hidden,
+    children,
+}: {
+    onClick: () => void;
+    hidden: boolean;
+    children: string;
+}) {
+    if (hidden) {
+        return null;
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="mt-4 inline-flex items-center gap-1 font-body text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+            <Icon name="chevron-left" size={14} /> {children}
+        </button>
+    );
 }
 
 export default function CheckoutPage({
@@ -97,8 +140,11 @@ export default function CheckoutPage({
     payUrl,
     statusUrl,
     releaseUrl,
+    extendUrl,
     mpPublicKey,
+    needsDocument,
     pendingPayment,
+    courtesyRequired,
 }: CheckoutPageProps) {
     const [summary, setSummary] = useState<PriceSummary>(priceSummary);
     const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -110,19 +156,33 @@ export default function CheckoutPage({
     // Refresh com pagamento pendente: restaura QR, polling e prazo.
     const restoredPix = pendingPayment?.pix ?? null;
 
-    const [method, setMethod] = useState<PaymentMethod>(
-        restoredPix ? 'pix' : 'card',
+    // Etapas: 1) cupom/cortesia, 2) forma de pagamento, 3) dados do método.
+    // Com pagamento em andamento, abre direto na 3. Total zerado pula a forma
+    // de pagamento: a etapa "details" vira só a confirmação.
+    const [step, setStep] = useState<'coupon' | 'method' | 'details'>(
+        pendingPayment?.status === 'pending' ? 'details' : 'coupon',
     );
+    const stepHeading = useRef<HTMLHeadingElement>(null);
+    const isFree = summary.total === 0;
+
+    // Pix primeiro: é o padrão (o cartão só volta se a página recarregar com um cartão em análise).
+    const [method, setMethod] = useState<PaymentMethod>(
+        pendingPayment?.status === 'pending' && !restoredPix ? 'card' : 'pix',
+    );
+    // CPF de quem paga o Pix — separado do CPF do cartão e da conta.
+    const [pixDocument, setPixDocument] = useState('');
+    const [pixError, setPixError] = useState<string | undefined>();
     const [card, setCard] = useState<CardFields>({
-        number: '',
-        exp: '',
-        cvv: '',
         name: '',
+        document: '',
         installments: 1,
     });
     const [pix, setPix] = useState<PixData | null>(
         restoredPix
-            ? { qrBase64: restoredPix.qrBase64, copyPaste: restoredPix.copyPaste }
+            ? {
+                  qrBase64: restoredPix.qrBase64,
+                  copyPaste: restoredPix.copyPaste,
+              }
             : null,
     );
     const [cardErrors, setCardErrors] = useState<CardErrors>({});
@@ -135,12 +195,49 @@ export default function CheckoutPage({
         pendingPayment?.reservationExpiresAt ?? reservation.expiresAt,
     );
 
+    // Secure Fields do Mercado Pago (número/validade/CVV em iframes). Só monta
+    // na etapa de pagamento, com a aba Cartão ativa e sem pagamento em andamento.
+    const secureCard = useSecureCardFields(
+        mpPublicKey,
+        step === 'details' && !isFree && method === 'card' && !awaitingPayment,
+    );
+
     const installmentOptions = useMemo(() => {
         return [1, 2, 3].map((n) => ({
             value: n,
             label: `${n}× de ${brl.format(summary.total / n)} sem juros`,
         }));
     }, [summary.total]);
+
+    // Aviso antes de a reserva acabar, com opção de mais tempo (WCAG 2.2.1).
+    const { total: secondsLeft } = useCountdown(deadline);
+    const [extended, setExtended] = useState(false);
+    const [extending, setExtending] = useState(false);
+    const showTimeWarning =
+        !extended && !awaitingPayment && secondsLeft > 0 && secondsLeft <= 60;
+
+    async function askMoreTime() {
+        setExtending(true);
+
+        try {
+            const res = await api.post<{ reservationExpiresAt: string }>(
+                extendUrl,
+            );
+            setDeadline(res.reservationExpiresAt);
+            veludoToast.success(
+                'Mais tempo',
+                'Sua reserva ganhou mais 5 minutos.',
+            );
+        } catch (e) {
+            veludoToast.error(
+                'Não foi possível estender',
+                e instanceof ApiError ? e.message : 'Tente novamente.',
+            );
+        } finally {
+            setExtended(true);
+            setExtending(false);
+        }
+    }
 
     function onExpire() {
         veludoToast.warning('Reserva expirada', 'Os assentos foram liberados.');
@@ -195,7 +292,8 @@ export default function CheckoutPage({
         if (res.status === 'failed') {
             veludoToast.error(
                 'Pagamento recusado',
-                'O pagamento não foi aprovado. Tente outro meio.',
+                res.failureReason ??
+                    'O pagamento não foi aprovado. Tente outro meio.',
             );
             setSubmitting(false);
 
@@ -230,6 +328,49 @@ export default function CheckoutPage({
         setSubmitting(false);
     }
 
+    /** Avança uma etapa. Lugar da cota de cortesia não sai do cupom sem o código. */
+    function goNext() {
+        if (step === 'method') {
+            setStep('details');
+
+            return;
+        }
+
+        if (courtesyRequired > 0 && !appliedCoupon) {
+            setCouponFeedback({
+                tone: 'danger',
+                message:
+                    'Digite e aplique o código de cortesia para continuar.',
+            });
+
+            return;
+        }
+
+        setStep(isFree ? 'details' : 'method');
+    }
+
+    function goBack() {
+        if (awaitingPayment || submitting) {
+            return;
+        }
+
+        setStep(step === 'details' && !isFree ? 'method' : 'coupon');
+    }
+
+    // Etapa nova (ou Pix gerado) começa do topo, e o foco vai ao título da
+    // etapa (leitor de tela anuncia a troca).
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+
+            return;
+        }
+
+        window.scrollTo({ top: 0 });
+        stepHeading.current?.focus({ preventScroll: true });
+    }, [step, awaitingPayment]);
+
     async function confirm() {
         if (submitting || awaitingPayment) {
             return;
@@ -238,9 +379,9 @@ export default function CheckoutPage({
         setSubmitting(true);
 
         try {
-            if (method === 'pix') {
+            if (isFree) {
                 const res = await api.post<PayResponse>(payUrl, {
-                    method: 'pix',
+                    method: 'free',
                     coupon_code: appliedCoupon ?? undefined,
                 });
                 handlePay(res);
@@ -248,7 +389,32 @@ export default function CheckoutPage({
                 return;
             }
 
-            const fieldErrors = validateCard(card);
+            if (method === 'pix') {
+                // Sempre o CPF de quem paga: nem sempre é o da conta.
+                const pixDoc = pixDocument.replace(/\D/g, '');
+
+                if (!isValidCpf(pixDoc)) {
+                    setPixError(
+                        pixDoc === ''
+                            ? 'Informe o CPF de quem vai pagar.'
+                            : 'CPF inválido.',
+                    );
+                    setSubmitting(false);
+
+                    return;
+                }
+
+                const res = await api.post<PayResponse>(payUrl, {
+                    method: 'pix',
+                    coupon_code: appliedCoupon ?? undefined,
+                    document: pixDoc,
+                });
+                handlePay(res);
+
+                return;
+            }
+
+            const fieldErrors = validateCard(card, needsDocument);
 
             if (Object.keys(fieldErrors).length > 0) {
                 setCardErrors(fieldErrors);
@@ -267,23 +433,50 @@ export default function CheckoutPage({
                 return;
             }
 
-            const mp = await createMercadoPago(mpPublicKey);
-            const [mm, yy] = card.exp.split('/').map((s) => s.trim());
-            const token = await mp.createCardToken({
-                cardNumber: card.number.replace(/\s/g, ''),
-                cardholderName: card.name,
-                cardExpirationMonth: mm ?? '',
-                cardExpirationYear: yy ? `20${yy}` : '',
-                securityCode: card.cvv,
-            });
-            const bin = card.number.replace(/\D/g, '').slice(0, 6);
-            const methods = await mp.getPaymentMethods({ bin });
+            // Campos seguros com erro de validade: destaca e não tokeniza.
+            if (Object.values(secureCard.errors).some(Boolean)) {
+                veludoToast.error(
+                    'Dados do cartão',
+                    'Confira os campos do cartão destacados.',
+                );
+                setSubmitting(false);
+
+                return;
+            }
+
+            const doc = card.document.replace(/\D/g, '');
+            let tokenId: string;
+
+            try {
+                tokenId = await secureCard.createToken({
+                    cardholderName: card.name,
+                    ...(needsDocument
+                        ? {
+                              identificationType: 'CPF',
+                              identificationNumber: doc,
+                          }
+                        : {}),
+                });
+            } catch (tokenError) {
+                veludoToast.error(
+                    'Dados do cartão',
+                    tokenError instanceof Error && tokenError.message
+                        ? tokenError.message
+                        : 'Não foi possível validar o cartão. Confira número, validade e CVV.',
+                );
+                setSubmitting(false);
+
+                return;
+            }
+
+            const paymentMethodId = await secureCard.resolvePaymentMethodId();
 
             const res = await api.post<PayResponse>(payUrl, {
                 method: 'card',
-                token: token.id,
-                payment_method_id: methods.results[0]?.id,
+                token: tokenId,
+                payment_method_id: paymentMethodId,
                 installments: card.installments,
+                document: needsDocument ? doc : undefined,
                 coupon_code: appliedCoupon ?? undefined,
             });
             handlePay(res);
@@ -326,7 +519,8 @@ export default function CheckoutPage({
                     // Recusado: destrava para tentar outro meio (o hold segue vivo).
                     veludoToast.error(
                         'Pagamento não aprovado',
-                        'Tente novamente com outro meio de pagamento.',
+                        res.failureReason ??
+                            'Tente novamente com outro meio de pagamento.',
                     );
                     setAwaitingPayment(false);
                     setPix(null);
@@ -353,13 +547,66 @@ export default function CheckoutPage({
         };
     }, [awaitingPayment, statusUrl]);
 
+    const stepList: { key: typeof step; label: string }[] = isFree
+        ? [
+              { key: 'coupon', label: 'Cupom ou cortesia' },
+              { key: 'details', label: 'Confirmação' },
+          ]
+        : [
+              { key: 'coupon', label: 'Cupom ou cortesia' },
+              { key: 'method', label: 'Forma de pagamento' },
+              {
+                  key: 'details',
+                  label: method === 'pix' ? 'Pagar com Pix' : 'Dados do cartão',
+              },
+          ];
+    const stepIndex = Math.max(
+        0,
+        stepList.findIndex((item) => item.key === step),
+    );
+    const ctaLabel =
+        step !== 'details'
+            ? 'Continuar'
+            : isFree
+              ? 'Confirmar ingressos'
+              : method === 'pix'
+                ? awaitingPayment
+                    ? 'Aguardando o Pix'
+                    : 'Gerar Pix'
+                : 'Pagar com cartão';
+
     return (
         <>
             <Head title="Checkout" />
+            <h1 className="sr-only">Pagamento</h1>
+
+            {showTimeWarning && (
+                <div
+                    role="alert"
+                    className="border-b border-warning bg-warning/15 px-4 py-3"
+                >
+                    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 sm:px-2">
+                        <p className="font-body text-sm text-foreground">
+                            Sua reserva acaba em menos de 1 minuto.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={askMoreTime}
+                            disabled={extending}
+                            className="rounded-btn bg-accent px-4 py-2 font-body text-sm font-semibold text-accent-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-60"
+                        >
+                            Preciso de mais tempo
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="border-b border-border bg-surface/60">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                    <nav className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground">
+                    <nav
+                        aria-label="Caminho"
+                        className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground"
+                    >
                         <Link href="/eventos" className="hover:text-foreground">
                             Eventos
                         </Link>
@@ -381,7 +628,11 @@ export default function CheckoutPage({
                             </button>
                         )}
                         <div className="flex items-center gap-2 rounded-btn border border-border bg-bg px-3 py-1.5">
-                            <Icon name="alert" size={15} className="text-warning" />
+                            <Icon
+                                name="alert"
+                                size={15}
+                                className="text-warning"
+                            />
                             <Countdown
                                 expiresAt={deadline}
                                 onExpire={onExpire}
@@ -395,59 +646,157 @@ export default function CheckoutPage({
 
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
                 <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-                    <section className="order-2 flex flex-col gap-7 lg:order-1">
+                    <section className="order-1 flex flex-col gap-7">
+                        <ol
+                            aria-label="Etapas"
+                            className="flex flex-wrap items-center gap-2 font-body text-xs text-faint"
+                        >
+                            {stepList.map((item, i) => (
+                                <li
+                                    key={item.key}
+                                    aria-current={
+                                        step === item.key ? 'step' : undefined
+                                    }
+                                    className={cn(
+                                        'flex items-center gap-2',
+                                        step === item.key &&
+                                            'font-semibold text-foreground',
+                                    )}
+                                >
+                                    {i > 0 && <span aria-hidden="true">›</span>}
+                                    {i + 1}. {item.label}
+                                </li>
+                            ))}
+                        </ol>
+
                         <div>
-                            <h2 className="kicker text-faint">
-                                Cupom de desconto
+                            <h2
+                                ref={stepHeading}
+                                tabIndex={-1}
+                                className="kicker text-faint focus:outline-none"
+                            >
+                                {stepIndex + 1}. {stepList[stepIndex].label}
                             </h2>
-                            <div className="mt-3">
-                                <CouponInput
-                                    onApply={applyCoupon}
-                                    busy={couponBusy || awaitingPayment}
-                                    feedback={couponFeedback}
-                                />
-                            </div>
-                        </div>
 
-                        <div>
-                            <h2 className="kicker text-faint">Pagamento</h2>
-                            <div className="mt-3 rounded-card border border-border bg-surface p-6">
-                                <PaymentBrick
-                                    method={method}
-                                    onMethodChange={setMethod}
-                                    card={card}
-                                    onCardChange={(patch) => {
-                                        setCard((prev) => ({
-                                            ...prev,
-                                            ...patch,
-                                        }));
-                                        // Limpa o erro dos campos que estão sendo editados.
-                                        setCardErrors((prev) => {
-                                            const next = { ...prev };
+                            {step === 'coupon' && (
+                                <>
+                                    <p className="mt-1 font-body text-sm text-muted-foreground">
+                                        Tem cupom de desconto ou código de
+                                        cortesia? Aplique aqui. Se não tiver, é
+                                        só continuar.
+                                    </p>
+                                    {courtesyRequired > 0 && (
+                                        <p
+                                            role="status"
+                                            className="mt-3 rounded-card border border-warning bg-warning/15 px-4 py-3 font-body text-sm text-foreground"
+                                        >
+                                            Os ingressos à venda esgotaram.{' '}
+                                            {courtesyRequired === 1
+                                                ? '1 dos seus lugares é da cota de cortesia'
+                                                : `${courtesyRequired} dos seus lugares são da cota de cortesia`}
+                                            : digite abaixo o código de cortesia
+                                            (nome completo da criança + 3
+                                            caracteres) para concluir.
+                                        </p>
+                                    )}
+                                    <div className="mt-3">
+                                        <CouponInput
+                                            onApply={applyCoupon}
+                                            busy={couponBusy || awaitingPayment}
+                                            feedback={couponFeedback}
+                                        />
+                                    </div>
+                                </>
+                            )}
 
-                                            for (const key of Object.keys(
-                                                patch,
-                                            ) as (keyof CardErrors)[]) {
-                                                delete next[key];
-                                            }
+                            {step === 'method' && (
+                                <div className="mt-3">
+                                    <PaymentMethodPicker
+                                        value={method}
+                                        onChange={setMethod}
+                                    />
+                                    <BackLink
+                                        onClick={goBack}
+                                        hidden={awaitingPayment}
+                                    >
+                                        Voltar ao cupom
+                                    </BackLink>
+                                </div>
+                            )}
 
-                                            return next;
-                                        });
-                                    }}
-                                    installmentOptions={installmentOptions}
-                                    pix={pix}
-                                    errors={cardErrors}
-                                />
-                            </div>
+                            {step === 'details' && isFree && (
+                                <div className="mt-3 rounded-card border border-border bg-surface p-6 font-body text-sm text-foreground">
+                                    <p>
+                                        {appliedCoupon
+                                            ? `Com ${appliedCoupon}, seu pedido não tem custo.`
+                                            : 'Seu pedido não tem custo.'}{' '}
+                                        Não é preciso pagar: confirme para
+                                        emitir os ingressos.
+                                    </p>
+                                    <BackLink
+                                        onClick={goBack}
+                                        hidden={awaitingPayment}
+                                    >
+                                        Voltar ao cupom
+                                    </BackLink>
+                                </div>
+                            )}
+
+                            {step === 'details' && !isFree && (
+                                <div className="mt-3 rounded-card border border-border bg-surface p-6">
+                                    <PaymentBrick
+                                        method={method}
+                                        card={card}
+                                        onCardChange={(patch) => {
+                                            setCard((prev) => ({
+                                                ...prev,
+                                                ...patch,
+                                            }));
+                                            // Limpa o erro dos campos que estão sendo editados.
+                                            setCardErrors((prev) => {
+                                                const next = { ...prev };
+
+                                                for (const key of Object.keys(
+                                                    patch,
+                                                ) as (keyof CardErrors)[]) {
+                                                    delete next[key];
+                                                }
+
+                                                return next;
+                                            });
+                                        }}
+                                        installmentOptions={installmentOptions}
+                                        pix={pix}
+                                        errors={cardErrors}
+                                        secureErrors={secureCard.errors}
+                                        cardReady={secureCard.ready}
+                                        configured={mpPublicKey !== null}
+                                        needsDocument={needsDocument}
+                                        pixDocument={pixDocument}
+                                        onPixDocumentChange={(value) => {
+                                            setPixDocument(value);
+                                            setPixError(undefined);
+                                        }}
+                                        pixError={pixError}
+                                    />
+                                    <BackLink
+                                        onClick={goBack}
+                                        hidden={awaitingPayment}
+                                    >
+                                        Trocar forma de pagamento
+                                    </BackLink>
+                                </div>
+                            )}
                         </div>
                     </section>
 
-                    <aside className="order-1 lg:sticky lg:top-20 lg:order-2 lg:self-start">
+                    <aside className="order-2 lg:sticky lg:top-20 lg:self-start">
                         <CheckoutPanel
                             reservation={reservation}
                             lines={summary.lines}
                             total={summary.total}
-                            onConfirm={confirm}
+                            onConfirm={step === 'details' ? confirm : goNext}
+                            confirmLabel={ctaLabel}
                             submitting={submitting || awaitingPayment}
                         />
                     </aside>

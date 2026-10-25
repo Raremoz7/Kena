@@ -5,8 +5,10 @@ const footerLink =
 
 export function Footer() {
     return (
-        <footer className="hidden border-t border-border md:block">
-            <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
+        // No mobile o rodapé também aparece (Termos/Privacidade precisam estar
+        // acessíveis), com folga embaixo para a tab bar fixa.
+        <footer className="border-t border-border pb-20 md:pb-0">
+            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-7 md:flex-row md:items-center md:justify-between">
                 <p className="font-body text-xs text-faint">
                     Kena · Entre em cena · {new Date().getFullYear()}
                 </p>
@@ -14,16 +16,19 @@ export function Footer() {
                  * O padding vertical (com margem negativa compensando) leva a área
                  * clicável ao mínimo de 24px da WCAG 2.5.8 sem alterar o layout.
                  */}
-                <nav className="flex gap-6">
+                <nav aria-label="Rodapé" className="flex gap-6">
                     <Link href="/eventos" className={footerLink}>
                         Eventos
                     </Link>
-                    <a href="#" className={footerLink}>
+                    <Link href="/ajuda" className={footerLink}>
                         Ajuda
-                    </a>
-                    <a href="#" className={footerLink}>
+                    </Link>
+                    <Link href="/termos" className={footerLink}>
                         Termos
-                    </a>
+                    </Link>
+                    <Link href="/privacidade" className={footerLink}>
+                        Privacidade
+                    </Link>
                 </nav>
             </div>
         </footer>

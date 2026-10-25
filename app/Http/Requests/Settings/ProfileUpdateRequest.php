@@ -17,6 +17,9 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        // `code`: obrigatório só quando o e-mail muda (conferido no controller).
+        return $this->profileRules($this->user()->id) + [
+            'code' => ['nullable', 'string', 'max:10'],
+        ];
     }
 }

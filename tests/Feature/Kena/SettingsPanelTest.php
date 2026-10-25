@@ -2,17 +2,23 @@
 
 namespace Tests\Feature\Kena;
 
+use App\Mail\TicketsIssuedMail;
+use App\Models\Order;
 use App\Models\PanelUser;
 use App\Models\Setting;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Support\MailSettings;
+use App\Support\SampleTicketOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Feature\Kena\Concerns\MakesKenaData;
 use Tests\TestCase;
 
 class SettingsPanelTest extends TestCase
 {
+    use MakesKenaData;
     use RefreshDatabase;
 
     public function test_saving_mail_settings_persists_and_applies_to_mailer(): void
@@ -69,12 +75,45 @@ class SettingsPanelTest extends TestCase
             ->postJson(route('admin.settings.test-mail'))
             ->assertOk()
             ->assertJson(['message' => 'E-mail de teste enviado para op@test.com.']);
+
+        // É o e-mail real de ingressos (modo teste), enviado na hora, sem gravar nada.
+        Mail::assertSent(TicketsIssuedMail::class, fn (TicketsIssuedMail $m): bool => $m->preview && $m->hasTo('op@test.com'));
+        $this->assertSame(0, Order::count());
+        $this->assertSame(0, Ticket::count());
+    }
+
+    public function test_test_email_renders_like_the_real_ticket_email(): void
+    {
+        $session = $this->makeSession(1);
+        $session->load('event.venue');
+
+        $mail = new TicketsIssuedMail(SampleTicketOrder::make('Davi Teste'), preview: true);
+        $html = $mail->render();
+
+        $this->assertSame('[Teste] Seus ingressos — '.$session->event->title, $mail->envelope()->subject);
+        $this->assertStringContainsString('Pagamento aprovado', $html);
+        $this->assertStringContainsString($session->event->title, $html);
+        $this->assertStringContainsString('TESTE-0001', $html);
+        $this->assertStringContainsString('TESTE-0002', $html);
+        $this->assertStringContainsString('Davi Teste', $html);
+        $this->assertStringContainsString(route('tickets.index'), $html);
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_test_email_works_without_any_event(): void
+    {
+        $html = (new TicketsIssuedMail(SampleTicketOrder::make('Davi Teste'), preview: true))->render();
+
+        $this->assertStringContainsString('Espetáculo de exemplo', $html);
+        $this->assertStringContainsString('TESTE-0001', $html);
     }
 
     public function test_buyer_cannot_send_test_email(): void
     {
         $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
+        // Chamada JSON sem login do painel: 401 (visita normal redireciona ao login).
+        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertUnauthorized();
+        $this->actingAs($buyer)->post(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
     }
 }

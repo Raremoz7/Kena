@@ -19,14 +19,15 @@ class TicketsIssuedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Order $order) {}
+    /** `$preview`: e-mail de teste do painel — mesmo layout, sem magic-link real. */
+    public function __construct(public Order $order, public bool $preview = false) {}
 
     public function envelope(): Envelope
     {
         $this->order->loadMissing('session.event');
 
         return new Envelope(
-            subject: 'Seus ingressos — '.$this->order->session->event->title,
+            subject: ($this->preview ? '[Teste] ' : '').'Seus ingressos — '.$this->order->session->event->title,
         );
     }
 
@@ -42,7 +43,9 @@ class TicketsIssuedMail extends Mailable implements ShouldQueue
                 'event' => $session->event,
                 'venue' => $session->event->venue,
                 'sessionLabel' => CatalogPresenter::sessionLabel($session),
-                'ticketsUrl' => self::magicLink($this->order->user_id, $session->starts_at),
+                'ticketsUrl' => $this->preview
+                    ? route('tickets.index')
+                    : self::magicLink($this->order->user_id, $session->starts_at),
             ],
         );
     }

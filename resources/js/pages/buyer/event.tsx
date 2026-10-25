@@ -2,6 +2,8 @@ import { Deferred, Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/atoms/Button';
 import { Icon  } from '@/components/atoms/Icon';
 import type {IconName} from '@/components/atoms/Icon';
+import { LotBanner } from '@/components/molecules/LotBanner';
+import type { LotInfo } from '@/components/molecules/LotBanner';
 import { EventHero } from '@/components/organisms/EventHero';
 import { SeatSelection } from '@/components/organisms/SeatSelection';
 import { SeatSelectionSkeleton } from '@/components/organisms/SeatSelectionSkeleton';
@@ -39,6 +41,11 @@ interface EventPageProps {
     seatMap: SeatMapData | null;
     reserveUrl: string;
     availabilityUrl: string;
+    emailCodeUrl: string;
+    /** Lote vendendo agora (sessão única com lotes). */
+    lot: LotInfo | null;
+    /** Venda paga esgotada: só restam lugares da cota de cortesia. */
+    courtesyOnly: boolean;
 }
 
 export default function EventPage({
@@ -50,6 +57,9 @@ export default function EventPage({
     seatMap,
     reserveUrl,
     availabilityUrl,
+    emailCodeUrl,
+    lot,
+    courtesyOnly,
 }: EventPageProps) {
     const multi = sessions.length > 1;
 
@@ -136,6 +146,7 @@ export default function EventPage({
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
                                 {sessionLabel} · {event.venue.name}, {event.venue.city}
                             </p>
+                            <LotBanner lot={lot} courtesyOnly={courtesyOnly} className="mt-3" />
                             <Deferred
                                 data="seatMap"
                                 fallback={<SeatSelectionSkeleton className="mt-6" />}
@@ -145,6 +156,7 @@ export default function EventPage({
                                         seatMap={seatMap}
                                         reserveUrl={reserveUrl}
                                         availabilityUrl={availabilityUrl}
+                                        emailCodeUrl={emailCodeUrl}
                                         className="mt-6"
                                     />
                                 ) : null}

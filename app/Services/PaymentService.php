@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\SessionSeat;
+use App\Models\User;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
 use Carbon\CarbonInterface;
@@ -31,7 +32,7 @@ class PaymentService
     /**
      * Cria o pedido a partir da reserva e dispara o pagamento.
      *
-     * @param  array{method?: string, token?: string, installments?: int, payment_method_id?: string, coupon_code?: string}  $input
+     * @param  array{method?: string, token?: string, installments?: int, payment_method_id?: string, coupon_code?: string, document?: string}  $input
      */
     public function pay(Reservation $reservation, array $input): Order
     {
@@ -41,11 +42,16 @@ class PaymentService
             throw new PaymentException('Esta sessão foi cancelada e não aceita mais pagamentos.');
         }
 
-        $coupon = $this->coupons->resolve($input['coupon_code'] ?? null, $reservation->session->event_id);
+        $coupon = $this->coupons->resolveForReservation($input['coupon_code'] ?? null, $reservation);
         $order = $this->orders->createFromReservation($reservation, $coupon);
 
         if ($order->status === Order::STATUS_PAID) {
             return $order;
+        }
+
+        // "Confirmar ingressos" sem pagamento só vale se o total zerou mesmo.
+        if (($input['method'] ?? null) === Payment::METHOD_FREE && $order->total_cents > 0) {
+            throw new PaymentException('O valor do pedido não está zerado. Escolha uma forma de pagamento.');
         }
 
         // Pedido gratuito (cupom 100%): não há o que cobrar — emite direto.
@@ -64,11 +70,18 @@ class PaymentService
 
         $order->loadMissing('user');
         $email = (string) $order->user->email;
-        $doc = $order->user->cpf;
-
         $method = ($input['method'] ?? 'card') === Payment::METHOD_PIX
             ? Payment::METHOD_PIX
             : Payment::METHOD_CARD;
+
+        // Pix: o CPF digitado é de quem paga (pode ser outra pessoa) — vai só
+        // para o Mercado Pago, sem trocar o CPF da conta.
+        $informedPixDoc = $method === Payment::METHOD_PIX
+            ? preg_replace('/\D/', '', (string) ($input['document'] ?? ''))
+            : '';
+        $doc = $informedPixDoc !== '' && strlen($informedPixDoc) === 11
+            ? $informedPixDoc
+            : $this->resolvePayerDocument($order, $input['document'] ?? null);
 
         // Um comprador não pode acumular dois meios de pagamento vivos —
         // inclui pagamentos de pedidos substituídos (ex.: cupom mudou).
@@ -171,9 +184,43 @@ class PaymentService
         }
     }
 
+    /**
+     * CPF do pagador: usa o que já está no cadastro; se faltar e o comprador
+     * informou um no checkout, persiste (o Mercado Pago exige CPF no cartão).
+     */
+    private function resolvePayerDocument(Order $order, ?string $informed): ?string
+    {
+        $existing = $order->user->cpf;
+        if ($existing !== null && $existing !== '') {
+            return $existing;
+        }
+
+        $digits = $informed !== null ? preg_replace('/\D/', '', $informed) : null;
+        if ($digits === null || strlen($digits) !== 11) {
+            return null;
+        }
+
+        // Não sobrescreve o CPF de outra conta (coluna única) — só grava se livre.
+        $takenByOther = User::query()
+            ->where('cpf', $digits)
+            ->whereKeyNot($order->user->getKey())
+            ->exists();
+        if (! $takenByOther) {
+            $order->user->forceFill(['cpf' => $digits])->save();
+        }
+
+        return $digits;
+    }
+
     private function extendHold(Reservation $reservation, CarbonInterface $until): void
     {
-        $buffered = $until->copy()->addMinutes(5);
+        $buffered = $until->copy()->setTimezone((string) config('app.timezone'))->addMinutes(5);
+
+        // Estender nunca encurta: uma data de vencimento estranha não pode
+        // derrubar a reserva antes do prazo que ela já tinha.
+        if ($buffered->lessThanOrEqualTo($reservation->expires_at)) {
+            return;
+        }
 
         $reservation->update(['expires_at' => $buffered]);
         SessionSeat::query()

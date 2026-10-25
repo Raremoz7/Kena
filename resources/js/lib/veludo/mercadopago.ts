@@ -1,16 +1,54 @@
-// Carrega o SDK do Mercado Pago (v2) e expõe um wrapper tipado mínimo para
-// tokenizar cartão no cliente — o número do cartão nunca chega ao nosso servidor.
+// Carrega o SDK do Mercado Pago (v2) e expõe um wrapper tipado para os
+// Secure Fields (PCI SAQ A): número, validade e CVV são renderizados pelo
+// SDK dentro de iframes — os dados sensíveis do cartão nunca tocam o nosso
+// DOM nem o nosso servidor.
 
-interface CardTokenData {
-    cardNumber: string;
-    cardholderName: string;
-    cardExpirationMonth: string;
-    cardExpirationYear: string;
-    securityCode: string;
+/** Tipos de campo seguro suportados pelo SDK. */
+export type SecureFieldType = 'cardNumber' | 'expirationDate' | 'securityCode';
+
+/** Estilos aplicáveis ao conteúdo do iframe (subconjunto permitido pelo MP). */
+export type SecureFieldStyle = Record<string, string>;
+
+export interface SecureFieldOptions {
+    placeholder?: string;
+    style?: SecureFieldStyle;
+}
+
+/** Dado emitido pelos eventos dos campos seguros. */
+export interface SecureFieldEvent {
+    bin?: string;
+    errorMessages?: Array<{ message: string; cause?: string }>;
+}
+
+export interface SecureField {
+    mount(idOrElement: string | HTMLElement): SecureField;
+    unmount(): SecureField;
+    on(
+        event:
+            | 'ready'
+            | 'binChange'
+            | 'validityChange'
+            | 'error'
+            | 'focus'
+            | 'blur',
+        callback: (data: SecureFieldEvent) => void,
+    ): SecureField;
+    update(options: SecureFieldOptions): SecureField;
+}
+
+export interface CardTokenParams {
+    cardholderName?: string;
+    identificationType?: string;
+    identificationNumber?: string;
+}
+
+export interface MercadoPagoFields {
+    create(type: SecureFieldType, options?: SecureFieldOptions): SecureField;
+    createCardToken(params: CardTokenParams): Promise<{ id: string }>;
 }
 
 export interface MercadoPagoInstance {
-    createCardToken(data: CardTokenData): Promise<{ id: string }>;
+    fields: MercadoPagoFields;
     getPaymentMethods(params: {
         bin: string;
     }): Promise<{ results: Array<{ id: string }> }>;

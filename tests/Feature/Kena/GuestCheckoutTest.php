@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\EmailVerificationCodeService;
 use App\Support\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Kena\Concerns\MakesKenaData;
@@ -26,7 +27,12 @@ class GuestCheckoutTest extends TestCase
             route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
             [
                 'seats' => $ids,
-                'guest' => ['name' => 'João Silva', 'email' => 'joao@guest.test', 'cpf' => self::VALID_CPF],
+                'guest' => [
+                    'name' => 'João Silva',
+                    'email' => 'joao@guest.test',
+                    'cpf' => self::VALID_CPF,
+                    'code' => app(EmailVerificationCodeService::class)->issue('joao@guest.test'),
+                ],
             ],
         );
 
@@ -36,24 +42,30 @@ class GuestCheckoutTest extends TestCase
         $user = User::where('email', 'joao@guest.test')->firstOrFail();
         $this->assertNull($user->password);
         $this->assertSame(self::VALID_CPF, $user->cpf);
+        $this->assertNotNull($user->email_verified_at);
         $this->assertSame(1, Reservation::where('user_id', $user->id)->count());
     }
 
-    public function test_guest_email_with_password_account_must_log_in(): void
+    public function test_guest_email_that_already_logs_in_is_sent_to_login(): void
     {
         $session = $this->makeSession(1);
         $session->load('event');
-        User::factory()->create(['email' => 'has@pass.test']); // factory define senha
+        // Conta do Google: o código é para criar conta, não para entrar nela.
+        User::factory()->create(['email' => 'has@pass.test', 'google_id' => 'g-1', 'password' => null]);
 
-        $response = $this->post(
+        $this->post(
             route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
             [
                 'seats' => $this->availableSeatIds($session, 1),
-                'guest' => ['name' => 'X', 'email' => 'has@pass.test', 'cpf' => self::VALID_CPF],
+                'guest' => [
+                    'name' => 'X',
+                    'email' => 'has@pass.test',
+                    'cpf' => self::VALID_CPF,
+                    'code' => app(EmailVerificationCodeService::class)->issue('has@pass.test'),
+                ],
             ],
-        );
+        )->assertSessionHasErrors(['guest.email']);
 
-        $response->assertSessionHasErrors('guest.email');
         $this->assertGuest();
     }
 

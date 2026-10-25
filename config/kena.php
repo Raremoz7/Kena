@@ -4,6 +4,13 @@ return [
     /** Minutos que uma reserva (hold) segura os assentos. */
     'hold_minutes' => (int) env('KENA_HOLD_MINUTES', 10),
 
+    /**
+     * Máximo de ingressos por CPF em uma sessão (reserva atual + já emitidos,
+     * cortesias incluídas). O CPF é único por conta, então contar pela conta é
+     * contar pelo CPF. Impede que uma pessoa (ou robô) segure a plateia inteira.
+     */
+    'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 8),
+
     /** Taxa de serviço (% sobre subtotal já com desconto). */
     'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 10),
 
@@ -27,5 +34,18 @@ return [
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
         'pix_expiration_minutes' => (int) env('MP_PIX_EXPIRATION_MINUTES', 30),
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
+    ],
+
+    /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
+    'support' => [
+        'email' => env('KENA_SUPPORT_EMAIL'),
+        'whatsapp' => env('KENA_SUPPORT_WHATSAPP'), // com DDI e DDD, ex.: 5561999999999
+    ],
+
+    /** Quem opera a plataforma (controlador dos dados na LGPD). */
+    'legal' => [
+        'name' => env('KENA_LEGAL_NAME', 'Somo'),
+        'document' => env('KENA_LEGAL_DOCUMENT'), // CNPJ ou CPF
+        'updated_at' => env('KENA_LEGAL_UPDATED_AT', '22/10/2026'),
     ],
 ];

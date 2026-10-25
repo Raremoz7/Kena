@@ -6,7 +6,8 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 /*
- * Veludo Design System — tema premium/teatral, dark-only.
+ * Veludo Design System — tema premium/teatral. Claro por padrão (:root);
+ * a paleta escura original continua disponível sob a classe .dark.
  * Os valores semânticos do shadcn (--background, --primary, etc.) são
  * sobrescritos com os tokens Veludo para que as telas do kit (auth/settings)
  * herdem o visual. Tokens próprios do Veludo (surface, accent, seat-*, ...)
@@ -34,6 +35,31 @@
     --radius-sm: 6px;
     --radius-xl: 16px;
 
+    /* ── Escala display (Oswald) + kicker ───────────────────── */
+    --text-display-xl: 56px;
+    --text-display-xl--line-height: 0.96;
+    --text-display-xl--font-weight: 700;
+    --text-display-lg: 36px;
+    --text-display-lg--line-height: 1;
+    --text-display-lg--font-weight: 600;
+    --text-display-md: 28px;
+    --text-display-md--line-height: 1.1;
+    --text-display-md--font-weight: 500;
+    --text-display-sm: 22px;
+    --text-display-sm--line-height: 1.2;
+    --text-display-sm--font-weight: 500;
+    --text-kicker: 11px;
+    --text-kicker--line-height: 1;
+    --text-kicker--letter-spacing: 0.22em;
+    --text-kicker--font-weight: 600;
+}
+
+/*
+ * Cores em @theme inline: as utilities usam var(--token) direto, então um
+ * trecho com .dark (ex.: banner do evento) troca de paleta mesmo dentro de
+ * uma página clara. Sem o inline, a cor é resolvida uma vez no :root.
+ */
+@theme inline {
     /* ── Cores Veludo (próprias) ────────────────────────────── */
     --color-bg: var(--bg);
     --color-surface: var(--surface);
@@ -44,6 +70,7 @@
     --color-success: var(--success);
     --color-warning: var(--warning);
     --color-info: var(--info);
+    --color-info-text: var(--info-text);
     --color-danger: var(--destructive);
 
     /* Variantes de TEXTO sobre fundo escuro (WCAG 1.4.3 ≥ 4.5:1).
@@ -68,6 +95,12 @@
     --color-seat-sold: var(--seat-sold);
     --color-seat-blocked: var(--seat-blocked);
     --color-seat-pcd: var(--seat-pcd);
+    /* número impresso no assento, por estado (contraste sobre o fundo do mapa) */
+    --color-seat-available-text: var(--seat-available-text);
+    --color-seat-pcd-text: var(--seat-pcd-text);
+    --color-seat-held-text: var(--seat-held-text);
+    --color-seat-sold-text: var(--seat-sold-text);
+    --color-seat-blocked-text: var(--seat-blocked-text);
 
     /* ── Cores semânticas shadcn (valores Veludo) ───────────── */
     --color-background: var(--background);
@@ -97,31 +130,94 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
-
-    /* ── Escala display (Oswald) + kicker ───────────────────── */
-    --text-display-xl: 56px;
-    --text-display-xl--line-height: 0.96;
-    --text-display-xl--font-weight: 700;
-    --text-display-lg: 36px;
-    --text-display-lg--line-height: 1;
-    --text-display-lg--font-weight: 600;
-    --text-display-md: 28px;
-    --text-display-md--line-height: 1.1;
-    --text-display-md--font-weight: 500;
-    --text-display-sm: 22px;
-    --text-display-sm--line-height: 1.2;
-    --text-display-sm--font-weight: 500;
-    --text-kicker: 11px;
-    --text-kicker--line-height: 1;
-    --text-kicker--letter-spacing: 0.22em;
-    --text-kicker--font-weight: 600;
 }
 
 /*
- * Dark-only: os mesmos valores em :root e .dark, garantindo o tema Veludo
- * independentemente do toggle de aparência herdado do starter kit.
+ * Tema claro (padrão). Contrastes medidos com WCAG 2.1 (oklch → sRGB):
+ * textos ≥ 5:1 sobre --bg/--surface/--surface-2, bordas interativas ≥ 3.3:1.
  */
-:root,
+:root {
+    /* fundo e superfícies — neutros quentes (papel) */
+    --bg: oklch(0.975 0.006 75);
+    --surface: oklch(0.995 0.003 75);
+    --surface-2: oklch(0.94 0.009 70);
+    /* 5.60:1 sobre --bg · 5.93:1 sobre --surface · 5.04:1 sobre --surface-2 */
+    --faint: oklch(0.5 0.012 60);
+
+    /* assentos */
+    --seat-available: oklch(0.52 0.14 155);
+    --seat-selected: oklch(0.52 0.14 155);
+    --seat-held: oklch(0.6 0.13 72);
+    --seat-sold: oklch(0.64 0.01 60); /* 3.1:1 sobre o fundo (WCAG 1.4.11) */
+    --seat-blocked: oklch(0.86 0.01 60);
+    --seat-pcd: oklch(0.52 0.14 230);
+    --seat-available-text: oklch(0.47 0.12 155);
+    --seat-pcd-text: oklch(0.48 0.13 230);
+    --seat-held-text: oklch(0.5 0.12 72);
+    --seat-sold-text: oklch(0.21 0.015 48); /* 5.3:1 sobre o ocupado */
+    --seat-blocked-text: oklch(0.55 0.01 50);
+    --seat-hatch-a: oklch(0.88 0.01 60);
+    --seat-hatch-b: oklch(0.93 0.008 60);
+
+    /* acento — vinho */
+    --accent-hover: oklch(0.45 0.16 20);
+    --accent-fg: oklch(0.99 0.005 40);
+
+    /* status semânticos (preenchimento; texto branco ≥ 4.9:1) */
+    --success: oklch(0.52 0.14 155);
+    --warning: oklch(0.68 0.14 72);
+    --info: oklch(0.52 0.14 230);
+
+    /* variantes de texto: ≥ 5.1:1 sobre todas as superfícies */
+    --accent-text: oklch(0.48 0.16 20);
+    --danger-text: oklch(0.5 0.19 27);
+    --success-text: oklch(0.47 0.12 155);
+    --warning-text: oklch(0.5 0.12 72);
+    --info-text: oklch(0.48 0.13 230);
+    --warning-fg: oklch(0.2 0.04 72); /* 6.15:1 sobre --warning */
+
+    /* borda de componente interativo: 3.69:1 sobre --bg, 3.33:1 sobre --surface-2 */
+    --border-strong: oklch(0.6 0.02 48);
+
+    --neutral-fill: oklch(0.52 0.012 50);
+    --tag-wine: oklch(0.48 0.14 24);
+
+    /* semânticos shadcn */
+    --background: oklch(0.975 0.006 75);
+    --foreground: oklch(0.21 0.015 48);
+    --card: oklch(0.995 0.003 75);
+    --card-foreground: oklch(0.21 0.015 48);
+    --popover: oklch(0.995 0.003 75);
+    --popover-foreground: oklch(0.21 0.015 48);
+    --primary: oklch(0.5 0.16 20);
+    --primary-foreground: oklch(0.99 0.005 40);
+    --secondary: oklch(0.94 0.009 70);
+    --secondary-foreground: oklch(0.21 0.015 48);
+    --muted: oklch(0.94 0.009 70);
+    --muted-foreground: oklch(0.46 0.015 60);
+    --accent: oklch(0.5 0.16 20);
+    --accent-foreground: oklch(0.99 0.005 40);
+    --destructive: oklch(0.52 0.19 27);
+    --destructive-foreground: oklch(0.99 0.005 40);
+    --border: oklch(0.885 0.01 60);
+    --input: oklch(0.885 0.01 60);
+    --ring: oklch(0.5 0.16 20);
+    --radius: 0.75rem;
+
+    --sidebar: oklch(0.955 0.008 70);
+    --sidebar-foreground: oklch(0.21 0.015 48);
+    --sidebar-primary: oklch(0.5 0.16 20);
+    --sidebar-primary-foreground: oklch(0.99 0.005 40);
+    --sidebar-accent: oklch(0.94 0.009 70);
+    --sidebar-accent-foreground: oklch(0.21 0.015 48);
+    --sidebar-border: oklch(0.885 0.01 60);
+    --sidebar-ring: oklch(0.5 0.16 20);
+}
+
+/*
+ * Tema escuro original. Fica disponível sob .dark (no <html> ou num trecho
+ * da página, como o banner do evento).
+ */
 .dark {
     /* fundo e superfícies — neutros quentes */
     --bg: oklch(0.16 0.013 48);
@@ -134,9 +230,16 @@
     --seat-available: oklch(0.52 0.14 155);
     --seat-selected: oklch(0.52 0.14 155);
     --seat-held: oklch(0.58 0.14 72);
-    --seat-sold: oklch(0.245 0.016 48);
+    --seat-sold: oklch(0.5 0.01 60); /* 3.2:1 sobre o fundo */
     --seat-blocked: oklch(0.245 0.016 48);
     --seat-pcd: oklch(0.52 0.14 230);
+    --seat-available-text: oklch(0.66 0.13 155);
+    --seat-pcd-text: oklch(0.66 0.13 230);
+    --seat-held-text: oklch(0.72 0.14 72);
+    --seat-sold-text: oklch(0.97 0.006 75); /* 6:1 sobre o ocupado */
+    --seat-blocked-text: oklch(0.45 0.01 50);
+    --seat-hatch-a: oklch(0.245 0.016 48);
+    --seat-hatch-b: oklch(0.2 0.013 48);
 
     /* acento — vinho */
     --accent-hover: oklch(0.61 0.16 20);
@@ -156,6 +259,7 @@
     --danger-text: oklch(0.66 0.17 27); /* 5.78:1 sobre --bg */
     --success-text: oklch(0.61 0.14 155); /* 5.47:1 sobre --bg */
     --warning-text: oklch(0.65 0.14 72); /* 5.85:1 sobre --bg */
+    --info-text: oklch(0.66 0.13 230);
     --warning-fg: oklch(0.14 0.04 72); /* 4.54:1 sobre --warning */
 
     /* Borda de componente interativo: 3.82:1 sobre --bg, 3.20:1 sobre --surface-2 */
@@ -203,6 +307,15 @@
         @apply border-border;
     }
 
+    /* controles nativos (scrollbar, <select>) acompanham o tema do trecho */
+    :root {
+        color-scheme: light;
+    }
+
+    .dark {
+        color-scheme: dark;
+    }
+
     body {
         @apply bg-background text-foreground font-body antialiased;
     }
@@ -222,6 +335,22 @@
         font-weight: 600;
         letter-spacing: 0.22em;
         text-transform: uppercase;
+    }
+}
+
+/*
+ * iPhone: o Safari dá zoom ao focar campo com fonte menor que 16px, e o zoom
+ * fica nas telas seguintes (o Inertia troca de página sem recarregar). Como
+ * login e painel focam o campo ao abrir, o site parecia "abrir com zoom".
+ * Em tela de toque, todo campo tem 16px. Fora de camada de propósito: vence
+ * as utilities (text-sm) sem !important. Não usar maximum-scale=1 no
+ * viewport: isso tiraria o zoom de quem precisa ampliar.
+ */
+@media (hover: none) and (pointer: coarse) {
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
+    select,
+    textarea {
+        font-size: 16px;
     }
 }
 

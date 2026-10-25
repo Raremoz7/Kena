@@ -5,12 +5,17 @@ import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Price } from '@/components/atoms/Price';
 import { Spinner } from '@/components/atoms/Spinner';
+import { EmailCodeField } from '@/components/molecules/EmailCodeField';
+import { EmailSuggestion } from '@/components/molecules/EmailSuggestion';
 import { FormField } from '@/components/molecules/FormField';
 import { Modal } from '@/components/molecules/Modal';
 import { SeatSheet } from '@/components/molecules/SeatSheet';
 import { SeatMap } from '@/components/organisms/SeatMap';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { Seat, SeatMapData, SeatStatus } from '@/lib/veludo/types';
+
+/** Intervalo do polling do mapa. O hold no servidor é a garantia; isto só atualiza a tela. */
+const POLL_INTERVAL_MS = 10_000;
 
 function SelectionPanel({
     seats,
@@ -33,7 +38,8 @@ function SelectionPanel({
 
             {seats.length === 0 ? (
                 <p className="mt-3 font-body text-sm text-muted-foreground">
-                    Toque nos assentos verdes do mapa para escolher seus lugares.
+                    Toque nos assentos verdes do mapa para escolher seus
+                    lugares.
                 </p>
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
@@ -43,11 +49,18 @@ function SelectionPanel({
                             className="flex items-center justify-between gap-3 rounded-btn border border-border bg-bg px-3 py-2"
                         >
                             <p className="min-w-0 font-body text-sm">
-                                <span className="font-display font-semibold text-foreground">{s.code}</span>{' '}
-                                <span className="text-muted-foreground">· {s.sectorName}</span>
+                                <span className="font-display font-semibold text-foreground">
+                                    {s.code}
+                                </span>{' '}
+                                <span className="text-muted-foreground">
+                                    · {s.sectorName}
+                                </span>
                             </p>
                             <div className="flex items-center gap-2">
-                                <Price value={s.price} className="text-sm text-muted-foreground" />
+                                <Price
+                                    value={s.price}
+                                    className="text-sm text-muted-foreground"
+                                />
                                 <button
                                     type="button"
                                     aria-label={`Remover ${s.code}`}
@@ -63,7 +76,9 @@ function SelectionPanel({
             )}
 
             <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-                <span className="font-body text-sm text-muted-foreground">Subtotal</span>
+                <span className="font-body text-sm text-muted-foreground">
+                    Subtotal
+                </span>
                 <Price value={total} className="text-lg text-foreground" />
             </div>
 
@@ -84,7 +99,13 @@ function SelectionPanel({
                     )}
                 </Button>
                 {seats.length > 0 && (
-                    <Button variant="ghost" block size="sm" onClick={onClear} disabled={submitting}>
+                    <Button
+                        variant="ghost"
+                        block
+                        size="sm"
+                        onClick={onClear}
+                        disabled={submitting}
+                    >
                         Limpar seleção
                     </Button>
                 )}
@@ -100,34 +121,61 @@ interface SeatSelectionProps {
     reserveUrl: string;
     /** Rota GET de disponibilidade (polling). Opcional. */
     availabilityUrl?: string;
+    /** Máximo de assentos que este comprador ainda pode selecionar. */
+    maxSeats?: number;
+    /** Rota POST que envia o código de confirmação do e-mail (convidado). */
+    emailCodeUrl: string;
 }
 
 /**
  * Seleção de assentos (mapa + painel + barra mobile). Reserva via POST Inertia e
  * mantém o mapa vivo por polling da disponibilidade.
  */
-export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl }: SeatSelectionProps) {
+export function SeatSelection({
+    seatMap,
+    className,
+    reserveUrl,
+    availabilityUrl,
+    maxSeats,
+    emailCodeUrl,
+}: SeatSelectionProps) {
     const [statuses, setStatuses] = useState<Record<number, SeatStatus>>(() =>
         Object.fromEntries(seatMap.seats.map((s) => [s.id, s.status])),
     );
     const [selected, setSelected] = useState<Seat[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
-    const page = usePage<{ auth: { user: { id: number } | null }; ziggy?: { location?: string } }>();
+    const page = usePage<{
+        auth: { user: { id: number; hasCpf?: boolean } | null };
+        ziggy?: { location?: string };
+    }>();
     const user = page.props.auth?.user ?? null;
     const currentUrl = page.props.ziggy?.location ?? page.url;
     const [guestOpen, setGuestOpen] = useState(false);
-    const [guest, setGuest] = useState({ name: '', email: '', cpf: '' });
+    const [guest, setGuest] = useState({
+        name: '',
+        email: '',
+        cpf: '',
+        code: '',
+    });
     const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
+    // Conta sem CPF (ex.: Google): o limite é por CPF, então pede antes de reservar.
+    const [cpfOpen, setCpfOpen] = useState(false);
+    const [cpf, setCpf] = useState('');
 
     const seats = useMemo(
-        () => seatMap.seats.map((s) => ({ ...s, status: statuses[s.id] ?? s.status })),
+        () =>
+            seatMap.seats.map((s) => ({
+                ...s,
+                status: statuses[s.id] ?? s.status,
+            })),
         [seatMap.seats, statuses],
     );
     const selectedIds = useMemo(() => selected.map((s) => s.id), [selected]);
     const total = selected.reduce((sum, s) => sum + s.price, 0);
 
-    // Polling da disponibilidade.
+    // Polling da disponibilidade: só os lugares ocupados vêm na resposta (o resto
+    // está livre). Pausa com a aba em segundo plano e confere de novo ao voltar.
     useEffect(() => {
         if (!availabilityUrl) {
             return;
@@ -135,6 +183,10 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
 
         let active = true;
         async function poll() {
+            if (document.hidden) {
+                return;
+            }
+
             try {
                 const res = await fetch(availabilityUrl as string, {
                     headers: { Accept: 'application/json' },
@@ -144,25 +196,43 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                     return;
                 }
 
-                const data = (await res.json()) as { seats: Record<number, SeatStatus> };
-                setStatuses(data.seats);
+                const data = (await res.json()) as {
+                    seats: Record<number, SeatStatus>;
+                };
+                setStatuses(
+                    Object.fromEntries(
+                        seatMap.seats.map((s) => [
+                            s.id,
+                            data.seats[s.id] ?? 'available',
+                        ]),
+                    ),
+                );
             } catch {
                 /* silencioso — tenta de novo no próximo tick */
             }
         }
-        const id = window.setInterval(poll, 4000);
+        const onVisible = () => {
+            if (!document.hidden) {
+                void poll();
+            }
+        };
+        const id = window.setInterval(poll, POLL_INTERVAL_MS);
+        document.addEventListener('visibilitychange', onVisible);
 
         return () => {
             active = false;
             window.clearInterval(id);
+            document.removeEventListener('visibilitychange', onVisible);
         };
-    }, [availabilityUrl]);
+    }, [availabilityUrl, seatMap.seats]);
 
     // Remove da seleção assentos que deixaram de estar disponíveis, avisando
     // o comprador (senão o assento some do resumo em silêncio).
     useEffect(() => {
         setSelected((prev) => {
-            const taken = prev.filter((s) => (statuses[s.id] ?? 'available') !== 'available');
+            const taken = prev.filter(
+                (s) => (statuses[s.id] ?? 'available') !== 'available',
+            );
 
             if (taken.length === 0) {
                 return prev;
@@ -175,7 +245,9 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                 `${taken.map((s) => s.code).join(', ')} ${taken.length === 1 ? 'acabou' : 'acabaram'} de sair. Escolha ${taken.length === 1 ? 'outro' : 'outros'}.`,
             );
 
-            return prev.filter((s) => (statuses[s.id] ?? 'available') === 'available');
+            return prev.filter(
+                (s) => (statuses[s.id] ?? 'available') === 'available',
+            );
         });
     }, [statuses]);
 
@@ -184,8 +256,27 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
             return;
         }
 
+        const isSelected = selected.some((s) => s.id === seat.id);
+
+        if (
+            !isSelected &&
+            maxSeats !== undefined &&
+            selected.length >= maxSeats
+        ) {
+            veludoToast.warning(
+                'Limite de ingressos',
+                maxSeats === 0
+                    ? 'Você já atingiu o máximo de ingressos para esta sessão.'
+                    : `Cada CPF pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'} por sessão.`,
+            );
+
+            return;
+        }
+
         setSelected((prev) =>
-            prev.some((s) => s.id === seat.id) ? prev.filter((s) => s.id !== seat.id) : [...prev, seat],
+            prev.some((s) => s.id === seat.id)
+                ? prev.filter((s) => s.id !== seat.id)
+                : [...prev, seat],
         );
     }
 
@@ -195,10 +286,14 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
             reserveUrl,
             { seats: selectedIds, ...extra },
             {
-                preserveScroll: true,
+                // Checkout abre no topo; só fica no lugar se voltar com erro.
+                preserveScroll: 'errors',
                 onError: (errors) => {
                     if (errors.seats) {
-                        veludoToast.warning('Não foi possível reservar', errors.seats);
+                        veludoToast.warning(
+                            'Não foi possível reservar',
+                            errors.seats,
+                        );
                     }
 
                     setGuestErrors(errors as Record<string, string>);
@@ -213,8 +308,12 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
             return;
         }
 
-        // Logado segue direto; convidado preenche dados (cria conta leve no backend).
-        if (user) {
+        // Logado segue direto (pedindo o CPF se a conta não tem); convidado
+        // preenche dados (cria conta leve no backend).
+        if (user && user.hasCpf === false) {
+            setGuestErrors({});
+            setCpfOpen(true);
+        } else if (user) {
             doReserve({});
         } else {
             setGuestErrors({});
@@ -233,9 +332,18 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
     return (
         <div className={className}>
             <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-                <SeatMap seats={seats} bounds={seatMap.bounds} selectedIds={selectedIds} onToggle={toggle} />
+                <SeatMap
+                    seats={seats}
+                    bounds={seatMap.bounds}
+                    selectedIds={selectedIds}
+                    onToggle={toggle}
+                />
 
-                <aside className="hidden rounded-card border border-border bg-surface p-6 lg:sticky lg:top-20 lg:block lg:self-start">
+                {/* section, não aside: dentro do <main> um complementar vira landmark duplicado. */}
+                <section
+                    aria-label="Sua seleção"
+                    className="hidden rounded-card border border-border bg-surface p-6 lg:sticky lg:top-20 lg:block lg:self-start"
+                >
                     <SelectionPanel
                         seats={selected}
                         total={total}
@@ -244,8 +352,19 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                         onCheckout={reserve}
                         submitting={submitting}
                     />
-                </aside>
+                </section>
             </div>
+
+            {/* Anúncio da seleção para leitor de tela (WCAG 4.1.3). */}
+            <p role="status" aria-live="polite" className="sr-only">
+                {selected.length === 0
+                    ? ''
+                    : `${selected.length} ${selected.length === 1 ? 'lugar selecionado' : 'lugares selecionados'}: ${selected
+                          .map((s) => s.code)
+                          .join(
+                              ', ',
+                          )}. Subtotal ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`}
+            </p>
 
             {/* folga p/ a legenda do mapa não ficar sob a barra fixa + tab bar no mobile */}
             <div aria-hidden="true" className="h-36 lg:hidden" />
@@ -260,6 +379,62 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
             />
 
             <Modal
+                open={cpfOpen}
+                onOpenChange={(o) => !o && !submitting && setCpfOpen(false)}
+                title="Informe seu CPF"
+                description="Cada CPF pode levar um número limitado de ingressos por sessão. Pedimos só uma vez."
+            >
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+
+                        if (!submitting) {
+                            doReserve({ cpf });
+                        }
+                    }}
+                    className="flex flex-col gap-4"
+                >
+                    <FormField
+                        label="CPF"
+                        htmlFor="u-cpf"
+                        error={guestErrors.cpf}
+                    >
+                        <Input
+                            id="u-cpf"
+                            value={cpf}
+                            onChange={(e) => setCpf(e.target.value)}
+                            placeholder="000.000.000-00"
+                            inputMode="numeric"
+                            required
+                        />
+                    </FormField>
+                    <div className="flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setCpfOpen(false)}
+                            disabled={submitting}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={
+                                submitting ||
+                                cpf.replace(/\D/g, '').length !== 11
+                            }
+                        >
+                            {submitting ? (
+                                <Spinner />
+                            ) : (
+                                'Continuar para o pagamento'
+                            )}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal
                 open={guestOpen}
                 onOpenChange={(o) => !o && !submitting && setGuestOpen(false)}
                 title="Quase lá"
@@ -272,11 +447,18 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                     }}
                     className="flex flex-col gap-4"
                 >
-                    <FormField label="Nome completo" htmlFor="g-name" error={guestErrors['guest.name']}>
+                    <FormField
+                        label="Nome completo"
+                        htmlFor="g-name"
+                        error={guestErrors['guest.name']}
+                    >
                         <Input
                             id="g-name"
+                            autoComplete="name"
                             value={guest.name}
-                            onChange={(e) => setGuest({ ...guest, name: e.target.value })}
+                            onChange={(e) =>
+                                setGuest({ ...guest, name: e.target.value })
+                            }
                             placeholder="Como no documento"
                             required
                         />
@@ -290,22 +472,46 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                         <Input
                             id="g-email"
                             type="email"
+                            autoComplete="email"
                             value={guest.email}
-                            onChange={(e) => setGuest({ ...guest, email: e.target.value })}
+                            onChange={(e) =>
+                                setGuest({ ...guest, email: e.target.value })
+                            }
                             placeholder="nome@email.com"
                             required
                         />
+                        <EmailSuggestion
+                            email={guest.email}
+                            onAccept={(email) => setGuest({ ...guest, email })}
+                        />
                     </FormField>
-                    <FormField label="CPF" htmlFor="g-cpf" error={guestErrors['guest.cpf']}>
+                    <FormField
+                        label="CPF"
+                        htmlFor="g-cpf"
+                        error={guestErrors['guest.cpf']}
+                    >
                         <Input
                             id="g-cpf"
                             value={guest.cpf}
-                            onChange={(e) => setGuest({ ...guest, cpf: e.target.value })}
+                            onChange={(e) =>
+                                setGuest({ ...guest, cpf: e.target.value })
+                            }
                             placeholder="000.000.000-00"
                             inputMode="numeric"
                             required
                         />
                     </FormField>
+                    <EmailCodeField
+                        id="g-code"
+                        email={guest.email}
+                        sendUrl={emailCodeUrl}
+                        code={guest.code}
+                        onCodeChange={(code) =>
+                            setGuest((g) => ({ ...g, code }))
+                        }
+                        error={guestErrors['guest.code']}
+                        loginRedirect={currentUrl}
+                    />
                     <p className="font-body text-xs text-faint">
                         Já tem conta?{' '}
                         <a
@@ -313,6 +519,25 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                             className="text-accent-text hover:underline"
                         >
                             Entrar
+                        </a>
+                        .
+                    </p>
+                    <p className="font-body text-xs text-faint">
+                        Ao continuar, você concorda com os{' '}
+                        <a
+                            href="/termos"
+                            target="_blank"
+                            className="text-accent-text hover:underline"
+                        >
+                            Termos de uso
+                        </a>{' '}
+                        e a{' '}
+                        <a
+                            href="/privacidade"
+                            target="_blank"
+                            className="text-accent-text hover:underline"
+                        >
+                            Política de privacidade
                         </a>
                         .
                     </p>
@@ -325,8 +550,15 @@ export function SeatSelection({ seatMap, className, reserveUrl, availabilityUrl 
                         >
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={submitting}>
-                            {submitting ? <Spinner /> : 'Continuar para o pagamento'}
+                        <Button
+                            type="submit"
+                            disabled={submitting || guest.code.length !== 6}
+                        >
+                            {submitting ? (
+                                <Spinner />
+                            ) : (
+                                'Continuar para o pagamento'
+                            )}
                         </Button>
                     </div>
                 </form>

@@ -7,6 +7,8 @@ import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
 import { FormField } from '@/components/molecules/FormField';
+import { MobileList, MobileListItem } from '@/components/molecules/MobileList';
+import { AdminPage, PageHeader } from '@/components/molecules/PageHeader';
 import { Pagination } from '@/components/molecules/Pagination';
 import type { Paginator } from '@/components/molecules/Pagination';
 
@@ -56,20 +58,15 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
     return (
         <>
             <Head title="Painel — Equipe" />
-            <div className="px-6 py-8 sm:px-8">
-                <div>
-                    <h1 className="font-display text-display-lg text-foreground uppercase">
-                        Equipe
-                    </h1>
-                    <p className="mt-1 font-body text-sm text-muted-foreground">
-                        Organizadores acessam o painel completo. Staff faz
-                        apenas o check-in na portaria.
-                    </p>
-                </div>
+            <AdminPage>
+                <PageHeader
+                    title="Equipe"
+                    description="Organizadores acessam o painel completo. Staff faz apenas o check-in na portaria."
+                />
 
                 <form
                     onSubmit={invite}
-                    className="mt-6 grid gap-4 rounded-card border border-border bg-surface p-6 sm:grid-cols-[1fr_1fr_1fr_180px_auto] sm:items-end"
+                    className="grid gap-4 rounded-card border border-border bg-surface p-4 sm:p-6 lg:grid-cols-[1fr_1fr_1fr_180px_auto] lg:items-end"
                 >
                     <FormField
                         label="Nome"
@@ -146,7 +143,65 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                     separada da conta de comprador.
                 </p>
 
-                <div className="mt-6 overflow-hidden rounded-card border border-border">
+                <MobileList className="mt-6">
+                    {members.data.map((m) => (
+                        <MobileListItem
+                            key={m.id}
+                            title={
+                                <>
+                                    {m.name}
+                                    {m.isSelf && (
+                                        <span className="ml-2 text-xs font-normal text-faint">
+                                            (você)
+                                        </span>
+                                    )}
+                                </>
+                            }
+                            subtitle={m.email}
+                            aside={
+                                m.isSelf ? (
+                                    <Badge tone="neutral">
+                                        {roleLabel[m.role] ?? m.role}
+                                    </Badge>
+                                ) : undefined
+                            }
+                            actions={
+                                m.isSelf ? undefined : (
+                                    <div className="flex w-full items-center gap-2 px-1.5">
+                                        <Select
+                                            aria-label={`Papel de ${m.name}`}
+                                            value={m.role}
+                                            onChange={(e) =>
+                                                changeRole(m, e.target.value)
+                                            }
+                                            className="py-2"
+                                        >
+                                            {roles.map((r) => (
+                                                <option
+                                                    key={r.value}
+                                                    value={r.value}
+                                                >
+                                                    {r.label}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => setRemoving(m)}
+                                            aria-label={`Remover ${m.name}`}
+                                            className="text-faint hover:text-danger-text"
+                                        >
+                                            <Icon name="trash" size={17} />
+                                        </Button>
+                                    </div>
+                                )
+                            }
+                        />
+                    ))}
+                </MobileList>
+
+                <div className="mt-6 hidden overflow-hidden rounded-card border border-border md:block">
                     <table className="w-full border-collapse font-body text-sm">
                         <thead>
                             <tr className="border-b border-border bg-surface-2 text-left">
@@ -231,7 +286,7 @@ export default function AdminTeam({ members, roles }: TeamPageProps) {
                     </table>
                 </div>
                 <Pagination links={members.links} />
-            </div>
+            </AdminPage>
 
             <ConfirmDialog
                 open={removing !== null}

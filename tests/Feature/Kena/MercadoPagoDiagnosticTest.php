@@ -171,7 +171,7 @@ class MercadoPagoDiagnosticTest extends TestCase
     {
         $this->actingAs(User::factory()->create())
             ->postJson(route('admin.settings.test-mp'))
-            // Fora de api/*, o app redireciona em vez de responder 401.
-            ->assertRedirect(route('painel.login'));
+            // Chamada JSON sem login do painel: 401 (visita normal redireciona ao login).
+            ->assertUnauthorized();
     }
 }

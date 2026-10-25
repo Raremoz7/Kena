@@ -42,6 +42,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                         id="email"
                                         type="email"
                                         name="email"
+                                        // Vindo do aviso "esse e-mail já tem conta", já chega preenchido.
+                                        defaultValue={
+                                            new URLSearchParams(
+                                                window.location.search,
+                                            ).get('email') ?? ''
+                                        }
                                         required
                                         autoFocus
                                         tabIndex={1}

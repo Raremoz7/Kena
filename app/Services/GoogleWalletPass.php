@@ -16,6 +16,12 @@ class GoogleWalletPass
 {
     private const SAVE_URL = 'https://pay.google.com/gp/v/save/';
 
+    /** Vinho da marca (mesmo tom do "K"). */
+    private const BACKGROUND = '#6e0021';
+
+    /** 660x660 com fundo branco: o Wallet recorta o logo em círculo. */
+    private const LOGO_PATH = 'img/wallet/kena-logo-660.png';
+
     public function saveUrl(Ticket $ticket): string
     {
         if (! GoogleWalletSettings::isConfigured()) {
@@ -34,31 +40,77 @@ class GoogleWalletPass
         return self::SAVE_URL.$this->sign($claims, (string) GoogleWalletSettings::privateKey());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     */
     private function object(Ticket $ticket, string $issuer): array
     {
-        $ticket->loadMissing('session.event');
+        $ticket->loadMissing('session.event.venue');
         $session = $ticket->session;
         $event = $session->event;
+        $venue = $event->venue;
 
-        return [
+        // A frente do cartão (layout da classe) mostra os módulos `seat` e `doors`.
+        $modules = [
+            ['header' => 'Assento', 'body' => $ticket->sector_name.' · '.$ticket->seat_code, 'id' => 'seat'],
+        ];
+        if ($session->doors_at !== null) {
+            $modules[] = ['header' => 'Portas', 'body' => CatalogPresenter::timeLabel($session->doors_at), 'id' => 'doors'];
+        }
+        $modules[] = ['header' => 'Titular', 'body' => $ticket->holder_name, 'id' => 'holder'];
+        $modules[] = ['header' => 'Local', 'body' => filled($venue->address) ? $venue->name.' — '.$venue->address : $venue->name, 'id' => 'venue'];
+
+        $links = [
+            ['id' => 'tickets', 'uri' => route('tickets.index'), 'description' => 'Meus ingressos no Kena'],
+        ];
+        if (filled($venue->maps_query)) {
+            $links[] = [
+                'id' => 'maps',
+                'uri' => 'https://www.google.com/maps/search/?api=1&query='.rawurlencode((string) $venue->maps_query),
+                'description' => 'Como chegar',
+            ];
+        }
+
+        $object = [
             'id' => $issuer.'.kena-'.$ticket->id,
             'classId' => $issuer.'.'.GoogleWalletSettings::classId(),
             'genericType' => 'GENERIC_TYPE_UNSPECIFIED',
             'state' => 'ACTIVE',
-            'hexBackgroundColor' => '#3a1220',
-            'cardTitle' => ['defaultValue' => ['language' => 'pt-BR', 'value' => 'Kena']],
-            'header' => ['defaultValue' => ['language' => 'pt-BR', 'value' => $event->title]],
-            'subheader' => ['defaultValue' => ['language' => 'pt-BR', 'value' => CatalogPresenter::sessionLabel($session)]],
-            'textModulesData' => [
-                ['header' => 'Assento', 'body' => $ticket->sector_name.' · '.$ticket->seat_code, 'id' => 'seat'],
-                ['header' => 'Titular', 'body' => $ticket->holder_name, 'id' => 'holder'],
-            ],
+            'hexBackgroundColor' => self::BACKGROUND,
+            'logo' => $this->image(self::LOGO_PATH, 'Kena'),
+            'cardTitle' => $this->text('Kena'),
+            'header' => $this->text($event->title),
+            'subheader' => $this->text(CatalogPresenter::sessionLabel($session)),
+            'textModulesData' => $modules,
+            'linksModuleData' => ['uris' => $links],
             'barcode' => [
                 'type' => 'QR_CODE',
                 'value' => $ticket->qr_token,
                 'alternateText' => $ticket->code,
             ],
+        ];
+
+        // Capa 3:1 opcional por evento: public/img/wallet/{slug}-hero.jpg.
+        $hero = 'img/wallet/'.$event->slug.'-hero.jpg';
+        if (is_file(public_path($hero))) {
+            $object['heroImage'] = $this->image($hero, $event->title);
+        }
+
+        return $object;
+    }
+
+    /** @return array<string, mixed> */
+    private function text(string $value): array
+    {
+        return ['defaultValue' => ['language' => 'pt-BR', 'value' => $value]];
+    }
+
+    /** @return array<string, mixed> */
+    private function image(string $publicPath, string $description): array
+    {
+        return [
+            'sourceUri' => ['uri' => asset($publicPath)],
+            'contentDescription' => $this->text($description),
         ];
     }
 

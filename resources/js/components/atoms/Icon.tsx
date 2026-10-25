@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
  */
 export type IconName =
     | 'check'
+    | 'copy'
     | 'close'
     | 'alert'
     | 'lock'
@@ -38,10 +39,21 @@ export type IconName =
     | 'trash'
     | 'eye'
     | 'logout'
-    | 'image';
+    | 'image'
+    | 'gift'
+    | 'users'
+    | 'settings'
+    | 'receipt'
+    | 'grid';
 
 const paths: Record<IconName, ReactElement> = {
     check: <path d="M4 12.5l5 5 11-11" />,
+    copy: (
+        <>
+            <rect x="8.5" y="8.5" width="12" height="12" rx="2.5" />
+            <path d="M15.5 8.5V6a2.5 2.5 0 00-2.5-2.5H6A2.5 2.5 0 003.5 6v7A2.5 2.5 0 006 15.5h2.5" />
+        </>
+    ),
     image: (
         <>
             <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -124,8 +136,13 @@ const paths: Record<IconName, ReactElement> = {
             <path d="M3 10h18M7 15h3" />
         </>
     ),
+    // Símbolo oficial do Pix (Simple Icons, CC0). Preenchido: o traço do sistema deforma o losango.
     pix: (
-        <path d="M12 3l3.4 3.4a3 3 0 010 4.2L12 14l-3.4-3.4a3 3 0 010-4.2L12 3zM5.5 9.5L3 12l2.5 2.5M18.5 9.5L21 12l-2.5 2.5M12 14l3.4 3.4a3 3 0 01-4.8 0L12 14z" />
+        <path
+            fill="currentColor"
+            stroke="none"
+            d="M5.283 18.36a3.505 3.505 0 0 0 2.493-1.032l3.6-3.6a.684.684 0 0 1 .946 0l3.613 3.613a3.504 3.504 0 0 0 2.493 1.032h.71l-4.56 4.56a3.647 3.647 0 0 1-5.156 0L4.85 18.36ZM18.428 5.627a3.505 3.505 0 0 0-2.493 1.032l-3.613 3.614a.67.67 0 0 1-.946 0l-3.6-3.6A3.505 3.505 0 0 0 5.283 5.64h-.434l4.573-4.572a3.646 3.646 0 0 1 5.156 0l4.559 4.559ZM1.068 9.422 3.79 6.699h1.492a2.483 2.483 0 0 1 1.744.722l3.6 3.6a1.73 1.73 0 0 0 2.443 0l3.614-3.613a2.482 2.482 0 0 1 1.744-.723h1.767l2.737 2.737a3.646 3.646 0 0 1 0 5.156l-2.736 2.736h-1.768a2.482 2.482 0 0 1-1.744-.722l-3.613-3.613a1.77 1.77 0 0 0-2.444 0l-3.6 3.6a2.483 2.483 0 0 1-1.744.722H3.791l-2.723-2.723a3.646 3.646 0 0 1 0-5.156"
+        />
     ),
     tag: (
         <>
@@ -192,6 +209,41 @@ const paths: Record<IconName, ReactElement> = {
         <>
             <path d="M4.5 7h15M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7" />
             <path d="M6 7l1 12.5A1.5 1.5 0 008.5 21h7a1.5 1.5 0 001.5-1.5L18 7" />
+        </>
+    ),
+    gift: (
+        <>
+            <rect x="4" y="8.5" width="16" height="4" rx="1" />
+            <path d="M5.5 12.5V20h13v-7.5M12 8.5V20" />
+            <path d="M12 8.5S10.5 4 8 4.5 6.5 8.5 12 8.5zM12 8.5S13.5 4 16 4.5s1.5 4-4 4z" />
+        </>
+    ),
+    users: (
+        <>
+            <circle cx="9" cy="8.5" r="3.2" />
+            <path d="M3 19.5a6 6 0 0112 0" />
+            <path d="M15.5 5.6a3.2 3.2 0 010 5.8M17.5 14a6 6 0 013.5 5.5" />
+        </>
+    ),
+    settings: (
+        <>
+            <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+            <circle cx="15" cy="7" r="2" />
+            <circle cx="9" cy="17" r="2" />
+        </>
+    ),
+    receipt: (
+        <>
+            <path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1.5-1.5 1.5-2-1.5L6 20.5v-17z" />
+            <path d="M9 8.5h6M9 12h6M9 15.5h3.5" />
+        </>
+    ),
+    grid: (
+        <>
+            <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+            <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+            <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+            <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
         </>
     ),
     eye: (

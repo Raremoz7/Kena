@@ -20,7 +20,9 @@ class PricingService
         $reservation->loadMissing(['seats.sessionSeat.sector']);
 
         $subtotal = (int) $reservation->seats->sum('price_cents');
-        $discount = $coupon !== null ? $coupon->discountFor($subtotal) : 0;
+        $discount = $coupon !== null
+            ? $coupon->discountForPrices($reservation->seats->pluck('price_cents')->map(fn ($p): int => (int) $p)->all())
+            : 0;
         $fee = $this->fee($subtotal - $discount);
         $total = $subtotal - $discount + $fee;
 
@@ -34,7 +36,7 @@ class PricingService
         }
         if ($coupon !== null && $discount > 0) {
             $lines[] = [
-                'label' => 'Cupom '.$coupon->code,
+                'label' => ($coupon->isCourtesy() ? 'Cortesia ' : 'Cupom ').$coupon->code,
                 'value' => -Money::toReais($discount),
                 'tone' => 'success',
             ];

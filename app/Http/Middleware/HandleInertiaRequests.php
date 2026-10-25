@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PanelUser;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -41,8 +43,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 // Comprador (guard web) e conta de painel (guard painel) sao
                 // independentes — os dois podem estar nulos ao mesmo tempo.
-                'user' => $request->user(),
-                'panelUser' => $request->user('painel'),
+                // So os campos que o front usa: isto vai em toda pagina.
+                'user' => self::buyer($request->user()),
+                'panelUser' => $request->user('painel')?->only(['id', 'name', 'email', 'role']),
             ],
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
@@ -51,5 +54,25 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
         ];
+    }
+
+    /**
+     * Comprador compartilhado com o front. hasCpf: o mapa pede o CPF antes de
+     * reservar (limite por CPF), sem expor o número.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function buyer(User|PanelUser|null $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        $data = $user->only(['id', 'name', 'email', 'email_verified_at']);
+        if ($user instanceof User) {
+            $data['hasCpf'] = filled($user->cpf);
+        }
+
+        return $data;
     }
 }

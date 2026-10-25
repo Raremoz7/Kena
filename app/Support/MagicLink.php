@@ -29,6 +29,35 @@ final class MagicLink
         );
     }
 
+    /** Validade curta do link enviado no meio da compra (conta leve já existente). */
+    public const CHECKOUT_TTL_MINUTES = 30;
+
+    /**
+     * Link para retomar a compra: loga e volta para `$redirect` (caminho local).
+     * O redirect entra na assinatura, então não pode ser trocado por terceiros.
+     */
+    public static function forCheckout(User $user, string $redirect): string
+    {
+        $token = Str::random(48);
+        $user->forceFill(['magic_login_token' => hash('sha256', $token)])->save();
+
+        return URL::temporarySignedRoute(
+            'magic-login',
+            now()->addMinutes(self::CHECKOUT_TTL_MINUTES),
+            ['user' => $user->id, 'token' => $token, 'redirect' => $redirect],
+        );
+    }
+
+    /** Só caminhos locais ("/x"), nunca "//host" ou URL absoluta. */
+    public static function safeRedirect(?string $path): ?string
+    {
+        if ($path === null || ! str_starts_with($path, '/') || str_starts_with($path, '//') || str_contains($path, '\\')) {
+            return null;
+        }
+
+        return $path;
+    }
+
     /** Consome o token (uso único). Retorna se o par usuário/token era válido. */
     public static function consume(User $user, string $token): bool
     {

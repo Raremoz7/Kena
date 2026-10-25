@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\User;
+use App\Rules\EmailDomainExists;
 use App\Rules\ValidCpf;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -44,6 +45,7 @@ trait ProfileValidationRules
             'string',
             'email',
             'max:255',
+            new EmailDomainExists,
             $userId === null
                 ? Rule::unique(User::class)
                 : Rule::unique(User::class)->ignore($userId),

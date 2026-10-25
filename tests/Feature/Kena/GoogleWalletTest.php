@@ -73,6 +73,50 @@ class GoogleWalletTest extends TestCase
         $this->assertStringContainsString('kena_evento', $object['classId']);
     }
 
+    /** @return array<string, mixed> */
+    private function passObject(Ticket $ticket): array
+    {
+        $url = app(GoogleWalletPass::class)->saveUrl($ticket);
+        $claims = explode('.', substr($url, strlen('https://pay.google.com/gp/v/save/')))[1];
+
+        return json_decode($this->b64urlDecode($claims), true)['payload']['genericObjects'][0];
+    }
+
+    public function test_pass_has_brand_logo_card_modules_and_links(): void
+    {
+        $this->configureWallet();
+        $ticket = $this->issuedTicket();
+        $ticket->session->update(['doors_at' => $ticket->session->starts_at->copy()->subMinutes(30)]);
+
+        $object = $this->passObject($ticket->fresh());
+
+        $this->assertSame('#6e0021', $object['hexBackgroundColor']);
+        $this->assertStringEndsWith('/img/wallet/kena-logo-660.png', $object['logo']['sourceUri']['uri']);
+        $this->assertFileExists(public_path('img/wallet/kena-logo-660.png'));
+
+        // Ids usados pelo layout da frente do cartão (classTemplateInfo da classe).
+        $modules = collect($object['textModulesData'])->keyBy('id');
+        $this->assertTrue($modules->has('seat'));
+        $this->assertSame($ticket->session->doors_at->format('H\\hi'), $modules['doors']['body']);
+        $this->assertTrue($modules->has('holder'));
+
+        $links = collect($object['linksModuleData']['uris'])->keyBy('id');
+        $this->assertSame(route('tickets.index'), $links['tickets']['uri']);
+    }
+
+    public function test_hero_image_only_when_event_has_one(): void
+    {
+        $this->configureWallet();
+        $ticket = $this->issuedTicket();
+
+        $this->assertArrayNotHasKey('heroImage', $this->passObject($ticket));
+
+        $ticket->session->event->update(['slug' => 'o-quebra-nozes']);
+        $object = $this->passObject($ticket->fresh());
+
+        $this->assertStringEndsWith('/img/wallet/o-quebra-nozes-hero.jpg', $object['heroImage']['sourceUri']['uri']);
+    }
+
     public function test_ticket_route_redirects_when_configured(): void
     {
         $this->configureWallet();

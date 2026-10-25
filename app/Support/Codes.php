@@ -9,6 +9,9 @@ final class Codes
 {
     private const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem caracteres ambíguos
 
+    /** Parte do nome no código de cortesia (o checkout aceita até 40 caracteres). */
+    private const COURTESY_NAME_MAX = 30;
+
     /** Ex.: KNA-7Q2X-J1K9-M4P1 */
     public static function ticket(): string
     {
@@ -19,6 +22,18 @@ final class Codes
     public static function orderReference(): string
     {
         return 'KNA-ORDER-'.self::group().self::group();
+    }
+
+    /**
+     * Código de cortesia: nome completo da criança, sem espaço, traço nem
+     * acento, + 3 caracteres aleatórios (quem só sabe o nome não adivinha).
+     * Ex.: "Maria Silva Santos" → MARIASILVASANTOS7Q2
+     */
+    public static function courtesy(string $name): string
+    {
+        $base = substr(strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', Str::ascii($name))), 0, self::COURTESY_NAME_MAX);
+
+        return ($base !== '' ? $base : 'CORTESIA').substr(self::group(), 0, 3);
     }
 
     private static function group(): string

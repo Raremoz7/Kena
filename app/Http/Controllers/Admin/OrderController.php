@@ -9,6 +9,7 @@ use App\Models\Refund;
 use App\Models\Ticket;
 use App\Services\RefundService;
 use App\Services\SessionCancellationService;
+use App\Support\Csv;
 use App\Support\Money;
 use App\Support\Presenters\CatalogPresenter;
 use App\Support\SessionOptionsCache;
@@ -102,7 +103,7 @@ class OrderController extends Controller
             }
             fputcsv($out, ['Código', 'Titular', 'Setor', 'Assento', 'Evento', 'Sessão', 'Pedido', 'E-mail', 'Status', 'Check-in']);
             foreach ($tickets as $t) {
-                fputcsv($out, [
+                Csv::put($out, [
                     $t->code,
                     $t->holder_name,
                     $t->sector_name,

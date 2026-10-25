@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CouponExhaustedException;
+use App\Exceptions\CourtesyRequiredException;
 use App\Exceptions\PaymentException;
 use App\Models\Order;
 use App\Models\Reservation;
+use App\Rules\ValidCpf;
 use App\Services\CouponService;
+use App\Services\Payments\PaymentResult;
 use App\Services\PaymentService;
 use App\Services\PricingService;
+use App\Services\SeatReservationService;
 use App\Support\MercadoPagoSettings;
 use App\Support\Presenters\CheckoutPresenter;
 use Illuminate\Http\JsonResponse;
@@ -29,7 +33,7 @@ class CheckoutController extends Controller
 
     public function show(Reservation $reservation): Response|RedirectResponse
     {
-        $reservation->loadMissing('session.event');
+        $reservation->loadMissing('session.event', 'user');
 
         if ($reservation->user_id !== Auth::id()) {
             abort(403);
@@ -65,8 +69,14 @@ class CheckoutController extends Controller
             'payUrl' => route('checkout.pay', $reservation),
             'statusUrl' => route('checkout.status', $reservation),
             'releaseUrl' => route('reservations.release', $reservation),
+            'extendUrl' => route('checkout.extend', $reservation),
             'mpPublicKey' => MercadoPagoSettings::publicKey(),
             'pendingPayment' => $pendingPayment,
+            // Comprador sem CPF cadastrado precisa informar no checkout —
+            // o Mercado Pago exige o documento do pagador no cartão.
+            'needsDocument' => blank($reservation->user->cpf),
+            // Lugares que passaram da venda paga: só fecham com código de cortesia.
+            'courtesyRequired' => $reservation->seats()->where('requires_courtesy', true)->count(),
         ]);
     }
 
@@ -76,7 +86,7 @@ class CheckoutController extends Controller
         $this->ensureOwnerActive($reservation);
 
         $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
-        $coupon = $this->coupons->resolve($data['code'], $reservation->session->event_id);
+        $coupon = $this->coupons->resolveForReservation($data['code'], $reservation);
 
         if ($coupon === null) {
             return response()->json(['message' => 'Cupom inválido ou expirado.'], 422);
@@ -94,26 +104,59 @@ class CheckoutController extends Controller
     public function pay(Request $request, Reservation $reservation): JsonResponse
     {
         $this->ensureOwnerActive($reservation);
+        $reservation->loadMissing('user');
+
+        // CPF é obrigatório (cartão e Pix) quando o comprador ainda não tem um
+        // cadastrado — o Mercado Pago exige o documento do pagador. Pedido de
+        // R$ 0 (cortesia) não passa pelo Mercado Pago e dispensa.
+        $code = $request->input('coupon_code');
+        $coupon = $this->coupons->resolveForReservation(is_string($code) ? $code : null, $reservation);
+        // Lugar da cota de cortesia sem código suficiente: o pay() recusa com a
+        // mensagem da cortesia — pedir CPF antes só confundiria (com o código, sai R$ 0).
+        $reservation->loadMissing('seats');
+        $courtesyMissing = count($coupon?->courtesyKeys(
+            $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
+        ) ?? []) < $reservation->seats->where('requires_courtesy', true)->count();
+        // Pix: sempre o CPF de quem paga (não é necessariamente o do login).
+        // Cartão: só quando a conta não tem CPF.
+        $requiresCpf = (blank($reservation->user->cpf) || $request->input('method') === 'pix')
+            && ! $courtesyMissing
+            && $this->pricing->quoteForReservation($reservation, $coupon)['total_cents'] > 0;
 
         $data = $request->validate([
-            'method' => ['required', Rule::in(['card', 'pix'])],
+            // free: cupom/cortesia zerou o total — confirma sem etapa de pagamento.
+            'method' => ['required', Rule::in(['card', 'pix', 'free'])],
             'coupon_code' => ['nullable', 'string', 'max:40'],
             'token' => ['required_if:method,card', 'string'],
             'installments' => ['nullable', 'integer', 'min:1', 'max:12'],
             'payment_method_id' => ['nullable', 'string'],
+            'document' => [$requiresCpf ? 'required' : 'nullable', 'string', new ValidCpf],
         ]);
 
         try {
             $order = $this->payments->pay($reservation, $data);
-        } catch (CouponExhaustedException $e) {
+        } catch (CouponExhaustedException|CourtesyRequiredException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
-        } catch (PaymentException) {
-            return response()->json([
-                'message' => 'Não foi possível processar o pagamento. Confira os dados e tente novamente.',
-            ], 422);
+        } catch (PaymentException $e) {
+            // A mensagem do gateway já é segura e amigável (traduzida no adapter).
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         return response()->json($this->orderStatusPayload($order));
+    }
+
+    /** "Preciso de mais tempo": estende a reserva uma vez. */
+    public function extend(Reservation $reservation, SeatReservationService $reservations): JsonResponse
+    {
+        abort_unless($reservation->user_id === Auth::id(), 403);
+
+        if (! $reservations->extend($reservation)) {
+            return response()->json([
+                'message' => 'Não dá para estender esta reserva de novo. Conclua o pagamento ou escolha os lugares outra vez.',
+            ], 422);
+        }
+
+        return response()->json(['reservationExpiresAt' => $reservation->expires_at->toIso8601String()]);
     }
 
     /** Status do pedido da reserva (polling do Pix). */
@@ -144,11 +187,19 @@ class CheckoutController extends Controller
             ];
         }
 
+        // Motivo amigável da recusa (cartão) pro comprador saber o que corrigir.
+        $failureReason = null;
+        if ($order->status === Order::STATUS_FAILED && is_array($payment?->payload)) {
+            $detail = $payment->payload['status_detail'] ?? null;
+            $failureReason = PaymentResult::friendlyStatusDetail(is_string($detail) ? $detail : null);
+        }
+
         return [
             'status' => $order->status, // pending | paid | failed | cancelled | refunded
             'orderReference' => $order->reference,
             'redirect' => $order->status === Order::STATUS_PAID ? route('tickets.index') : null,
             'pix' => $pix,
+            'failureReason' => $failureReason,
             // Prazo REAL da reserva (o Pix estende o hold) — o countdown do front usa isso.
             'reservationExpiresAt' => $order->reservation?->expires_at?->toIso8601String(),
         ];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\Order;
 use App\Models\SessionSeat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -28,7 +29,10 @@ class AdminController extends Controller
         $capacity = SessionSeat::count();
         $sold = SessionSeat::where('status', SessionSeat::STATUS_SOLD)->count();
         $available = SessionSeat::where('status', SessionSeat::STATUS_AVAILABLE)->count();
-        $revenueCents = (int) SessionSeat::where('status', SessionSeat::STATUS_SOLD)->sum('price_cents');
+        // Receita = o que foi pago de fato (total dos pedidos pagos, já com cupons
+        // e cortesias descontados). Somar o preço dos assentos vendidos contava
+        // cortesia como se tivesse sido paga.
+        $revenueCents = (int) Order::where('status', Order::STATUS_PAID)->sum('total_cents');
 
         return Inertia::render('admin/overview', [
             'kpis' => [
@@ -58,6 +62,9 @@ class AdminController extends Controller
         // Substitui os itens pelas linhas mapeadas, preservando o envelope (data/links).
         // Não usamos through() porque rowsFor() agrega os assentos de todos os
         // eventos da página numa query só — precisa da coleção inteira de uma vez.
+        // O paginator troca os models Event por linhas-array do Inertia de
+        // propósito; o generics do PHPStan não expressa essa substituição.
+        // @phpstan-ignore-next-line argument.type
         $events->setCollection(collect($this->rowsFor($events->getCollection())));
 
         return Inertia::render('admin/events', [
@@ -98,6 +105,9 @@ class AdminController extends Controller
                     'slug' => $event->slug,
                     'title' => $event->title,
                     'status' => $event->status,
+                    // O PHPDoc da relação `venue` é não-nulável, mas ela pode
+                    // ser nula em runtime; o ternário é intencional.
+                    // @phpstan-ignore-next-line ternary.alwaysTrue
                     'venue' => $event->venue
                         ? trim($event->venue->name.', '.$event->venue->city, ', ')
                         : '—',

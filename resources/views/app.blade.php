@@ -1,19 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" >
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        {{-- Equivalente hex de --bg (oklch(0.16 0.013 48)): pinta a barra do navegador no mobile. --}}
-        <meta name="theme-color" content="#120c08">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        {{-- Equivalente hex de --bg (oklch(0.975 0.006 75)): pinta a barra do navegador no mobile. --}}
+        <meta name="theme-color" content="#f9f6f2">
 
-        {{-- Kena é dark-only: a classe .dark é fixa no <html>, sem toggle de aparência.
-             color-scheme faz o navegador pintar scrollbars, <select> nativo e controles
-             de formulário no esquema escuro (sem isso ficam claros no Windows). --}}
+        {{-- Tema claro é o padrão. A paleta escura segue disponível pela classe .dark
+             (veja resources/css/app.css). O fundo inline evita flash antes do CSS carregar. --}}
         <style>
-            html,
-            html.dark {
-                color-scheme: dark;
-                background-color: oklch(0.16 0.013 48);
+            html {
+                color-scheme: light;
+                background-color: oklch(0.975 0.006 75);
             }
         </style>
 

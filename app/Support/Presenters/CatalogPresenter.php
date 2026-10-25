@@ -5,6 +5,9 @@ namespace App\Support\Presenters;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionSeat;
+use App\Services\CourtesyReserveService;
+use App\Services\LotSnapshot;
+use App\Services\TicketLotService;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,7 +26,8 @@ final class CatalogPresenter
     public static function listItem(Event $event): array
     {
         $session = $event->sessions->first();
-        $priceFrom = $event->sectors->min('price_cents') ?? 0;
+        $priceFrom = ($session ? self::lots()->snapshot($session)->currentPriceCents() : null)
+            ?? $event->sectors->min('price_cents') ?? 0;
 
         return [
             'id' => $event->id,
@@ -34,8 +38,6 @@ final class CatalogPresenter
             'venue' => self::venue($event),
             'dateLabel' => $session ? self::dateLabel($session->starts_at) : '',
             'timeLabel' => $session ? self::timeLabel($session->starts_at) : '',
-            'bannerFrom' => $event->banner_from,
-            'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
             'priceFrom' => Money::toReais((int) $priceFrom),
         ];
@@ -64,6 +66,9 @@ final class CatalogPresenter
             'bannerFrom' => $event->banner_from,
             'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
+            // Degradê horizontal por cima da foto, só no topo do evento.
+            'bannerFromOpacity' => (int) $event->banner_from_opacity,
+            'bannerToOpacity' => (int) $event->banner_to_opacity,
         ];
     }
 
@@ -72,7 +77,7 @@ final class CatalogPresenter
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function sectors(Event $event, EventSession $session): array
+    public static function sectors(Event $event, EventSession $session, ?LotSnapshot $lots = null): array
     {
         $available = $session->sessionSeats()
             ->where('status', SessionSeat::STATUS_AVAILABLE)
@@ -80,10 +85,12 @@ final class CatalogPresenter
             ->groupBy('sector_id')
             ->pluck('total', 'sector_id');
 
+        $lotPrice = ($lots ?? self::lots()->snapshot($session))->currentPriceCents();
+
         return $event->sectors->map(fn ($sector): array => [
             'id' => $sector->id,
             'name' => $sector->name,
-            'price' => Money::toReais($sector->price_cents),
+            'price' => Money::toReais($lotPrice ?? $sector->price_cents),
             'availableCount' => (int) ($available[$sector->id] ?? 0),
             'soldOut' => (int) ($available[$sector->id] ?? 0) === 0,
         ])->all();
@@ -94,10 +101,12 @@ final class CatalogPresenter
      *
      * @return array<string, mixed>
      */
-    public static function seatMap(EventSession $session): array
+    public static function seatMap(EventSession $session, ?LotSnapshot $lots = null): array
     {
         /** @var Collection<int, SessionSeat> $seats */
         $seats = $session->sessionSeats()->with(['seat', 'sector'])->get();
+        // Com lotes, todo lugar livre custa o preço do lote atual.
+        $lotPrice = ($lots ?? self::lots()->snapshot($session))->currentPriceCents();
 
         $mapped = $seats->map(fn (SessionSeat $ss): array => [
             'id' => $ss->id,
@@ -109,7 +118,7 @@ final class CatalogPresenter
             'sectorName' => $ss->sector->name,
             'status' => $ss->isEffectivelyAvailable() ? 'available' : $ss->status,
             'kind' => $ss->seat->kind,
-            'price' => Money::toReais($ss->price_cents),
+            'price' => Money::toReais($lotPrice ?? $ss->price_cents),
             'visibility' => self::visibilityForRow($ss->seat->line),
         ]);
 
@@ -162,6 +171,51 @@ final class CatalogPresenter
             ])->values()->all();
     }
 
+    private static function lots(): TicketLotService
+    {
+        return app(TicketLotService::class);
+    }
+
+    /**
+     * Lote vendendo agora e o próximo, para o site mostrar "1º lote · R$ 45".
+     *
+     * @return array{current: array{name: string, price: float, remaining: int|null}|null, next: array{name: string, price: float}|null, soldOut: bool}|null
+     */
+    public static function lotInfo(EventSession $session, ?LotSnapshot $lots = null): ?array
+    {
+        $summary = ($lots ?? self::lots()->snapshot($session))->summary();
+        if ($summary === []) {
+            return null;
+        }
+
+        $current = collect($summary)->firstWhere('state', 'current');
+        $next = collect($summary)->firstWhere('state', 'next');
+
+        return [
+            'current' => $current ? [
+                'name' => $current['name'],
+                'price' => Money::toReais($current['priceCents']),
+                'remaining' => $current['remaining'],
+            ] : null,
+            'next' => $next ? ['name' => $next['name'], 'price' => Money::toReais($next['priceCents'])] : null,
+            'soldOut' => $current === null,
+        ];
+    }
+
+    /**
+     * A venda paga esgotou, mas a sessão ainda guarda lugares de cortesia:
+     * o mapa continua aberto, e o pai escolhe e informa o código no pagamento.
+     */
+    public static function courtesyOnly(EventSession $session, ?LotSnapshot $lots = null): bool
+    {
+        if ((int) $session->courtesy_reserve <= 0) {
+            return false;
+        }
+
+        return app(CourtesyReserveService::class)->paidLeft($session) === 0
+            || ($lots ?? self::lots()->snapshot($session))->soldOut();
+    }
+
     /** @return array<string, mixed> */
     private static function venue(Event $event): array
     {
@@ -189,7 +243,7 @@ final class CatalogPresenter
         return ucfirst($dt->isoFormat('ddd, D [de] MMMM'));
     }
 
-    private static function timeLabel(CarbonInterface $dt): string
+    public static function timeLabel(CarbonInterface $dt): string
     {
         return $dt->format('H\\hi');
     }

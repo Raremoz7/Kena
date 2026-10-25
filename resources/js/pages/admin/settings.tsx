@@ -30,6 +30,22 @@ interface Mail {
     passwordConfigured: boolean;
 }
 
+interface MailBackup {
+    configured: boolean;
+    host: string;
+    port: number;
+    username: string;
+    encryption: string;
+    passwordConfigured: boolean;
+}
+
+interface MailUsage {
+    sentToday: number;
+    dailyLimit: number;
+    warn: boolean;
+    over: boolean;
+}
+
 interface Setup {
     mpAccessToken: boolean;
     mpPublicKey: boolean;
@@ -48,6 +64,8 @@ interface Gw {
 interface SettingsProps {
     mp: Mp;
     mail: Mail;
+    mailBackup: MailBackup;
+    mailUsage: MailUsage;
     gw: Gw;
     webhookUrl: string;
     setup: Setup;
@@ -137,6 +155,8 @@ function ChecklistItem({ done, label }: { done: boolean; label: string }) {
 export default function Settings({
     mp,
     mail,
+    mailBackup,
+    mailUsage,
     gw,
     webhookUrl,
     setup,
@@ -213,6 +233,13 @@ export default function Settings({
         mail_encryption: mail.encryption || 'tls',
         mail_from_address: mail.fromAddress || '',
         mail_from_name: mail.fromName || '',
+        mail_daily_limit: String(mailUsage.dailyLimit),
+
+        mail_backup_host: mailBackup.host || '',
+        mail_backup_port: String(mailBackup.port || 587),
+        mail_backup_username: mailBackup.username || '',
+        mail_backup_password: '',
+        mail_backup_encryption: mailBackup.encryption || 'tls',
 
         gw_issuer_id: gw.issuerId || '',
         gw_class_id: gw.classId || '',
@@ -232,6 +259,7 @@ export default function Settings({
                 form.setData('mp_access_token', '');
                 form.setData('mp_webhook_secret', '');
                 form.setData('mail_password', '');
+                form.setData('mail_backup_password', '');
                 form.setData('gw_private_key', '');
             },
         });
@@ -246,8 +274,8 @@ export default function Settings({
     return (
         <>
             <Head title="Painel — Configurações" />
-            <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
-                <h1 className="font-display text-display-lg text-foreground uppercase">
+            <div className="mx-auto max-w-2xl px-4 pt-5 pb-8 sm:px-8 sm:py-8">
+                <h1 className="font-display text-display-md text-foreground uppercase sm:text-display-lg">
                     Configurações
                 </h1>
                 <p className="mt-1 font-body text-sm text-muted-foreground">
@@ -256,7 +284,7 @@ export default function Settings({
                 </p>
 
                 {/* Checklist */}
-                <div className="mt-6 rounded-card border border-border bg-surface p-6">
+                <div className="mt-6 rounded-card border border-border bg-surface p-4 sm:p-6">
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="font-display text-display-sm text-foreground uppercase">
                             Pronto para vender
@@ -361,15 +389,17 @@ export default function Settings({
 
                     <p className="mt-4 flex items-start gap-1.5 font-body text-[11px] text-faint">
                         <Icon name="info" size={14} className="mt-px" />
-                        Os e-mails são enviados em segundo plano — mantenha um{' '}
-                        <strong>worker de fila</strong> rodando no servidor
-                        (`php artisan queue:work`).
+                        <span>
+                            Os e-mails são enviados em segundo plano — mantenha
+                            um <strong>worker de fila</strong> rodando no
+                            servidor (`php artisan queue:work`).
+                        </span>
                     </p>
                 </div>
 
                 <form onSubmit={submit} className="mt-6 flex flex-col gap-6">
                     {/* Mercado Pago */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
@@ -513,7 +543,7 @@ export default function Settings({
                     </div>
 
                     {/* E-mail (SMTP) */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
@@ -528,6 +558,49 @@ export default function Settings({
                             <Badge tone={setup.mail ? 'success' : 'warning'}>
                                 {setup.mail ? 'Configurado' : 'Pendente'}
                             </Badge>
+                        </div>
+
+                        {/* Cota do dia no SMTP principal (Brevo grátis: 300/dia). */}
+                        <div
+                            className={`mt-5 rounded-btn border p-4 ${mailUsage.over ? 'border-danger bg-danger/10' : mailUsage.warn ? 'border-warning bg-warning/15' : 'border-border bg-bg'}`}
+                        >
+                            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <p className="font-body text-sm text-foreground">
+                                    <strong className="tabular-nums">
+                                        {mailUsage.sentToday}
+                                    </strong>{' '}
+                                    de{' '}
+                                    <span className="tabular-nums">
+                                        {mailUsage.dailyLimit}
+                                    </span>{' '}
+                                    e-mails enviados hoje
+                                </p>
+                                <span className="font-body text-xs text-faint">
+                                    zera à meia-noite (Brasília)
+                                </span>
+                            </div>
+                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2">
+                                <div
+                                    className={`h-full rounded-full ${mailUsage.over ? 'bg-danger' : mailUsage.warn ? 'bg-warning' : 'bg-accent'}`}
+                                    style={{
+                                        width: `${Math.min(100, Math.round((mailUsage.sentToday / mailUsage.dailyLimit) * 100))}%`,
+                                    }}
+                                />
+                            </div>
+                            {(mailUsage.warn || mailUsage.over) && (
+                                <p
+                                    role="status"
+                                    className="mt-2 font-body text-xs text-foreground"
+                                >
+                                    {mailUsage.over
+                                        ? mailBackup.configured
+                                            ? 'Limite do dia atingido: os e-mails estão saindo pelo SMTP secundário.'
+                                            : 'Limite do dia atingido e sem SMTP secundário: os e-mails podem não sair até amanhã.'
+                                        : mailBackup.configured
+                                          ? 'Perto do limite do dia. Quando passar, o SMTP secundário assume sozinho.'
+                                          : 'Perto do limite do dia. Configure um SMTP secundário abaixo.'}
+                                </p>
+                            )}
                         </div>
 
                         <div className="mt-5 flex flex-col gap-4">
@@ -642,6 +715,26 @@ export default function Settings({
                                         <option value="none">Nenhuma</option>
                                     </Select>
                                 </FormField>
+                                <FormField
+                                    label="Limite diário do principal"
+                                    htmlFor="mail_daily_limit"
+                                    error={form.errors.mail_daily_limit}
+                                    helper="Brevo grátis: 300 por dia. Só para o aviso acima."
+                                >
+                                    <Input
+                                        id="mail_daily_limit"
+                                        type="number"
+                                        inputMode="numeric"
+                                        min={1}
+                                        value={form.data.mail_daily_limit}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'mail_daily_limit',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -682,6 +775,149 @@ export default function Settings({
                             </div>
                         </div>
 
+                        {/* SMTP secundário: assume sozinho se o principal recusar (ex.: cota do dia). */}
+                        <div className="mt-6 rounded-btn border border-dashed border-border p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <h3 className="font-body text-sm font-semibold text-foreground">
+                                    SMTP secundário (reserva)
+                                </h3>
+                                <Badge
+                                    tone={
+                                        mailBackup.configured
+                                            ? 'success'
+                                            : 'neutral'
+                                    }
+                                >
+                                    {mailBackup.configured
+                                        ? 'Ativo'
+                                        : 'Desligado'}
+                                </Badge>
+                            </div>
+                            <p className="mt-1 font-body text-xs text-muted-foreground">
+                                Se o principal recusar um envio (por exemplo,
+                                porque a cota grátis do dia acabou), o e-mail
+                                sai por aqui na hora, sem se perder. Opções
+                                grátis: outra conta Brevo (300/dia), SMTP2GO
+                                (1.000/mês) ou um Gmail com senha de app
+                                (500/dia). O remetente precisa ser aceito por
+                                esse provedor. Deixe o servidor em branco para
+                                desligar.
+                            </p>
+                            <div className="mt-4 flex flex-col gap-4">
+                                <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
+                                    <FormField
+                                        label="Servidor (host)"
+                                        htmlFor="mail_backup_host"
+                                        error={form.errors.mail_backup_host}
+                                    >
+                                        <Input
+                                            id="mail_backup_host"
+                                            value={form.data.mail_backup_host}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mail_backup_host',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="mail.smtp2go.com"
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Porta"
+                                        htmlFor="mail_backup_port"
+                                        error={form.errors.mail_backup_port}
+                                    >
+                                        <Input
+                                            id="mail_backup_port"
+                                            type="number"
+                                            inputMode="numeric"
+                                            value={form.data.mail_backup_port}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mail_backup_port',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    </FormField>
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <FormField
+                                        label="Usuário"
+                                        htmlFor="mail_backup_username"
+                                        error={form.errors.mail_backup_username}
+                                    >
+                                        <Input
+                                            id="mail_backup_username"
+                                            autoComplete="off"
+                                            value={
+                                                form.data.mail_backup_username
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mail_backup_username',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    </FormField>
+                                    <FormField
+                                        label="Senha"
+                                        htmlFor="mail_backup_password"
+                                        error={form.errors.mail_backup_password}
+                                        helper={
+                                            mailBackup.passwordConfigured
+                                                ? 'Já configurada. Em branco = manter.'
+                                                : undefined
+                                        }
+                                    >
+                                        <Input
+                                            id="mail_backup_password"
+                                            type="password"
+                                            autoComplete="new-password"
+                                            value={
+                                                form.data.mail_backup_password
+                                            }
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mail_backup_password',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder={
+                                                mailBackup.passwordConfigured
+                                                    ? '••••••••'
+                                                    : ''
+                                            }
+                                        />
+                                    </FormField>
+                                </div>
+                                <FormField
+                                    label="Criptografia"
+                                    htmlFor="mail_backup_encryption"
+                                >
+                                    <Select
+                                        id="mail_backup_encryption"
+                                        value={form.data.mail_backup_encryption}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'mail_backup_encryption',
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        <option value="tls">
+                                            TLS (porta 587)
+                                        </option>
+                                        <option value="ssl">
+                                            SSL (porta 465)
+                                        </option>
+                                        <option value="none">Nenhuma</option>
+                                    </Select>
+                                </FormField>
+                            </div>
+                        </div>
+
                         <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border pt-4">
                             <Button
                                 type="button"
@@ -713,7 +949,7 @@ export default function Settings({
                     </div>
 
                     {/* Google Wallet (opcional) */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
