@@ -128,10 +128,7 @@ export function AdminBrand() {
     return (
         <>
             <KenaMark className="size-7" />
-            <span className="font-display text-base font-semibold tracking-[0.04em] text-foreground uppercase">
-                Kena
-            </span>
-            <span className="kicker ml-0.5 text-faint">Painel</span>
+            <span className="kicker text-faint">Painel</span>
         </>
     );
 }
