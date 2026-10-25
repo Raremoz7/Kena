@@ -118,8 +118,8 @@ final class TicketImage
     /** Foto do evento recortada no topo; sem foto, um bloco vinho. */
     private static function cover(GdImage $img, ?string $banner): void
     {
-        $path = $banner !== null ? public_path(ltrim($banner, '/')) : null;
-        $photo = $path !== null && is_file($path) ? @imagecreatefromstring((string) file_get_contents($path)) : false;
+        $path = BannerImage::localFile($banner);
+        $photo = $path !== null ? @imagecreatefromstring((string) file_get_contents($path)) : false;
 
         $layer = imagecreatetruecolor(self::W, self::COVER_H);
         if ($photo instanceof GdImage) {
