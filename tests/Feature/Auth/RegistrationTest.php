@@ -34,7 +34,7 @@ class RegistrationTest extends TestCase
             'email' => 'helena@example.com',
             'phone' => '(61) 99999-8888',
             'cpf' => '529.982.247-25',
-            'password' => 'password',
+            'password' => 'password123',
             'code' => app(EmailVerificationCodeService::class)->issue('helena@example.com'),
         ]);
 
@@ -56,7 +56,7 @@ class RegistrationTest extends TestCase
             'email' => 'helena3@example.com',
             'phone' => '(61) 99999-8888',
             'cpf' => '529.982.247-25',
-            'password' => 'password',
+            'password' => 'password123',
         ]);
 
         $response->assertSessionHasErrors('code');
@@ -73,7 +73,7 @@ class RegistrationTest extends TestCase
             'email' => 'helena4@example.com',
             'phone' => '(61) 99999-8888',
             'cpf' => '529.982.247-25',
-            'password' => 'password',
+            'password' => 'password123',
             'code' => $code,
         ]);
 
@@ -88,7 +88,7 @@ class RegistrationTest extends TestCase
             'email' => 'helena2@example.com',
             'phone' => '(61) 99999-8888',
             'cpf' => '111.111.111-11',
-            'password' => 'password',
+            'password' => 'password123',
         ]);
 
         $response->assertSessionHasErrors('cpf');
@@ -144,7 +144,7 @@ class RegistrationTest extends TestCase
 
         $this->from(route('register'))->post(route('register.store'), [
             'name' => 'Intruso', 'email' => 'mae@example.com', 'phone' => '(61) 99999-8888',
-            'cpf' => '529.982.247-25', 'password' => 'senha-do-intruso', 'code' => '000000',
+            'cpf' => '529.982.247-25', 'password' => 'senha-do-intruso1', 'code' => '000000',
         ])->assertSessionHasErrors('code');
 
         $this->assertGuest();

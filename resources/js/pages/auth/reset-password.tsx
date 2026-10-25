@@ -43,6 +43,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                             label="Senha"
                             htmlFor="password"
                             error={errors.password}
+                            helper="Mínimo de 8 caracteres, com letras e números."
                         >
                             <PasswordInput
                                 id="password"

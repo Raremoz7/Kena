@@ -75,6 +75,7 @@ export default function Security(props: Props) {
                                 label="Nova senha"
                                 htmlFor="password"
                                 error={errors.password}
+                                helper="Mínimo de 8 caracteres, com letras e números."
                             >
                                 <PasswordInput
                                     id="password"
@@ -127,4 +128,3 @@ export default function Security(props: Props) {
         </>
     );
 }
-
