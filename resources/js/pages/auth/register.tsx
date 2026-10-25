@@ -6,6 +6,7 @@ import { Spinner } from '@/components/atoms/Spinner';
 import SocialAuth from '@/components/auth/social-auth';
 import MaskedInput from '@/components/masked-input';
 import { EmailCodeField } from '@/components/molecules/EmailCodeField';
+import { EmailSuggestion } from '@/components/molecules/EmailSuggestion';
 import { FormField } from '@/components/molecules/FormField';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -73,6 +74,10 @@ export default function Register({ passwordRules, emailCodeUrl }: Props) {
                                         tabIndex={2}
                                         autoComplete="email"
                                         placeholder="voce@email.com"
+                                    />
+                                    <EmailSuggestion
+                                        email={email}
+                                        onAccept={setEmail}
                                     />
                                 </FormField>
 

@@ -10,6 +10,7 @@ use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Rules\EmailDomainExists;
 use App\Rules\ValidCpf;
 use App\Services\EmailVerificationCodeService;
 use App\Services\GuestIdentityService;
@@ -41,7 +42,7 @@ class ReservationController extends Controller
         ];
         if (! Auth::check()) {
             $rules += [
-                'guest.email' => ['required', 'email', 'max:255'],
+                'guest.email' => ['required', 'email', 'max:255', new EmailDomainExists],
                 'guest.name' => ['required', 'string', 'max:120'],
                 'guest.cpf' => ['required', 'string', new ValidCpf],
                 'guest.code' => ['required', 'digits:6'],

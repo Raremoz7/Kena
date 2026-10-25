@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\EmailDomainExists;
 use App\Services\EmailVerificationCodeService;
 use App\Support\AccountNotice;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,7 @@ class EmailCodeController extends Controller
     public function send(Request $request, EmailVerificationCodeService $codes): JsonResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', 'max:255', new EmailDomainExists],
         ]);
 
         // E-mail que já entra com Google ou senha não recebe código: o código é
