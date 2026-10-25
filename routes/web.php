@@ -64,7 +64,8 @@ Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::clas
     ->name('sessions.reserve');
 
 // Magic-link (login sem senha por e-mail, assinado)
-Route::get('/entrar/{user}', [MagicLoginController::class, 'login'])->name('magic-login')->middleware('signed');
+Route::get('/entrar/{user}', [MagicLoginController::class, 'show'])->name('magic-login')->middleware('signed');
+Route::post('/entrar/{user}', [MagicLoginController::class, 'login'])->name('magic-login.confirm')->middleware(['signed', 'throttle:10,1']);
 
 // Autenticado como comprador — checkout / ingressos. O guard é explícito:
 // com dois guards no sistema, 'auth' sozinho resolveria o padrão e deixaria

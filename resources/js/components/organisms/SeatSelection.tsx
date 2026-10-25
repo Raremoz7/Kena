@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
@@ -172,6 +172,11 @@ export function SeatSelection({
         [seatMap.seats, statuses],
     );
     const selectedIds = useMemo(() => selected.map((s) => s.id), [selected]);
+    // Seleção atual para o polling (o intervalo não recria a cada clique).
+    const selectedRef = useRef(selected);
+    useEffect(() => {
+        selectedRef.current = selected;
+    }, [selected]);
     const total = selected.reduce((sum, s) => sum + s.price, 0);
 
     // Polling da disponibilidade: só os lugares ocupados vêm na resposta (o resto
@@ -199,14 +204,30 @@ export function SeatSelection({
                 const data = (await res.json()) as {
                     seats: Record<number, SeatStatus>;
                 };
-                setStatuses(
-                    Object.fromEntries(
-                        seatMap.seats.map((s) => [
-                            s.id,
-                            data.seats[s.id] ?? 'available',
-                        ]),
-                    ),
+                const next: Record<number, SeatStatus> = Object.fromEntries(
+                    seatMap.seats.map((s) => [
+                        s.id,
+                        data.seats[s.id] ?? 'available',
+                    ]),
                 );
+                setStatuses(next);
+
+                // Tira da seleção o que outra pessoa reservou, avisando o
+                // comprador (senão o assento some do resumo em silêncio).
+                const taken = selectedRef.current.filter(
+                    (s) => next[s.id] !== 'available',
+                );
+
+                if (taken.length > 0) {
+                    const ids = new Set(taken.map((s) => s.id));
+                    setSelected((prev) => prev.filter((s) => !ids.has(s.id)));
+                    veludoToast.warning(
+                        taken.length === 1
+                            ? 'Um assento foi reservado'
+                            : 'Alguns assentos foram reservados',
+                        `${taken.map((s) => s.code).join(', ')} ${taken.length === 1 ? 'acabou' : 'acabaram'} de sair. Escolha ${taken.length === 1 ? 'outro' : 'outros'}.`,
+                    );
+                }
             } catch {
                 /* silencioso — tenta de novo no próximo tick */
             }
@@ -226,31 +247,6 @@ export function SeatSelection({
         };
     }, [availabilityUrl, seatMap.seats]);
 
-    // Remove da seleção assentos que deixaram de estar disponíveis, avisando
-    // o comprador (senão o assento some do resumo em silêncio).
-    useEffect(() => {
-        setSelected((prev) => {
-            const taken = prev.filter(
-                (s) => (statuses[s.id] ?? 'available') !== 'available',
-            );
-
-            if (taken.length === 0) {
-                return prev;
-            }
-
-            veludoToast.warning(
-                taken.length === 1
-                    ? 'Um assento foi reservado'
-                    : 'Alguns assentos foram reservados',
-                `${taken.map((s) => s.code).join(', ')} ${taken.length === 1 ? 'acabou' : 'acabaram'} de sair. Escolha ${taken.length === 1 ? 'outro' : 'outros'}.`,
-            );
-
-            return prev.filter(
-                (s) => (statuses[s.id] ?? 'available') === 'available',
-            );
-        });
-    }, [statuses]);
-
     function toggle(seat: Seat) {
         if ((statuses[seat.id] ?? seat.status) !== 'available') {
             return;
@@ -267,7 +263,7 @@ export function SeatSelection({
                 'Limite de ingressos',
                 maxSeats === 0
                     ? 'Você já atingiu o máximo de ingressos para esta sessão.'
-                    : `Cada CPF pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'} por sessão.`,
+                    : `Cada pessoa pode escolher até ${maxSeats} ${maxSeats === 1 ? 'assento' : 'assentos'} por sessão.`,
             );
 
             return;

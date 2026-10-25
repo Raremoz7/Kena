@@ -143,7 +143,7 @@ class CheckInService
         // Perdeu a corrida (ou nunca foi válido): relê o estado real pra negar com motivo.
         $ticket->refresh();
 
-        return [CheckIn::RESULT_DENIED, $this->denialReason($ticket, $session) ?? 'Ingresso '.$ticket->status.'.'];
+        return [CheckIn::RESULT_DENIED, $this->denialReason($ticket, $session) ?? 'Ingresso inválido.'];
     }
 
     /** Motivo para negar a entrada, ou null se o ingresso pode entrar agora. */
@@ -159,11 +159,13 @@ class CheckInService
             return 'Ingresso já utilizado'.($when ? " ({$when})" : '').'.';
         }
 
-        if ($ticket->status !== Ticket::STATUS_VALID) {
-            return 'Ingresso '.$ticket->status.'.';
-        }
-
-        return null;
+        return match ($ticket->status) {
+            Ticket::STATUS_VALID => null,
+            Ticket::STATUS_TRANSFERRED => 'Ingresso transferido: vale o ingresso novo, com quem recebeu.',
+            Ticket::STATUS_REFUNDED => 'Ingresso reembolsado.',
+            Ticket::STATUS_CANCELLED => 'Ingresso cancelado.',
+            default => 'Ingresso inválido.',
+        };
     }
 
     /**

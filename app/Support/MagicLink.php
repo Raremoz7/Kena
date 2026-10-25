@@ -58,14 +58,18 @@ final class MagicLink
         return $path;
     }
 
+    /** Confere o token sem gastar (a página do botão "Entrar"). */
+    public static function isValid(User $user, string $token): bool
+    {
+        return $token !== ''
+            && $user->magic_login_token !== null
+            && hash_equals($user->magic_login_token, hash('sha256', $token));
+    }
+
     /** Consome o token (uso único). Retorna se o par usuário/token era válido. */
     public static function consume(User $user, string $token): bool
     {
-        if ($token === '' || $user->magic_login_token === null) {
-            return false;
-        }
-
-        if (! hash_equals($user->magic_login_token, hash('sha256', $token))) {
+        if (! self::isValid($user, $token)) {
             return false;
         }
 

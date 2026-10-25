@@ -113,10 +113,10 @@ class GuestAccountTakeoverTest extends TestCase
         $owner = $this->lightAccount();
         $url = MagicLink::forCheckout($owner, '/eventos');
 
-        $this->get($url)->assertRedirect('/eventos');
+        $this->post($url)->assertRedirect('/eventos');
         auth()->logout();
 
-        $this->get($url)->assertRedirect(route('login'));
+        $this->post($url)->assertRedirect(route('login'));
         $this->assertGuest();
     }
 
