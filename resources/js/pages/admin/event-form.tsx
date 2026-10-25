@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
+import type { IconName } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
@@ -53,6 +54,34 @@ const presets = [
 /** Hex válido para o <input type="color"> (valor antigo fora do padrão vira preto). */
 const asHex = (value: string) =>
     /^#[0-9a-f]{6}$/i.test(value) ? value : '#000000';
+
+function sessionLinks(id: number): {
+    label: string;
+    description: string;
+    href: string;
+    icon: IconName;
+}[] {
+    return [
+        {
+            label: 'Assentos',
+            description: 'Bloquear ou liberar lugares',
+            href: `/painel/sessoes/${id}/assentos`,
+            icon: 'map-pin',
+        },
+        {
+            label: 'Lotes',
+            description: 'Preço e quantidade à venda',
+            href: `/painel/sessoes/${id}/lotes`,
+            icon: 'ticket',
+        },
+        {
+            label: 'Pedidos',
+            description: 'Compras desta sessão',
+            href: `/painel/pedidos?session=${id}`,
+            icon: 'receipt',
+        },
+    ];
+}
 
 export default function EventForm({
     venues,
@@ -480,7 +509,7 @@ export default function EventForm({
                             {form.data.sessions.map((s, i) => (
                                 <div
                                     key={s.id ?? `new-${i}`}
-                                    className="grid gap-4 rounded-btn border border-border bg-bg p-4 sm:grid-cols-[1fr_1fr_auto]"
+                                    className="grid gap-4 rounded-btn border border-border bg-bg p-4 sm:grid-cols-2"
                                 >
                                     <FormField
                                         label="Início"
@@ -517,72 +546,52 @@ export default function EventForm({
                                             }
                                         />
                                     </FormField>
-                                    <div className="flex items-end gap-1">
-                                        {s.id && (
-                                            <>
-                                                <Button
-                                                    asChild
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
+                                    {s.id && (
+                                        <ul className="grid gap-2 sm:col-span-2 sm:grid-cols-3">
+                                            {sessionLinks(s.id).map((l) => (
+                                                <li key={l.href}>
                                                     <Link
-                                                        href={`/painel/sessoes/${s.id}/assentos`}
-                                                        title="Gerenciar assentos (bloquear/liberar)"
+                                                        href={l.href}
+                                                        className="flex h-full items-center gap-3 rounded-btn border border-border bg-surface px-3 py-2.5 transition-colors hover:border-border-strong hover:bg-surface-2 active:scale-[0.99]"
                                                     >
+                                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent-text">
+                                                            <Icon
+                                                                name={l.icon}
+                                                                size={18}
+                                                            />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block font-body text-sm font-semibold text-foreground">
+                                                                {l.label}
+                                                            </span>
+                                                            <span className="block font-body text-xs text-muted-foreground">
+                                                                {l.description}
+                                                            </span>
+                                                        </span>
                                                         <Icon
-                                                            name="map-pin"
+                                                            name="chevron-right"
                                                             size={16}
+                                                            className="text-faint"
                                                         />
                                                     </Link>
-                                                </Button>
-                                                <Button
-                                                    asChild
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    <Link
-                                                        href={`/painel/sessoes/${s.id}/lotes`}
-                                                        title="Lotes de venda (preço e quantidade)"
-                                                    >
-                                                        <Icon
-                                                            name="ticket"
-                                                            size={16}
-                                                        />
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    asChild
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                >
-                                                    <Link
-                                                        href={`/painel/pedidos?session=${s.id}`}
-                                                        title="Ver pedidos desta sessão"
-                                                    >
-                                                        <Icon
-                                                            name="agenda"
-                                                            size={16}
-                                                        />
-                                                    </Link>
-                                                </Button>
-                                            </>
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            disabled={
-                                                form.data.sessions.length === 1
-                                            }
-                                            onClick={() => removeSession(i)}
-                                            aria-label="Remover sessão"
-                                        >
-                                            <Icon name="trash" size={16} />
-                                        </Button>
-                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                    {form.data.sessions.length > 1 && (
+                                        <div className="sm:col-span-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeSession(i)}
+                                                className="-ml-2 text-faint hover:text-danger-text"
+                                            >
+                                                <Icon name="trash" size={15} />
+                                                Remover sessão
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
