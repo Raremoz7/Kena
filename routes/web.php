@@ -113,6 +113,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     // Check-in scanner (staff + organizer)
     Route::get('/painel/checkin', [CheckInController::class, 'show'])->name('admin.checkin');
     Route::post('/api/checkin', [CheckInController::class, 'scan'])->name('admin.checkin.scan');
+    Route::post('/api/checkin/conferir', [CheckInController::class, 'preview'])->name('admin.checkin.preview');
     Route::post('/api/checkin/buscar', [CheckInController::class, 'lookup'])->name('admin.checkin.lookup');
     Route::post('/api/checkin/admitir', [CheckInController::class, 'admit'])->name('admin.checkin.admit');
 
