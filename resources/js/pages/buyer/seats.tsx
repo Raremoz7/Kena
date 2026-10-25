@@ -14,9 +14,11 @@ interface SeatsPageProps {
     maxSeats: number;
     emailCodeUrl: string;
     lot: LotInfo | null;
+    /** Venda paga esgotada: só restam lugares da cota de cortesia. */
+    courtesyOnly: boolean;
 }
 
-export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl, maxSeats, emailCodeUrl, lot }: SeatsPageProps) {
+export default function SeatsPage({ event, session, seatMap, reserveUrl, availabilityUrl, maxSeats, emailCodeUrl, lot, courtesyOnly }: SeatsPageProps) {
     return (
         <>
             <Head title={`Assentos · ${event.title}`} />
@@ -35,9 +37,9 @@ export default function SeatsPage({ event, session, seatMap, reserveUrl, availab
                 </div>
             </div>
 
-            {lot && (
+            {(lot || courtesyOnly) && (
                 <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
-                    <LotBanner lot={lot} />
+                    <LotBanner lot={lot} courtesyOnly={courtesyOnly} />
                 </div>
             )}
 

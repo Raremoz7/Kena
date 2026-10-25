@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Kena;
 
-use App\Http\Controllers\Admin\CourtesyController;
 use App\Models\Coupon;
 use App\Models\PanelUser;
 use App\Models\User;
@@ -10,6 +9,7 @@ use App\Services\CourtesyService;
 use App\Services\Payments\PaymentGateway;
 use App\Services\PaymentService;
 use App\Services\SeatReservationService;
+use App\Support\Codes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Kena\Concerns\MakesKenaData;
 use Tests\Feature\Kena\Support\FakeGateway;
@@ -43,10 +43,13 @@ class CourtesyAdminTest extends TestCase
         ], $people);
     }
 
-    public function test_prefix_comes_from_the_event_title(): void
+    public function test_code_is_the_full_name_without_spaces_plus_three_characters(): void
     {
-        $this->assertSame('QN', CourtesyController::prefixFor('O Quebra-Nozes'));
-        $this->assertSame('LDC', CourtesyController::prefixFor('O Lago dos Cisnes'));
+        $this->assertMatchesRegularExpression('/^MARIASILVASANTOS[A-Z2-9]{3}$/', Codes::courtesy('Maria Silva Santos'));
+        $this->assertMatchesRegularExpression('/^JOAOPEDRODASILVA[A-Z2-9]{3}$/', Codes::courtesy('João Pedro da-Silva'));
+        $this->assertMatchesRegularExpression('/^CORTESIA[A-Z2-9]{3}$/', Codes::courtesy('  -  '));
+        // Nome enorme não passa do limite do campo de cupom no checkout.
+        $this->assertLessThanOrEqual(40, strlen(Codes::courtesy(str_repeat('Ana Clara ', 10))));
     }
 
     public function test_organizer_generates_one_code_per_person(): void
@@ -59,7 +62,6 @@ class CourtesyAdminTest extends TestCase
                 'people' => "Ana; Escola A\nBia; Escola B",
                 'tickets' => 2,
                 'expires_at' => '2030-11-10',
-                'prefix' => 'qn',
             ])
             ->assertRedirect(route('admin.courtesies', ['event' => $session->event_id]));
 
@@ -68,7 +70,7 @@ class CourtesyAdminTest extends TestCase
         $this->assertSame(['Ana', 'Bia'], $coupons->pluck('beneficiary')->all());
         $this->assertSame(['Escola A', 'Escola B'], $coupons->pluck('group_name')->all());
         foreach ($coupons as $c) {
-            $this->assertMatchesRegularExpression('/^QN-[A-Z2-9]{6}$/', $c->code);
+            $this->assertMatchesRegularExpression('/^'.strtoupper($c->beneficiary).'[A-Z2-9]{3}$/', $c->code);
             $this->assertSame(Coupon::TYPE_TICKETS, $c->type);
             $this->assertSame(2, $c->value);
             $this->assertSame(1, $c->max_uses);
@@ -92,8 +94,8 @@ class CourtesyAdminTest extends TestCase
         $session = $this->makeSession(4);
         $event = $session->event;
         $courtesies = app(CourtesyService::class);
-        [$ana, $bia] = $courtesies->generate($event, [['name' => 'Ana', 'group' => 'A'], ['name' => 'Bia', 'group' => 'B']], 2, null, 'QN')->all();
-        $expired = $courtesies->generate($event, [['name' => 'Carla', 'group' => 'A']], 2, now()->subDay(), 'QN')->first();
+        [$ana, $bia] = $courtesies->generate($event, [['name' => 'Ana', 'group' => 'A'], ['name' => 'Bia', 'group' => 'B']], 2, null)->all();
+        $expired = $courtesies->generate($event, [['name' => 'Carla', 'group' => 'A']], 2, now()->subDay())->first();
 
         $parent = User::factory()->create(['name' => 'Mãe da Ana', 'phone' => '61999990000']);
         $reservation = app(SeatReservationService::class)->hold($session, $parent, $this->availableSeatIds($session, 2));
@@ -115,7 +117,7 @@ class CourtesyAdminTest extends TestCase
     public function test_expired_courtesy_cannot_be_used(): void
     {
         $session = $this->makeSession(2);
-        $coupon = app(CourtesyService::class)->generate($session->event, [['name' => 'Ana', 'group' => null]], 2, now()->subMinute(), 'QN')->first();
+        $coupon = app(CourtesyService::class)->generate($session->event, [['name' => 'Ana', 'group' => null]], 2, now()->subMinute())->first();
 
         $this->assertFalse($coupon->isRedeemable($session->event_id));
     }
@@ -123,7 +125,7 @@ class CourtesyAdminTest extends TestCase
     public function test_panel_page_and_csv_export(): void
     {
         $session = $this->makeSession(2);
-        app(CourtesyService::class)->generate($session->event, [['name' => 'Ana Ç', 'group' => 'Escola A']], 2, null, 'QN');
+        app(CourtesyService::class)->generate($session->event, [['name' => 'Ana Ç', 'group' => 'Escola A']], 2, null);
         $organizer = $this->organizer();
 
         $this->actingAs($organizer, 'painel')->get(route('admin.courtesies', ['event' => $session->event_id]))->assertOk();

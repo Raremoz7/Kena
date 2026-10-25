@@ -10,6 +10,7 @@ use App\Models\Reservation;
 use App\Models\ReservationSeat;
 use App\Models\SessionSeat;
 use App\Models\Ticket;
+use App\Models\TicketLot;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,10 @@ use Illuminate\Support\Facades\DB;
  */
 class SeatReservationService
 {
-    public function __construct(private readonly TicketLotService $lots) {}
+    public function __construct(
+        private readonly TicketLotService $lots,
+        private readonly CourtesyReserveService $reserve,
+    ) {}
 
     public function holdMinutes(): int
     {
@@ -100,8 +104,13 @@ class SeatReservationService
                 throw new SeatConflictException(array_values(array_unique($conflicts)));
             }
 
+            // Cota de cortesia: o que passar da venda paga só fecha com código
+            // de cortesia no pagamento (o comprador escolhe o lugar antes).
+            $paidCount = $this->paidSlots($session, $seats->count());
+
             // Com lotes, o preço de cada ingresso vem do lote em que ele cai.
-            $allocation = $this->lots->allocate($session, $seats->count());
+            $allocation = $this->allocatePaid($session, $paidCount);
+            $courtesyPrice = $paidCount < $seats->count() ? $this->courtesyPriceCents($session) : null;
 
             $reservation = Reservation::create([
                 'session_id' => $session->id,
@@ -111,8 +120,9 @@ class SeatReservationService
             ]);
 
             foreach ($seats->values() as $i => $seat) {
-                $lot = $allocation[$i] ?? null;
-                $price = $lot !== null ? $lot->price_cents : $seat->price_cents;
+                $requiresCourtesy = $i >= $paidCount;
+                $lot = $requiresCourtesy ? null : ($allocation[$i] ?? null);
+                $price = $lot?->price_cents ?? ($requiresCourtesy ? $courtesyPrice : null) ?? $seat->price_cents;
 
                 $seat->update([
                     'status' => SessionSeat::STATUS_HELD,
@@ -127,11 +137,58 @@ class SeatReservationService
                     'session_seat_id' => $seat->id,
                     'price_cents' => $price,
                     'lot_id' => $lot?->id,
+                    // Fora da venda paga: conta na cota de cortesia, não no lote.
+                    'courtesy' => $requiresCourtesy,
+                    'requires_courtesy' => $requiresCourtesy,
                 ]);
             }
 
             return $reservation;
         });
+    }
+
+    /**
+     * Quantos dos `$count` lugares cabem na venda paga. Sem cota, todos (os
+     * lotes continuam valendo como antes). Trava a sessão para serializar
+     * holds concorrentes na conta da cota.
+     */
+    private function paidSlots(EventSession $session, int $count): int
+    {
+        $locked = EventSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
+        $paidLeft = $this->reserve->paidLeft($locked);
+
+        return $paidLeft === null ? $count : min($count, $paidLeft);
+    }
+
+    /**
+     * Distribui os pagos pelos lotes. Com cota, lote esgotado não barra o
+     * hold: o que não couber vira lugar de cortesia (o pai com código ainda
+     * consegue escolher). Sem cota, segue o esgotado de sempre.
+     *
+     * @return array<int, TicketLot>|null
+     *
+     * @throws LotsSoldOutException
+     */
+    private function allocatePaid(EventSession $session, int &$paidCount): ?array
+    {
+        try {
+            return $this->lots->allocate($session, $paidCount);
+        } catch (LotsSoldOutException $e) {
+            if ((int) $session->courtesy_reserve <= 0) {
+                throw $e;
+            }
+            $paidCount = $e->remaining;
+
+            return $this->lots->allocate($session, $paidCount);
+        }
+    }
+
+    /** Preço de vitrine do lugar de cortesia: lote atual (ou o último); sem lotes, o do setor. */
+    private function courtesyPriceCents(EventSession $session): ?int
+    {
+        $snapshot = $this->lots->snapshot($session);
+
+        return $snapshot->current()?->price_cents ?? $snapshot->lots->last()?->price_cents;
     }
 
     /** Minutos a mais que o comprador pode pedir no checkout (uma vez). */

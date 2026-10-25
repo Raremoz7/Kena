@@ -48,6 +48,8 @@ interface CheckoutPageProps {
     needsDocument: boolean;
     /** Pagamento pendente vivo (ex.: refresh com Pix aguardando) — restaura QR e polling. */
     pendingPayment: PayResponse | null;
+    /** Lugares escolhidos depois que a venda paga esgotou: só fecham com código de cortesia. */
+    courtesyRequired: number;
 }
 
 const brl = new Intl.NumberFormat('pt-BR', {
@@ -113,6 +115,7 @@ export default function CheckoutPage({
     mpPublicKey,
     needsDocument,
     pendingPayment,
+    courtesyRequired,
 }: CheckoutPageProps) {
     const [summary, setSummary] = useState<PriceSummary>(priceSummary);
     const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -521,6 +524,20 @@ export default function CheckoutPage({
                             <h2 className="kicker text-faint">
                                 Cupom de desconto
                             </h2>
+                            {courtesyRequired > 0 && (
+                                <p
+                                    role="status"
+                                    className="mt-3 rounded-card border border-warning bg-warning/15 px-4 py-3 font-body text-sm text-foreground"
+                                >
+                                    Os ingressos à venda esgotaram.{' '}
+                                    {courtesyRequired === 1
+                                        ? '1 dos seus lugares é da cota de cortesia'
+                                        : `${courtesyRequired} dos seus lugares são da cota de cortesia`}
+                                    : digite abaixo o código de cortesia (nome
+                                    completo da criança + 3 caracteres) para
+                                    concluir.
+                                </p>
+                            )}
                             <div className="mt-3">
                                 <CouponInput
                                     onApply={applyCoupon}

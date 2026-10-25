@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CouponExhaustedException;
+use App\Exceptions\CourtesyRequiredException;
 use App\Exceptions\PaymentException;
 use App\Models\Order;
 use App\Models\Reservation;
@@ -74,6 +75,8 @@ class CheckoutController extends Controller
             // Comprador sem CPF cadastrado precisa informar no checkout —
             // o Mercado Pago exige o documento do pagador no cartão.
             'needsDocument' => blank($reservation->user->cpf),
+            // Lugares que passaram da venda paga: só fecham com código de cortesia.
+            'courtesyRequired' => $reservation->seats()->where('requires_courtesy', true)->count(),
         ]);
     }
 
@@ -122,7 +125,7 @@ class CheckoutController extends Controller
 
         try {
             $order = $this->payments->pay($reservation, $data);
-        } catch (CouponExhaustedException $e) {
+        } catch (CouponExhaustedException|CourtesyRequiredException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (PaymentException $e) {
             // A mensagem do gateway já é segura e amigável (traduzida no adapter).

@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $starts_at
  * @property Carbon|null $doors_at
  * @property string $status
+ * @property int $courtesy_reserve
  * @property Carbon|null $reminded_at
  * @property-read Event $event
  * @property-read Collection<int, TicketLot> $lots

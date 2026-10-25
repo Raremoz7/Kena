@@ -5,6 +5,7 @@ namespace App\Support\Presenters;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionSeat;
+use App\Services\CourtesyReserveService;
 use App\Services\LotSnapshot;
 use App\Services\TicketLotService;
 use App\Support\Money;
@@ -198,6 +199,20 @@ final class CatalogPresenter
             'next' => $next ? ['name' => $next['name'], 'price' => Money::toReais($next['priceCents'])] : null,
             'soldOut' => $current === null,
         ];
+    }
+
+    /**
+     * A venda paga esgotou, mas a sessão ainda guarda lugares de cortesia:
+     * o mapa continua aberto, e o pai escolhe e informa o código no pagamento.
+     */
+    public static function courtesyOnly(EventSession $session, ?LotSnapshot $lots = null): bool
+    {
+        if ((int) $session->courtesy_reserve <= 0) {
+            return false;
+        }
+
+        return app(CourtesyReserveService::class)->paidLeft($session) === 0
+            || ($lots ?? self::lots()->snapshot($session))->soldOut();
     }
 
     /** @return array<string, mixed> */

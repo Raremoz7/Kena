@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
 use App\Models\TicketLot;
+use App\Services\CourtesyReserveService;
 use App\Services\TicketLotService;
 use App\Support\Presenters\CatalogPresenter;
 use Illuminate\Http\RedirectResponse;
@@ -12,10 +13,13 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** Lotes de venda de uma sessão (preço e quantidade de ingressos pagos por lote). */
+/** Lotes de venda de uma sessão (preço e quantidade de ingressos pagos por lote) e cota de cortesia. */
 class LotController extends Controller
 {
-    public function __construct(private readonly TicketLotService $lots) {}
+    public function __construct(
+        private readonly TicketLotService $lots,
+        private readonly CourtesyReserveService $reserve,
+    ) {}
 
     public function index(EventSession $session): Response
     {
@@ -27,7 +31,31 @@ class LotController extends Controller
             'lots' => $this->lots->summary($session),
             'sectorPriceCents' => (int) ($session->event->sectors->min('price_cents') ?? 0),
             'seatCount' => $session->sessionSeats()->count(),
+            'courtesyReserve' => $this->reserve->summary($session),
         ]);
+    }
+
+    /** Quantos lugares a sessão guarda para cortesia (só a quantidade, sem lugar fixo). */
+    public function reserve(Request $request, EventSession $session): RedirectResponse
+    {
+        $data = $request->validate([
+            'courtesy_reserve' => ['required', 'integer', 'min:0'],
+        ]);
+        $reserve = (int) $data['courtesy_reserve'];
+
+        $summary = $this->reserve->summary($session);
+        $maxReserve = $summary['capacity'] - $summary['paidUsed'];
+        if ($reserve > $maxReserve) {
+            return back()->withErrors([
+                'courtesy_reserve' => "Cabem no máximo {$maxReserve}: a sessão tem {$summary['capacity']} lugares e {$summary['paidUsed']} já foram vendidos ou estão reservados.",
+            ]);
+        }
+
+        $session->update(['courtesy_reserve' => $reserve]);
+
+        return back()->with('status', $reserve > 0
+            ? "Cota de cortesia: {$reserve} lugares guardados."
+            : 'Cota de cortesia removida.');
     }
 
     public function store(Request $request, EventSession $session): RedirectResponse
