@@ -38,8 +38,8 @@ function maskCpf(value: string): string {
 }
 
 interface PaymentBrickProps {
+    /** Método já escolhido na etapa anterior (PaymentMethodPicker). */
     method: PaymentMethod;
-    onMethodChange: (method: PaymentMethod) => void;
     card: CardFields;
     onCardChange: (patch: Partial<CardFields>) => void;
     installmentOptions: InstallmentOption[];
@@ -52,36 +52,76 @@ interface PaymentBrickProps {
     cardReady?: boolean;
     /** O Mercado Pago está configurado (public key presente). */
     configured?: boolean;
-    /** Pede o CPF do pagador (comprador sem CPF cadastrado). */
+    /** Pede o CPF do titular do cartão (comprador sem CPF cadastrado). */
     needsDocument?: boolean;
+    /** CPF de quem paga o Pix (sempre pedido: nem sempre é o do login). */
+    pixDocument: string;
+    onPixDocumentChange: (value: string) => void;
+    pixError?: string;
 }
 
-function TabBtn({
-    active,
-    icon,
-    onClick,
-    children,
-}: {
-    active: boolean;
+const METHODS: {
+    value: PaymentMethod;
     icon: IconName;
-    onClick: () => void;
-    children: string;
+    label: string;
+    hint: string;
+}[] = [
+    {
+        value: 'pix',
+        icon: 'pix',
+        label: 'Pix',
+        hint: 'Aprovação na hora, pelo app do banco.',
+    },
+    {
+        value: 'card',
+        icon: 'credit-card',
+        label: 'Cartão de crédito ou débito',
+        hint: 'Crédito em até 3× sem juros.',
+    },
+];
+
+/** Etapa "Forma de pagamento": só a escolha, os dados vêm na etapa seguinte. */
+export function PaymentMethodPicker({
+    value,
+    onChange,
+}: {
+    value: PaymentMethod;
+    onChange: (method: PaymentMethod) => void;
 }) {
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            aria-pressed={active}
-            className={cn(
-                'flex items-center justify-center gap-2 rounded-[6px] py-2.5 font-body text-sm font-semibold transition-colors',
-                active
-                    ? 'bg-surface-2 text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-            )}
-        >
-            <Icon name={icon} size={17} />
-            {children}
-        </button>
+        <fieldset className="flex flex-col gap-3">
+            <legend className="sr-only">Forma de pagamento</legend>
+            {METHODS.map((m) => (
+                <label
+                    key={m.value}
+                    className={cn(
+                        'flex cursor-pointer items-center gap-4 rounded-card border bg-surface px-5 py-4 transition-colors',
+                        'focus-within:ring-[3px] focus-within:ring-accent/20',
+                        value === m.value
+                            ? 'border-accent'
+                            : 'border-border hover:border-border-strong',
+                    )}
+                >
+                    <input
+                        type="radio"
+                        name="payment-method"
+                        value={m.value}
+                        checked={value === m.value}
+                        onChange={() => onChange(m.value)}
+                        className="size-4 accent-accent"
+                    />
+                    <Icon name={m.icon} size={22} className="text-foreground" />
+                    <span className="flex flex-col">
+                        <span className="font-body text-sm font-semibold text-foreground">
+                            {m.label}
+                        </span>
+                        <span className="font-body text-xs text-muted-foreground">
+                            {m.hint}
+                        </span>
+                    </span>
+                </label>
+            ))}
+        </fieldset>
     );
 }
 
@@ -113,7 +153,6 @@ function copy(text: string) {
  */
 export function PaymentBrick({
     method,
-    onMethodChange,
     card,
     onCardChange,
     installmentOptions,
@@ -123,33 +162,19 @@ export function PaymentBrick({
     cardReady,
     configured = true,
     needsDocument,
+    pixDocument,
+    onPixDocumentChange,
+    pixError,
 }: PaymentBrickProps) {
     return (
         <div>
-            <div className="grid grid-cols-2 gap-1 rounded-btn border border-border-strong p-1">
-                <TabBtn
-                    active={method === 'card'}
-                    icon="credit-card"
-                    onClick={() => onMethodChange('card')}
-                >
-                    Cartão
-                </TabBtn>
-                <TabBtn
-                    active={method === 'pix'}
-                    icon="pix"
-                    onClick={() => onMethodChange('pix')}
-                >
-                    Pix
-                </TabBtn>
-            </div>
-
             {method === 'card' ? (
                 !configured ? (
-                    <p className="mt-5 rounded-card border border-dashed border-border bg-bg px-5 py-6 text-center font-body text-sm text-muted-foreground">
+                    <p className="rounded-card border border-dashed border-border bg-bg px-5 py-6 text-center font-body text-sm text-muted-foreground">
                         A integração do Mercado Pago ainda não foi configurada.
                     </p>
                 ) : (
-                    <div className="mt-5 flex flex-col gap-4">
+                    <div className="flex flex-col gap-4">
                         <FormField
                             label="Número do cartão"
                             error={secureErrors?.cardNumber}
@@ -241,52 +266,25 @@ export function PaymentBrick({
                         )}
                     </div>
                 )
-            ) : (
-                <div className="mt-5 flex flex-col items-center gap-4 rounded-card border border-border bg-bg px-5 py-7 text-center">
-                    {needsDocument && !pix?.qrBase64 && (
-                        <FormField
-                            label="CPF de quem paga"
-                            htmlFor="pix-doc"
-                            error={errors?.document}
-                            helper="Exigido pelo Mercado Pago para gerar o Pix."
-                            className="w-full text-left"
-                        >
-                            <Input
-                                id="pix-doc"
-                                inputMode="numeric"
-                                placeholder="000.000.000-00"
-                                value={card.document}
-                                onChange={(e) =>
-                                    onCardChange({
-                                        document: maskCpf(e.target.value),
-                                    })
-                                }
-                            />
-                        </FormField>
-                    )}
-                    {pix?.qrBase64 ? (
+            ) : pix?.qrBase64 || pix?.copyPaste ? (
+                <div className="flex flex-col items-center gap-4 text-center">
+                    {pix.qrBase64 && (
                         <img
                             src={`data:image/png;base64,${pix.qrBase64}`}
                             alt="QR Code do Pix"
-                            className="size-[160px] rounded-[8px] bg-white p-2"
+                            className="size-[180px] rounded-[8px] bg-white p-2"
                         />
-                    ) : (
-                        <div className="flex size-[140px] items-center justify-center rounded-[8px] border border-dashed border-border text-faint">
-                            <Icon name="pix" size={40} />
-                        </div>
                     )}
                     <div>
                         <p className="font-body text-sm font-medium text-foreground">
-                            {pix?.qrBase64
-                                ? 'Escaneie para pagar'
-                                : 'Gere o Pix ao confirmar'}
+                            Escaneie o QR ou copie o código no app do banco
                         </p>
                         <p className="mt-1 font-body text-xs text-muted-foreground">
-                            Aprovação na hora. O pedido fica pendente até o Pix
-                            cair.
+                            Confirmamos sozinhos quando o Pix cair. Não feche
+                            esta página.
                         </p>
                     </div>
-                    {pix?.copyPaste && (
+                    {pix.copyPaste && (
                         <button
                             type="button"
                             onClick={() => copy(pix.copyPaste as string)}
@@ -295,6 +293,29 @@ export function PaymentBrick({
                             {pix.copyPaste.slice(0, 28)}… · toque para copiar
                         </button>
                     )}
+                </div>
+            ) : (
+                <div className="flex flex-col gap-4">
+                    <FormField
+                        label="CPF de quem vai pagar"
+                        htmlFor="pix-doc"
+                        error={pixError}
+                        helper="Pode ser outra pessoa, não precisa ser o CPF da sua conta. Exigido pelo Mercado Pago."
+                    >
+                        <Input
+                            id="pix-doc"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            placeholder="000.000.000-00"
+                            value={pixDocument}
+                            onChange={(e) =>
+                                onPixDocumentChange(maskCpf(e.target.value))
+                            }
+                        />
+                    </FormField>
+                    <p className="font-body text-xs text-muted-foreground">
+                        Ao gerar, mostramos o QR Code e o código copia e cola.
+                    </p>
                 </div>
             )}
 

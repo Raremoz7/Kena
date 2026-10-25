@@ -60,7 +60,8 @@ class MercadoPagoGateway implements PaymentGateway
             'description' => 'Kena · '.$order->reference,
             'payment_method_id' => 'pix',
             'external_reference' => $order->reference,
-            'date_of_expiration' => now()->addMinutes($minutes)->toIso8601String(),
+            // Formato dos exemplos da API do MP: 2026-11-17T09:37:52.000-03:00.
+            'date_of_expiration' => now()->addMinutes($minutes)->format('Y-m-d\TH:i:s.vP'),
             'payer' => $this->payer($order, $payerEmail, $payerDoc),
             'additional_info' => $this->additionalInfo($order),
         ];
@@ -68,7 +69,9 @@ class MercadoPagoGateway implements PaymentGateway
             $body['notification_url'] = $url;
         }
 
-        $data = $this->post('/v1/payments', $body, $order->reference.'-pix');
+        // A chave inclui o CPF: corrigir o CPF e tentar de novo não pode cair
+        // na resposta guardada da tentativa anterior.
+        $data = $this->post('/v1/payments', $body, $order->reference.'-pix-'.substr(sha1((string) $payerDoc), 0, 8));
 
         return $this->toResult($data, 'pix');
     }
@@ -247,6 +250,16 @@ class MercadoPagoGateway implements PaymentGateway
     private function friendlyApiError(?array $body): string
     {
         $causeCode = (string) ($body['cause'][0]['code'] ?? '');
+        $raw = mb_strtolower((string) ($body['cause'][0]['description'] ?? '').' '.(string) ($body['message'] ?? ''));
+
+        // Conta do Mercado Pago sem chave Pix cadastrada: nenhum Pix sai até
+        // o organizador cadastrar uma chave na conta.
+        if ($causeCode === '13253' || str_contains($raw, 'key enabled for qr')) {
+            return 'O Pix está indisponível no momento. Tente pagar com cartão ou fale com a organização.';
+        }
+        if (str_contains($raw, 'identification')) {
+            return 'Confira o CPF de quem vai pagar e tente novamente.';
+        }
 
         // Erros de validação comuns na criação do pagamento.
         return match ($causeCode) {

@@ -11,10 +11,13 @@ use App\Support\MailSettings;
 use App\Support\MailUsage;
 use App\Support\SessionOptionsCache;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as Events;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -35,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureRateLimits();
         $this->overrideMercadoPagoConfig();
         $this->invalidateSessionOptionsCache();
         MailSettings::apply();
@@ -121,5 +125,46 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /** Texto do limite estourado (o padrão do Laravel é "Too Many Attempts."). */
+    public const RATE_LIMIT_MESSAGE = 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.';
+
+    /**
+     * Limites contados por PESSOA, não por IP: no celular a operadora põe muita
+     * gente atrás do mesmo IP (CGNAT), e o Wi-Fi da escola também. Por IP, pais
+     * diferentes se bloqueavam na abertura das vendas. O teto por IP fica alto,
+     * só para segurar abuso.
+     */
+    private function configureRateLimits(): void
+    {
+        // Quem é: conta logada > e-mail do convidado > sessão do navegador.
+        $person = function (Request $request): string {
+            if ($request->user() !== null) {
+                return 'user:'.$request->user()->getAuthIdentifier();
+            }
+
+            $email = $request->input('guest.email') ?? $request->input('email');
+            if (is_string($email) && trim($email) !== '') {
+                return 'email:'.hash('sha256', mb_strtolower(trim($email)));
+            }
+
+            return 'session:'.$request->session()->getId();
+        };
+
+        $tooMany = fn (Request $request) => $request->expectsJson()
+            ? response()->json(['message' => self::RATE_LIMIT_MESSAGE], 429)
+            : back()->withErrors(['seats' => self::RATE_LIMIT_MESSAGE]);
+
+        RateLimiter::for('reserve', fn (Request $request): array => [
+            Limit::perMinute(10)->by('reserve:'.$person($request))->response($tooMany),
+            Limit::perMinute(300)->by('reserve-ip:'.$request->ip())->response($tooMany),
+        ]);
+
+        // O limite por e-mail (3 envios a cada 10 min) já fica no EmailVerificationCodeService.
+        RateLimiter::for('email-code', fn (Request $request): array => [
+            Limit::perMinute(6)->by('email-code:'.$person($request))->response($tooMany),
+            Limit::perMinute(300)->by('email-code-ip:'.$request->ip())->response($tooMany),
+        ]);
     }
 }
