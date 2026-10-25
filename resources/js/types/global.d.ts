@@ -1,3 +1,4 @@
+import type { ActiveReservation } from '@/components/organisms/ActiveReservationBanner';
 import type { Auth } from '@/types/auth';
 
 declare module 'react' {
@@ -12,6 +13,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            activeReservation?: ActiveReservation | null;
             [key: string]: unknown;
         };
     }

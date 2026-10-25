@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\PanelUser;
+use App\Models\Reservation;
 use App\Models\User;
+use App\Support\Presenters\CatalogPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -47,12 +49,40 @@ class HandleInertiaRequests extends Middleware
                 'user' => self::buyer($request->user()),
                 'panelUser' => $request->user('painel')?->only(['id', 'name', 'email', 'role']),
             ],
+            // Reserva em andamento do comprador: alimenta o aviso flutuante
+            // "retomar ou cancelar" em todas as telas do comprador.
+            'activeReservation' => fn (): ?array => self::activeReservation($request->user('web')),
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
                 'success' => $request->session()->get('status'),
                 'warning' => $request->session()->get('warning'),
                 'error' => $request->session()->get('error'),
             ],
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function activeReservation(User|PanelUser|null $user): ?array
+    {
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $reservation = Reservation::inProgressFor($user->id);
+        if ($reservation === null) {
+            return null;
+        }
+
+        $reservation->loadMissing(['session.event', 'seats.sessionSeat.seat']);
+
+        return [
+            'id' => $reservation->id,
+            'eventTitle' => $reservation->session->event->title,
+            'sessionLabel' => CatalogPresenter::sessionLabel($reservation->session),
+            'seats' => $reservation->seats->map(fn ($rs): string => $rs->sessionSeat->seat->code)->all(),
+            'expiresAt' => $reservation->expires_at->toIso8601String(),
+            'checkoutUrl' => route('checkout', $reservation, false),
+            'releaseUrl' => route('reservations.release', ['reservation' => $reservation, 'voltar' => 1], false),
         ];
     }
 

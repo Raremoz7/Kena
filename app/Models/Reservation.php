@@ -60,4 +60,15 @@ class Reservation extends Model
     {
         return $this->status === self::STATUS_ACTIVE && $this->expires_at->isFuture();
     }
+
+    /** Reserva em andamento do comprador (ativa e dentro do prazo), se houver. */
+    public static function inProgressFor(int $userId): ?self
+    {
+        return self::query()
+            ->where('user_id', $userId)
+            ->where('status', self::STATUS_ACTIVE)
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
+    }
 }

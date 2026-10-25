@@ -88,6 +88,14 @@ class ReservationController extends Controller
             $user->update(['cpf' => $cpf]);
         }
 
+        // Uma reserva por vez: com outra em andamento, o comprador retoma ou
+        // cancela pelo aviso flutuante antes de escolher novos assentos.
+        if (Reservation::inProgressFor((int) Auth::id()) !== null) {
+            return back()->withErrors([
+                'seats' => 'Você já tem uma reserva em andamento. Retome o pagamento ou cancele a reserva antes de escolher outros assentos.',
+            ]);
+        }
+
         try {
             $reservation = $this->reservations->hold($session, $request->user('web'), $validated['seats']);
         } catch (SeatConflictException $e) {
@@ -113,12 +121,19 @@ class ReservationController extends Controller
         return redirect()->route('checkout', $reservation);
     }
 
-    /** Libera a reserva ativa do próprio usuário. */
-    public function release(Reservation $reservation): RedirectResponse
+    /**
+     * Libera a reserva ativa do próprio usuário. Do checkout volta ao evento;
+     * do aviso flutuante (`voltar`) fica na página em que o comprador estava.
+     */
+    public function release(Request $request, Reservation $reservation): RedirectResponse
     {
         abort_unless($reservation->user_id === Auth::id(), 403);
 
         $this->reservations->release($reservation);
+
+        if ($request->boolean('voltar')) {
+            return back()->with('status', 'Reserva cancelada. Os assentos foram liberados.');
+        }
 
         return redirect()->route('events.show', $reservation->session->event->slug);
     }
