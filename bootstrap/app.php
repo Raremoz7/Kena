@@ -38,7 +38,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // JSON para as rotas api/* e para qualquer chamada fetch que peça JSON
+        // (checkout, código de e-mail, ações do painel). Sem isso, um erro de
+        // validação virava redirect 302 → o fetch seguia, recebia HTML com 200 e
+        // tratava como sucesso. Visitas Inertia continuam com redirect + errors.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*')
+                || ($request->expectsJson() && ! $request->hasHeader('X-Inertia')),
         );
     })->create();

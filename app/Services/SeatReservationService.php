@@ -122,7 +122,7 @@ class SeatReservationService
             foreach ($seats->values() as $i => $seat) {
                 $requiresCourtesy = $i >= $paidCount;
                 $lot = $requiresCourtesy ? null : ($allocation[$i] ?? null);
-                $price = $lot?->price_cents ?? ($requiresCourtesy ? $courtesyPrice : null) ?? $seat->price_cents;
+                $price = $lot->price_cents ?? ($requiresCourtesy ? $courtesyPrice : null) ?? $seat->price_cents;
 
                 $seat->update([
                     'status' => SessionSeat::STATUS_HELD,
@@ -188,7 +188,9 @@ class SeatReservationService
     {
         $snapshot = $this->lots->snapshot($session);
 
-        return $snapshot->current()?->price_cents ?? $snapshot->lots->last()?->price_cents;
+        $current = $snapshot->current();
+
+        return $current !== null ? $current->price_cents : $snapshot->lots->last()?->price_cents;
     }
 
     /** Minutos a mais que o comprador pode pedir no checkout (uma vez). */

@@ -43,8 +43,8 @@ class KenaSeeder extends Seeder
                     .'Sessão única, plateia numerada.',
                 'status' => 'on_sale',
                 'duration_label' => '1h50 · com intervalo',
-                'banner_from' => 'oklch(0.32 0.08 285)',
-                'banner_to' => 'oklch(0.14 0.012 48)',
+                'banner_from' => '#2f2b59',
+                'banner_to' => '#0d0806',
                 'banner_image' => '/img/quebra-nozes.jpg',
             ],
         );

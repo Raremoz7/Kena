@@ -112,6 +112,8 @@ class SettingsPanelTest extends TestCase
     {
         $buyer = User::factory()->create();
 
-        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
+        // Chamada JSON sem login do painel: 401 (visita normal redireciona ao login).
+        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertUnauthorized();
+        $this->actingAs($buyer)->post(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
     }
 }
