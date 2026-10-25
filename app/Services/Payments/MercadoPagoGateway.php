@@ -236,7 +236,12 @@ class MercadoPagoGateway implements PaymentGateway
             raw: $data,
             pixQrBase64: is_array($poi) ? ($poi['qr_code_base64'] ?? null) : null,
             pixCopyPaste: is_array($poi) ? ($poi['qr_code'] ?? null) : null,
-            pixExpiresAt: $expiration !== null ? Carbon::parse((string) $expiration) : null,
+            // O MP devolve no fuso dele (ex.: 22:21-04:00). Sem converter, o banco
+            // guardava só o relógio (22:21 "UTC", horas no passado) e a reserva
+            // vencia na hora de gerar o Pix.
+            pixExpiresAt: $expiration !== null
+                ? Carbon::parse((string) $expiration)->setTimezone((string) config('app.timezone'))
+                : null,
             statusDetail: isset($data['status_detail']) ? (string) $data['status_detail'] : null,
         );
     }
