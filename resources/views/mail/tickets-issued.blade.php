@@ -6,12 +6,9 @@
 <p style="color:#A59D95;font-size:13px;margin:0;">{{ $venue->name }} — {{ $venue->city }}/{{ $venue->state }}</p>
 
 @foreach ($order->tickets as $ticket)
-<x-mail.ticket-stub
-    :sector-name="$ticket->sector_name"
-    :seat-label="$ticket->seat_code"
-    :holder-name="$ticket->holder_name"
-    :code="$ticket->code"
-    :qr-src="$message->embedData(\App\Support\QrImage::png($ticket->qr_token), 'qr-'.$ticket->code.'.png', 'image/png')"
+<x-mail.ticket-image
+    :ticket="$ticket"
+    :src="$message->embedData(\App\Support\TicketImage::png($ticket), 'ingresso-'.$ticket->code.'.png', 'image/png')"
 />
 @endforeach
 
