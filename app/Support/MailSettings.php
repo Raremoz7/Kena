@@ -26,6 +26,17 @@ final class MailSettings
             return;
         }
 
+        self::applyPrimary($map);
+        self::applyBackup($map);
+    }
+
+    /**
+     * SMTP principal salvo no painel (sem servidor no painel, fica o do .env).
+     *
+     * @param  array<string, string|null>  $map
+     */
+    private static function applyPrimary(array $map): void
+    {
         $host = $map['mail_host'] ?? null;
         if (blank($host)) {
             return; // nada configurado no painel → usa o .env
@@ -47,6 +58,57 @@ final class MailSettings
             'mail.from.address' => $pick('mail_from_address', config('mail.from.address')),
             'mail.from.name' => $pick('mail_from_name', config('mail.from.name')),
         ]);
+    }
+
+    /**
+     * SMTP secundário: se o principal recusar (ex.: acabou a cota grátis do dia
+     * na Brevo), o e-mail sai por ele na hora — o mailer "failover" do Laravel.
+     * Vale também com o principal vindo do .env.
+     *
+     * @param  array<string, string|null>  $map
+     */
+    private static function applyBackup(array $map): void
+    {
+        $host = $map['mail_backup_host'] ?? null;
+        if (blank($host) || config('mail.default') !== 'smtp') {
+            return;
+        }
+
+        $encryption = $map['mail_backup_encryption'] ?? 'tls';
+
+        config([
+            'mail.mailers.smtp_backup' => [
+                'transport' => 'smtp',
+                'host' => $host,
+                'port' => (int) ($map['mail_backup_port'] ?? 587),
+                'username' => $map['mail_backup_username'] ?? null,
+                'password' => $map['mail_backup_password'] ?? null,
+                'encryption' => $encryption === 'none' ? null : $encryption,
+                'scheme' => $encryption === 'ssl' ? 'smtps' : null,
+                'timeout' => 15,
+            ],
+            'mail.mailers.failover' => [
+                'transport' => 'failover',
+                'mailers' => ['smtp', 'smtp_backup'],
+                'retry_after' => 60,
+            ],
+            'mail.default' => 'failover',
+        ]);
+    }
+
+    /** @return array<string, mixed> Campos não-secretos do SMTP secundário para o painel. */
+    public static function backupDisplay(): array
+    {
+        $host = (string) (Setting::get('mail_backup_host') ?? '');
+
+        return [
+            'configured' => $host !== '',
+            'host' => $host,
+            'port' => (int) (Setting::get('mail_backup_port') ?? 587),
+            'username' => (string) (Setting::get('mail_backup_username') ?? ''),
+            'encryption' => (string) (Setting::get('mail_backup_encryption') ?? 'tls'),
+            'passwordConfigured' => filled(Setting::get('mail_backup_password')),
+        ];
     }
 
     /** @return array<string, mixed> Campos não-secretos para exibir no painel. */

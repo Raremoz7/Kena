@@ -8,12 +8,15 @@ use App\Models\Setting;
 use App\Services\Payments\MercadoPagoGateway;
 use App\Services\Payments\PaymentGateway;
 use App\Support\MailSettings;
+use App\Support\MailUsage;
 use App\Support\SessionOptionsCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event as Events;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
         $this->overrideMercadoPagoConfig();
         $this->invalidateSessionOptionsCache();
         MailSettings::apply();
+        // Conta os e-mails do dia (cota do SMTP principal) — ver MailUsage.
+        Events::listen(MessageSent::class, fn () => MailUsage::recordSent());
     }
 
     /**
