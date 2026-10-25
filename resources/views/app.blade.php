@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" >
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         {{-- Equivalente hex de --bg (oklch(0.975 0.006 75)): pinta a barra do navegador no mobile. --}}
         <meta name="theme-color" content="#f9f6f2">
 

@@ -2,12 +2,11 @@ import type { ReactNode } from 'react';
 import { SkipLink } from '@/components/atoms/SkipLink';
 import { Footer } from '@/components/organisms/Footer';
 import { Header } from '@/components/organisms/Header';
-import { MobileTabBar } from '@/components/organisms/MobileTabBar';
 import { useFlashToasts } from '@/lib/veludo/use-flash-toasts';
 
 /**
- * Shell das telas do comprador: header fixo, conteúdo, footer e tab bar
- * (mobile). A folga para a tab bar fica no próprio footer.
+ * Shell das telas do comprador: header fixo (com a navegação, inclusive no
+ * mobile), conteúdo e footer.
  */
 export default function BuyerLayout({ children }: { children: ReactNode }) {
     useFlashToasts();
@@ -20,7 +19,6 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
                 {children}
             </main>
             <Footer />
-            <MobileTabBar />
         </div>
     );
 }

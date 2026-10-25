@@ -1,0 +1,21 @@
+{
+    "name": "Kena Painel",
+    "short_name": "Kena Painel",
+    "start_url": "/painel",
+    "scope": "/painel",
+    "display": "standalone",
+    "background_color": "#f9f6f2",
+    "theme_color": "#f9f6f2",
+    "icons": [
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
