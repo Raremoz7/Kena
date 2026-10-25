@@ -22,12 +22,14 @@ final class SampleTicketOrder
     {
         $buyer = new User(['name' => $holderName]);
 
+        $session = self::session();
+
         $order = new Order(['reference' => 'TESTE']);
         $order->setRelation('user', $buyer);
-        $order->setRelation('session', self::session());
+        $order->setRelation('session', $session);
         $order->setRelation('tickets', new Collection([
-            self::ticket('TESTE-0001', 'A10', $holderName),
-            self::ticket('TESTE-0002', 'A11', $holderName),
+            self::ticket('TESTE-0001', 'A10', $holderName)->setRelation('session', $session),
+            self::ticket('TESTE-0002', 'A11', $holderName)->setRelation('session', $session),
         ]));
 
         return $order;
