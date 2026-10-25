@@ -29,6 +29,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             // CPF válido: o limite de ingressos é por CPF e a reserva exige um.
+            // @phpstan-ignore method.notFound (cpf() vem do provider pt_BR do Faker)
             'cpf' => fake('pt_BR')->unique()->cpf(false),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
