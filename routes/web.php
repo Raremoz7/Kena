@@ -56,11 +56,11 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 // Reserva (hold) — pública: aceita convidado (cria conta leve) ou usuário logado
 // Código de confirmação do e-mail (convidado e cadastro com senha).
 Route::post('/codigo-email', [EmailCodeController::class, 'send'])
-    ->middleware('throttle:10,1')
+    ->middleware('throttle:email-code')
     ->name('email-code.send');
 
 Route::post('/e/{slug}/sessoes/{session}/reservar', [ReservationController::class, 'reserve'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:reserve')
     ->name('sessions.reserve');
 
 // Magic-link (login sem senha por e-mail, assinado)
