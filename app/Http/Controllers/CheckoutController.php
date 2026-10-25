@@ -122,7 +122,8 @@ class CheckoutController extends Controller
             && $this->pricing->quoteForReservation($reservation, $coupon)['total_cents'] > 0;
 
         $data = $request->validate([
-            'method' => ['required', Rule::in(['card', 'pix'])],
+            // free: cupom/cortesia zerou o total — confirma sem etapa de pagamento.
+            'method' => ['required', Rule::in(['card', 'pix', 'free'])],
             'coupon_code' => ['nullable', 'string', 'max:40'],
             'token' => ['required_if:method,card', 'string'],
             'installments' => ['nullable', 'integer', 'min:1', 'max:12'],

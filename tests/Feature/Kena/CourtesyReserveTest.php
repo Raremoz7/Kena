@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\CouponService;
 use App\Services\CourtesyReserveService;
 use App\Services\CourtesyService;
+use App\Services\OrderService;
 use App\Services\Payments\PaymentGateway;
 use App\Services\PaymentService;
 use App\Services\SeatReservationService;
@@ -193,5 +194,54 @@ class CourtesyReserveTest extends TestCase
             ->postJson(route('checkout.pay', $reservation), ['method' => 'pix'])
             ->assertStatus(422);
         $this->assertStringContainsString('cota de cortesia', (string) $response->json('message'));
+    }
+
+    public function test_zero_total_confirms_without_payment_step(): void
+    {
+        $session = $this->makeSession(4);
+        $coupon = $this->courtesy($session, 'Maria Silva');
+        $parent = User::factory()->create();
+        $reservation = $this->hold($session, 2, $parent);
+
+        // Sem cupom, "confirmar sem pagar" é recusado.
+        $this->actingAs($parent)
+            ->postJson(route('checkout.pay', $reservation), ['method' => 'free'])
+            ->assertStatus(422);
+
+        $this->actingAs($parent)
+            ->postJson(route('checkout.pay', $reservation), ['method' => 'free', 'coupon_code' => $coupon->code])
+            ->assertOk()
+            ->assertJsonPath('status', Order::STATUS_PAID);
+    }
+
+    public function test_courtesy_comes_back_when_the_parent_picks_other_seats(): void
+    {
+        $session = $this->makeSession(6);
+        $coupon = $this->courtesy($session, 'Vitoria Ferreira', tickets: 1);
+        $parent = User::factory()->create();
+
+        // Pedido criado com a cortesia (2 lugares, 1 cortesia: fica pendente, sem pagar).
+        $first = $this->hold($session, 2, $parent);
+        app(OrderService::class)->createFromReservation($first, $coupon);
+        $this->assertNull(app(CouponService::class)->resolve($coupon->code, $session->event_id));
+
+        // "Escolher outros lugares": a reserva nova solta a antiga e devolve a cortesia.
+        $this->hold($session, 1, $parent);
+
+        $this->assertSame(Order::STATUS_CANCELLED, Order::where('reservation_id', $first->id)->value('status'));
+        $this->assertSame($coupon->id, app(CouponService::class)->resolve($coupon->code, $session->event_id)?->id);
+    }
+
+    public function test_courtesy_comes_back_when_the_hold_expires(): void
+    {
+        $session = $this->makeSession(4);
+        $coupon = $this->courtesy($session, 'Ana', tickets: 1);
+        $reservation = $this->hold($session, 2);
+        app(OrderService::class)->createFromReservation($reservation, $coupon);
+
+        $this->travel(11)->minutes();
+        app(SeatReservationService::class)->expireDueHolds();
+
+        $this->assertSame(0, $coupon->fresh()?->used);
     }
 }

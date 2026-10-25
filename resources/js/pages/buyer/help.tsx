@@ -27,7 +27,7 @@ export default function Help({ support, policy }: LegalPageProps) {
                 </p>
                 {policy.maxTickets !== null && (
                     <p>
-                        Cada comprador pode levar até {policy.maxTickets}{' '}
+                        Cada CPF pode levar até {policy.maxTickets}{' '}
                         ingressos por sessão.
                     </p>
                 )}

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Countdown } from '@/components/atoms/Countdown';
 import { Icon } from '@/components/atoms/Icon';
 import { CouponInput } from '@/components/molecules/CouponInput';
@@ -104,6 +104,29 @@ function validateCard(card: CardFields, needsDocument: boolean): CardErrors {
     return errors;
 }
 
+/** Volta da etapa 2 para o cupom (some com pagamento em andamento). */
+function BackLink({
+    onClick,
+    hidden,
+}: {
+    onClick: () => void;
+    hidden: boolean;
+}) {
+    if (hidden) {
+        return null;
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="mt-4 inline-flex items-center gap-1 font-body text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+            <Icon name="chevron-left" size={14} /> Voltar ao cupom
+        </button>
+    );
+}
+
 export default function CheckoutPage({
     reservation,
     priceSummary,
@@ -126,6 +149,14 @@ export default function CheckoutPage({
 
     // Refresh com pagamento pendente: restaura QR, polling e prazo.
     const restoredPix = pendingPayment?.pix ?? null;
+
+    // Etapas: 1) cupom/cortesia, 2) pagamento. Com pagamento em andamento,
+    // abre direto na 2. Total zerado pula o pagamento: só confirma.
+    const [step, setStep] = useState<'coupon' | 'payment'>(
+        pendingPayment?.status === 'pending' ? 'payment' : 'coupon',
+    );
+    const stepHeading = useRef<HTMLHeadingElement>(null);
+    const isFree = summary.total === 0;
 
     const [method, setMethod] = useState<PaymentMethod>(
         restoredPix ? 'pix' : 'card',
@@ -154,10 +185,10 @@ export default function CheckoutPage({
     );
 
     // Secure Fields do Mercado Pago (número/validade/CVV em iframes). Só monta
-    // enquanto a aba Cartão está ativa e não há pagamento em andamento.
+    // na etapa de pagamento, com a aba Cartão ativa e sem pagamento em andamento.
     const secureCard = useSecureCardFields(
         mpPublicKey,
-        method === 'card' && !awaitingPayment,
+        step === 'payment' && !isFree && method === 'card' && !awaitingPayment,
     );
 
     const installmentOptions = useMemo(() => {
@@ -286,6 +317,39 @@ export default function CheckoutPage({
         setSubmitting(false);
     }
 
+    /** Etapa 1 → 2. Lugar da cota de cortesia não segue sem o código. */
+    function goToPayment() {
+        if (courtesyRequired > 0 && !appliedCoupon) {
+            setCouponFeedback({
+                tone: 'danger',
+                message:
+                    'Digite e aplique o código de cortesia para continuar.',
+            });
+
+            return;
+        }
+
+        setStep('payment');
+    }
+
+    function backToCoupon() {
+        if (!awaitingPayment && !submitting) {
+            setStep('coupon');
+        }
+    }
+
+    // Leva o foco ao título da etapa nova (leitor de tela anuncia a troca).
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+
+            return;
+        }
+
+        stepHeading.current?.focus();
+    }, [step]);
+
     async function confirm() {
         if (submitting || awaitingPayment) {
             return;
@@ -294,6 +358,16 @@ export default function CheckoutPage({
         setSubmitting(true);
 
         try {
+            if (isFree) {
+                const res = await api.post<PayResponse>(payUrl, {
+                    method: 'free',
+                    coupon_code: appliedCoupon ?? undefined,
+                });
+                handlePay(res);
+
+                return;
+            }
+
             if (method === 'pix') {
                 // Sem CPF cadastrado (ex.: entrou com Google), o Pix também pede o documento.
                 const pixDoc = card.document.replace(/\D/g, '');
@@ -520,68 +594,144 @@ export default function CheckoutPage({
             <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
                 <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
                     <section className="order-1 flex flex-col gap-7">
-                        <div>
-                            <h2 className="kicker text-faint">
-                                Cupom de desconto
-                            </h2>
-                            {courtesyRequired > 0 && (
-                                <p
-                                    role="status"
-                                    className="mt-3 rounded-card border border-warning bg-warning/15 px-4 py-3 font-body text-sm text-foreground"
+                        <ol
+                            aria-label="Etapas"
+                            className="flex items-center gap-2 font-body text-xs text-faint"
+                        >
+                            <li
+                                aria-current={
+                                    step === 'coupon' ? 'step' : undefined
+                                }
+                                className={
+                                    step === 'coupon'
+                                        ? 'font-semibold text-foreground'
+                                        : undefined
+                                }
+                            >
+                                1. Cupom ou cortesia
+                            </li>
+                            <li aria-hidden="true">›</li>
+                            <li
+                                aria-current={
+                                    step === 'payment' ? 'step' : undefined
+                                }
+                                className={
+                                    step === 'payment'
+                                        ? 'font-semibold text-foreground'
+                                        : undefined
+                                }
+                            >
+                                {isFree && step === 'payment'
+                                    ? '2. Confirmação'
+                                    : '2. Pagamento'}
+                            </li>
+                        </ol>
+
+                        {step === 'coupon' ? (
+                            <div>
+                                <h2
+                                    ref={stepHeading}
+                                    tabIndex={-1}
+                                    className="kicker text-faint focus:outline-none"
                                 >
-                                    Os ingressos à venda esgotaram.{' '}
-                                    {courtesyRequired === 1
-                                        ? '1 dos seus lugares é da cota de cortesia'
-                                        : `${courtesyRequired} dos seus lugares são da cota de cortesia`}
-                                    : digite abaixo o código de cortesia (nome
-                                    completo da criança + 3 caracteres) para
-                                    concluir.
+                                    1. Cupom ou cortesia
+                                </h2>
+                                <p className="mt-1 font-body text-sm text-muted-foreground">
+                                    Tem cupom de desconto ou código de cortesia?
+                                    Aplique aqui. Se não tiver, é só continuar.
                                 </p>
-                            )}
-                            <div className="mt-3">
-                                <CouponInput
-                                    onApply={applyCoupon}
-                                    busy={couponBusy || awaitingPayment}
-                                    feedback={couponFeedback}
-                                />
+                                {courtesyRequired > 0 && (
+                                    <p
+                                        role="status"
+                                        className="mt-3 rounded-card border border-warning bg-warning/15 px-4 py-3 font-body text-sm text-foreground"
+                                    >
+                                        Os ingressos à venda esgotaram.{' '}
+                                        {courtesyRequired === 1
+                                            ? '1 dos seus lugares é da cota de cortesia'
+                                            : `${courtesyRequired} dos seus lugares são da cota de cortesia`}
+                                        : digite abaixo o código de cortesia
+                                        (nome completo da criança + 3
+                                        caracteres) para concluir.
+                                    </p>
+                                )}
+                                <div className="mt-3">
+                                    <CouponInput
+                                        onApply={applyCoupon}
+                                        busy={couponBusy || awaitingPayment}
+                                        feedback={couponFeedback}
+                                    />
+                                </div>
                             </div>
-                        </div>
-
-                        <div>
-                            <h2 className="kicker text-faint">Pagamento</h2>
-                            <div className="mt-3 rounded-card border border-border bg-surface p-6">
-                                <PaymentBrick
-                                    method={method}
-                                    onMethodChange={setMethod}
-                                    card={card}
-                                    onCardChange={(patch) => {
-                                        setCard((prev) => ({
-                                            ...prev,
-                                            ...patch,
-                                        }));
-                                        // Limpa o erro dos campos que estão sendo editados.
-                                        setCardErrors((prev) => {
-                                            const next = { ...prev };
-
-                                            for (const key of Object.keys(
-                                                patch,
-                                            ) as (keyof CardErrors)[]) {
-                                                delete next[key];
-                                            }
-
-                                            return next;
-                                        });
-                                    }}
-                                    installmentOptions={installmentOptions}
-                                    pix={pix}
-                                    errors={cardErrors}
-                                    secureErrors={secureCard.errors}
-                                    cardReady={secureCard.ready}
-                                    configured={mpPublicKey !== null}
-                                    needsDocument={needsDocument}
-                                />
+                        ) : isFree ? (
+                            <div>
+                                <h2
+                                    ref={stepHeading}
+                                    tabIndex={-1}
+                                    className="kicker text-faint focus:outline-none"
+                                >
+                                    2. Confirmação
+                                </h2>
+                                <div className="mt-3 rounded-card border border-border bg-surface p-6 font-body text-sm text-foreground">
+                                    <p>
+                                        {appliedCoupon
+                                            ? `Com ${appliedCoupon}, seu pedido não tem custo.`
+                                            : 'Seu pedido não tem custo.'}{' '}
+                                        Não é preciso pagar: confirme para
+                                        emitir os ingressos.
+                                    </p>
+                                    <BackLink
+                                        onClick={backToCoupon}
+                                        hidden={awaitingPayment}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div>
+                                <h2
+                                    ref={stepHeading}
+                                    tabIndex={-1}
+                                    className="kicker text-faint focus:outline-none"
+                                >
+                                    2. Pagamento
+                                </h2>
+                                <div className="mt-3 rounded-card border border-border bg-surface p-6">
+                                    <PaymentBrick
+                                        method={method}
+                                        onMethodChange={setMethod}
+                                        card={card}
+                                        onCardChange={(patch) => {
+                                            setCard((prev) => ({
+                                                ...prev,
+                                                ...patch,
+                                            }));
+                                            // Limpa o erro dos campos que estão sendo editados.
+                                            setCardErrors((prev) => {
+                                                const next = { ...prev };
+
+                                                for (const key of Object.keys(
+                                                    patch,
+                                                ) as (keyof CardErrors)[]) {
+                                                    delete next[key];
+                                                }
+
+                                                return next;
+                                            });
+                                        }}
+                                        installmentOptions={installmentOptions}
+                                        pix={pix}
+                                        errors={cardErrors}
+                                        secureErrors={secureCard.errors}
+                                        cardReady={secureCard.ready}
+                                        configured={mpPublicKey !== null}
+                                        needsDocument={needsDocument}
+                                    />
+                                    <BackLink
+                                        onClick={backToCoupon}
+                                        hidden={awaitingPayment}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </section>
 
                     <aside className="order-2 lg:sticky lg:top-20 lg:self-start">
@@ -589,7 +739,16 @@ export default function CheckoutPage({
                             reservation={reservation}
                             lines={summary.lines}
                             total={summary.total}
-                            onConfirm={confirm}
+                            onConfirm={
+                                step === 'coupon' ? goToPayment : confirm
+                            }
+                            confirmLabel={
+                                step === 'coupon'
+                                    ? 'Continuar'
+                                    : isFree
+                                      ? 'Confirmar ingressos'
+                                      : 'Confirmar pagamento'
+                            }
                             submitting={submitting || awaitingPayment}
                         />
                     </aside>

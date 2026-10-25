@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Exceptions\SeatLimitException;
+use App\Models\Coupon;
 use App\Models\EventSession;
 use App\Models\Reservation;
 use App\Models\SessionSeat;
@@ -15,7 +16,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\Feature\Kena\Concerns\MakesKenaData;
 use Tests\TestCase;
 
-/** Limite de ingressos por comprador: ninguém segura a plateia inteira. */
+/** Limite de ingressos por CPF: ninguém segura a plateia inteira. */
 class SeatLimitTest extends TestCase
 {
     use MakesKenaData;
@@ -75,7 +76,7 @@ class SeatLimitTest extends TestCase
         $this->actingAs($user);
 
         $this->reserve($session, $this->availableSeatIds($session, 2))
-            ->assertSessionHasErrors(['seats' => 'Cada comprador pode levar até 3 ingressos. Você ainda pode escolher 1.']);
+            ->assertSessionHasErrors(['seats' => 'Cada CPF pode levar até 3 ingressos por sessão. Você ainda pode escolher 1.']);
 
         $this->reserve($session, $this->availableSeatIds($session, 1))->assertSessionHasNoErrors();
     }
@@ -98,6 +99,49 @@ class SeatLimitTest extends TestCase
 
         $this->get($url)->assertInertia(fn ($page) => $page->where('maxSeats', 3));
         $this->actingAs($user)->get($url)->assertInertia(fn ($page) => $page->where('maxSeats', 1));
+    }
+
+    public function test_courtesy_tickets_count_against_the_limit(): void
+    {
+        $session = $this->makeSession(6);
+        $user = User::factory()->create();
+        $coupon = Coupon::create(['event_id' => $session->event_id, 'code' => 'ANA7Q2', 'type' => Coupon::TYPE_TICKETS, 'value' => 2, 'max_uses' => 1, 'used' => 0, 'active' => true]);
+        $reservation = app(SeatReservationService::class)->hold($session, $user, $this->availableSeatIds($session, 2));
+        $order = app(OrderService::class)->createFromReservation($reservation, $coupon);
+        app(TicketIssuanceService::class)->issueForOrder($order);
+
+        $this->assertSame(1, app(SeatReservationService::class)->remainingFor($session, $user));
+    }
+
+    public function test_account_without_cpf_must_inform_it_to_reserve(): void
+    {
+        $session = $this->makeSession(3);
+        $user = User::factory()->withoutCpf()->create();
+        $this->actingAs($user);
+
+        $this->reserve($session, $this->availableSeatIds($session, 1))->assertSessionHasErrors('cpf');
+        $this->assertSame(0, Reservation::count());
+
+        $session->loadMissing('event');
+        $this->post(
+            route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
+            ['seats' => $this->availableSeatIds($session, 1), 'cpf' => '529.982.247-25'],
+        )->assertSessionHasNoErrors();
+        $this->assertSame('52998224725', $user->fresh()?->cpf);
+    }
+
+    public function test_cpf_from_another_account_cannot_be_reused_to_double_the_limit(): void
+    {
+        $session = $this->makeSession(3);
+        $session->load('event');
+        User::factory()->create(['cpf' => '52998224725']);
+        $this->actingAs(User::factory()->withoutCpf()->create());
+
+        $this->post(
+            route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
+            ['seats' => $this->availableSeatIds($session, 1), 'cpf' => '52998224725'],
+        )->assertSessionHasErrors('cpf');
+        $this->assertSame(0, Reservation::count());
     }
 
     public function test_guest_over_the_limit_is_rejected_before_creating_an_account(): void

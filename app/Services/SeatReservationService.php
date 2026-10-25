@@ -6,6 +6,8 @@ use App\Exceptions\LotsSoldOutException;
 use App\Exceptions\SeatConflictException;
 use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\ReservationSeat;
 use App\Models\SessionSeat;
@@ -24,6 +26,7 @@ class SeatReservationService
     public function __construct(
         private readonly TicketLotService $lots,
         private readonly CourtesyReserveService $reserve,
+        private readonly CouponService $coupons,
     ) {}
 
     public function holdMinutes(): int
@@ -33,7 +36,7 @@ class SeatReservationService
 
     public function maxTicketsPerBuyer(): int
     {
-        return max(1, (int) config('kena.max_tickets_per_buyer', 10));
+        return max(1, (int) config('kena.max_tickets_per_buyer', 8));
     }
 
     /** Quantos ingressos o comprador ainda pode pegar nesta sessão. */
@@ -242,6 +245,7 @@ class SeatReservationService
                 ]);
 
             $reservation->update(['status' => Reservation::STATUS_CANCELLED]);
+            $this->abandonPendingOrders([$reservation->id]);
         });
     }
 
@@ -259,13 +263,47 @@ class SeatReservationService
                     'held_by_reservation_id' => null,
                 ]);
 
-            Reservation::query()
+            $expired = Reservation::query()
                 ->where('status', Reservation::STATUS_ACTIVE)
                 ->where('expires_at', '<=', now())
+                ->pluck('id')
+                ->all();
+
+            Reservation::query()
+                ->whereIn('id', $expired)
                 ->update(['status' => Reservation::STATUS_EXPIRED]);
+            $this->abandonPendingOrders($expired);
 
             return $count;
         });
+    }
+
+    /**
+     * Reserva que morreu sem virar venda (trocou de lugares, venceu): o pedido
+     * pendente é cancelado e o cupom/cortesia volta a valer. Sem isso, a
+     * cortesia de uso único ficava "gasta" num pedido abandonado e o pai via
+     * "cupom inválido" na tentativa seguinte.
+     *
+     * @param  array<int, int>  $reservationIds
+     */
+    private function abandonPendingOrders(array $reservationIds): void
+    {
+        if ($reservationIds === []) {
+            return;
+        }
+
+        // Pagamento ainda vivo no gateway (Pix aguardando, cartão em análise)
+        // fica de fora: ele mesmo devolve o cupom ao falhar ou vencer.
+        $orders = Order::query()
+            ->whereIn('reservation_id', $reservationIds)
+            ->where('status', Order::STATUS_PENDING)
+            ->whereDoesntHave('payment', fn ($q) => $q->where('status', Payment::STATUS_PENDING))
+            ->get();
+
+        foreach ($orders as $order) {
+            $order->update(['status' => Order::STATUS_CANCELLED]);
+            $this->coupons->release($order);
+        }
     }
 
     private function releaseExpiredForSession(int $sessionId): void

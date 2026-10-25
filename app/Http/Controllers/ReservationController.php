@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CpfInUseException;
 use App\Exceptions\GuestAccountExistsException;
 use App\Exceptions\LotsSoldOutException;
 use App\Exceptions\SeatConflictException;
 use App\Exceptions\SeatLimitException;
 use App\Models\EventSession;
 use App\Models\Reservation;
+use App\Models\User;
 use App\Rules\ValidCpf;
 use App\Services\EmailVerificationCodeService;
 use App\Services\GuestIdentityService;
@@ -43,9 +45,13 @@ class ReservationController extends Controller
                 'guest.cpf' => ['required', 'string', new ValidCpf],
                 'guest.code' => ['required', 'digits:6'],
             ];
+        } elseif (blank($request->user('web')?->cpf)) {
+            // Conta sem CPF (ex.: login com Google): o limite é por CPF, então pede antes de reservar.
+            $rules['cpf'] = ['required', 'string', new ValidCpf];
         }
         $validated = $request->validate($rules, [
-            'seats.max' => "Cada comprador pode levar até {$max} ingressos.",
+            'seats.max' => "Cada CPF pode levar até {$max} ingressos por sessão.",
+            'cpf.required' => 'Informe seu CPF para reservar.',
             'guest.code.required' => 'Digite o código que enviamos para o seu e-mail.',
             'guest.code.digits' => 'O código tem 6 números.',
         ]);
@@ -64,8 +70,20 @@ class ReservationController extends Controller
                 return back()->withErrors([
                     'guest.email' => 'Esse e-mail já tem uma conta. Faça login para continuar a compra.',
                 ]);
+            } catch (CpfInUseException) {
+                return back()->withErrors([
+                    'guest.cpf' => 'Esse CPF já está em outra conta. Entre com o e-mail dela para continuar.',
+                ]);
             }
             Auth::login($user);
+        } elseif (isset($validated['cpf'])) {
+            /** @var User $user */
+            $user = $request->user('web');
+            $cpf = (string) preg_replace('/\D/', '', $validated['cpf']);
+            if (User::where('cpf', $cpf)->whereKeyNot($user->id)->exists()) {
+                return back()->withErrors(['cpf' => 'Esse CPF já está em outra conta. Entre com o e-mail dela para continuar.']);
+            }
+            $user->update(['cpf' => $cpf]);
         }
 
         try {
@@ -85,8 +103,8 @@ class ReservationController extends Controller
         } catch (SeatLimitException $e) {
             return back()->withErrors([
                 'seats' => $e->remaining === 0
-                    ? "Você já tem {$e->max} ingressos para esta sessão, o máximo por comprador."
-                    : "Cada comprador pode levar até {$e->max} ingressos. Você ainda pode escolher {$e->remaining}.",
+                    ? "Este CPF já tem {$e->max} ingressos para esta sessão, o máximo permitido."
+                    : "Cada CPF pode levar até {$e->max} ingressos por sessão. Você ainda pode escolher {$e->remaining}.",
             ]);
         }
 

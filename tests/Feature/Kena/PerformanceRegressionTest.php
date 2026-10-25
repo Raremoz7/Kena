@@ -125,7 +125,7 @@ class PerformanceRegressionTest extends TestCase
         $this->actingAs($user)
             ->get(route('events.show', $session->event->slug))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('auth.user', fn ($shared): bool => array_keys(collect($shared)->all()) === ['id', 'name', 'email', 'email_verified_at']));
+                ->where('auth.user', fn ($shared): bool => array_keys(collect($shared)->all()) === ['id', 'name', 'email', 'email_verified_at', 'hasCpf']));
     }
 
     public function test_tickets_page_queries_do_not_grow_with_tickets(): void
