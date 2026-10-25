@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Price } from '@/components/atoms/Price';
-import { AdminEventsTable  } from '@/components/organisms/AdminEventsTable';
-import type {EventRow} from '@/components/organisms/AdminEventsTable';
+import { AdminEventsTable } from '@/components/organisms/AdminEventsTable';
+import type { EventRow } from '@/components/organisms/AdminEventsTable';
 
 interface Kpis {
     events: number;
@@ -14,28 +14,54 @@ interface Kpis {
     revenue: number;
 }
 
-function Metric({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+function Metric({
+    label,
+    value,
+    hint,
+}: {
+    label: string;
+    value: ReactNode;
+    hint?: string;
+}) {
     return (
         <div className="rounded-card border border-border bg-surface p-5">
             <p className="kicker text-faint">{label}</p>
-            <p className="mt-2 font-display text-display-md text-foreground tabular">{value}</p>
-            {hint && <p className="mt-1 font-body text-xs text-muted-foreground">{hint}</p>}
+            <p className="tabular mt-2 font-display text-display-md text-foreground">
+                {value}
+            </p>
+            {hint && (
+                <p className="mt-1 font-body text-xs text-muted-foreground">
+                    {hint}
+                </p>
+            )}
         </div>
     );
 }
 
-export default function Overview({ kpis, events }: { kpis: Kpis; events: EventRow[] }) {
+export default function Overview({
+    kpis,
+    events,
+}: {
+    kpis: Kpis;
+    events: EventRow[];
+}) {
     return (
         <>
             <Head title="Painel — Visão geral" />
             <div className="px-6 py-8 sm:px-8">
-                <h1 className="font-display text-display-lg text-foreground uppercase">Visão geral</h1>
+                <h1 className="font-display text-display-lg text-foreground uppercase">
+                    Visão geral
+                </h1>
                 <p className="mt-1 font-body text-sm text-muted-foreground">
                     Resumo de vendas e eventos do Kena.
                 </p>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <Metric label="Receita" value={<Price value={kpis.revenue} />} />
+                    <Metric
+                        label="Receita"
+                        value={<Price value={kpis.revenue} />}
+                        hint="Só o que foi pago (cortesias não contam)"
+                    />
                     <Metric
                         label="Vendidos"
                         value={kpis.sold}

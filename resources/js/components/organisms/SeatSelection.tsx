@@ -285,7 +285,8 @@ export function SeatSelection({
             reserveUrl,
             { seats: selectedIds, ...extra },
             {
-                preserveScroll: true,
+                // Checkout abre no topo; só fica no lugar se voltar com erro.
+                preserveScroll: 'errors',
                 onError: (errors) => {
                     if (errors.seats) {
                         veludoToast.warning(

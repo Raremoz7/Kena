@@ -22,7 +22,8 @@ function pageLabel(label: string): string {
     return label.replace(/^\.\.\.$/, '…');
 }
 
-const base = 'inline-flex min-h-8 items-center rounded-btn px-3 py-1.5 font-body text-sm transition-colors';
+const base =
+    'inline-flex min-h-8 items-center rounded-btn px-3 py-1.5 font-body text-sm transition-colors';
 const inactive = 'border border-border-strong text-muted-foreground';
 
 function Item({
@@ -37,7 +38,10 @@ function Item({
     // Extremidades e o separador "…" vêm com url null: nada para onde navegar.
     if (!link.url) {
         return (
-            <span aria-disabled="true" className={cn(base, inactive, 'opacity-40')}>
+            <span
+                aria-disabled="true"
+                className={cn(base, inactive, 'opacity-40')}
+            >
                 {label}
             </span>
         );
@@ -46,12 +50,13 @@ function Item({
     return (
         <Link
             href={link.url}
-            preserveScroll
             aria-label={ariaLabel}
             aria-current={link.active ? 'page' : undefined}
             className={cn(
                 base,
-                link.active ? 'bg-accent text-accent-fg' : cn(inactive, 'hover:bg-surface-2'),
+                link.active
+                    ? 'bg-accent text-accent-fg'
+                    : cn(inactive, 'hover:bg-surface-2'),
             )}
         >
             {label}
@@ -81,7 +86,11 @@ export function Pagination({ links }: { links: PaginatorLink[] }) {
 
     return (
         <nav aria-label="Paginação" className="mt-4 flex flex-wrap gap-1">
-            <Item link={previous} label="« Anterior" ariaLabel="Página anterior" />
+            <Item
+                link={previous}
+                label="« Anterior"
+                ariaLabel="Página anterior"
+            />
 
             {pages.map((link, i) => (
                 <Item

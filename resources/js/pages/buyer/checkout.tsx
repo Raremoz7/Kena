@@ -357,7 +357,8 @@ export default function CheckoutPage({
         setStep(step === 'details' && !isFree ? 'method' : 'coupon');
     }
 
-    // Leva o foco ao título da etapa nova (leitor de tela anuncia a troca).
+    // Etapa nova (ou Pix gerado) começa do topo, e o foco vai ao título da
+    // etapa (leitor de tela anuncia a troca).
     const firstRender = useRef(true);
     useEffect(() => {
         if (firstRender.current) {
@@ -366,8 +367,9 @@ export default function CheckoutPage({
             return;
         }
 
-        stepHeading.current?.focus();
-    }, [step]);
+        window.scrollTo({ top: 0 });
+        stepHeading.current?.focus({ preventScroll: true });
+    }, [step, awaitingPayment]);
 
     async function confirm() {
         if (submitting || awaitingPayment) {
