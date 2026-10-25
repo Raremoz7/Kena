@@ -11,6 +11,8 @@ export class ApiError extends Error {
     constructor(
         public readonly status: number,
         message: string,
+        /** Corpo JSON da resposta de erro (ex.: aviso de conta já existente). */
+        public readonly data: Record<string, unknown> = {},
     ) {
         super(message);
     }
@@ -40,7 +42,13 @@ async function request<T>(
                 ? String((data as { message: unknown }).message)
                 : 'Algo deu errado. Tente novamente.';
 
-        throw new ApiError(res.status, message);
+        throw new ApiError(
+            res.status,
+            message,
+            typeof data === 'object' && data !== null
+                ? (data as Record<string, unknown>)
+                : {},
+        );
     }
 
     return data as T;

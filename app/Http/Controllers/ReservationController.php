@@ -14,6 +14,7 @@ use App\Rules\ValidCpf;
 use App\Services\EmailVerificationCodeService;
 use App\Services\GuestIdentityService;
 use App\Services\SeatReservationService;
+use App\Support\AccountNotice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -68,7 +69,7 @@ class ReservationController extends Controller
                 $user = $this->guests->identify($validated['guest']);
             } catch (GuestAccountExistsException) {
                 return back()->withErrors([
-                    'guest.email' => 'Esse e-mail já tem uma conta. Faça login para continuar a compra.',
+                    'guest.email' => (AccountNotice::forEmail((string) $validated['guest']['email'])['message'] ?? 'Este e-mail já tem conta.').' Depois é só voltar aos assentos.',
                 ]);
             } catch (CpfInUseException) {
                 return back()->withErrors([
