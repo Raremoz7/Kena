@@ -6,8 +6,8 @@ const footerLink =
 export function Footer() {
     return (
         // No mobile o rodapé também aparece (Termos/Privacidade precisam estar
-        // acessíveis), com folga embaixo para a tab bar fixa.
-        <footer className="border-t border-border pb-20 md:pb-0">
+        // acessíveis), com folga para a área segura do iPhone.
+        <footer className="border-t border-border pb-[env(safe-area-inset-bottom)]">
             <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-7 md:flex-row md:items-center md:justify-between">
                 <p className="font-body text-xs text-faint">
                     Kena · Entre em cena · {new Date().getFullYear()}

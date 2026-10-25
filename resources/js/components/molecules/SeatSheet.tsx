@@ -20,7 +20,14 @@ interface SeatSheetProps {
  * lista "Sua seleção" + subtotal + CTA. Substitui a barra fixa fina no mobile.
  * Só renderiza abaixo de lg — no desktop a seleção vive no aside.
  */
-export function SeatSheet({ seats, total, onRemove, onClear, onCheckout, submitting }: SeatSheetProps) {
+export function SeatSheet({
+    seats,
+    total,
+    onRemove,
+    onClear,
+    onCheckout,
+    submitting,
+}: SeatSheetProps) {
     const [open, setOpen] = useState(false);
     const count = seats.length;
     const codes = seats.map((s) => s.code).join(', ');
@@ -43,14 +50,18 @@ export function SeatSheet({ seats, total, onRemove, onClear, onCheckout, submitt
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
-                            transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+                            transition={{
+                                type: 'spring',
+                                stiffness: 380,
+                                damping: 38,
+                            }}
                             drag="y"
                             dragConstraints={{ top: 0, bottom: 0 }}
                             dragElastic={{ top: 0, bottom: 0.4 }}
                             onDragEnd={(_, info) => {
                                 if (info.offset.y > 90) {
-setOpen(false);
-}
+                                    setOpen(false);
+                                }
                             }}
                         >
                             <button
@@ -59,7 +70,9 @@ setOpen(false);
                                 onClick={() => setOpen(false)}
                                 className="mx-auto mb-3 h-1 w-9 rounded-full bg-border"
                             />
-                            <p className="kicker mb-3 text-faint">Sua seleção</p>
+                            <p className="kicker mb-3 text-faint">
+                                Sua seleção
+                            </p>
 
                             <ul className="-mx-1 flex flex-col gap-2 overflow-y-auto px-1">
                                 {seats.map((s) => (
@@ -68,11 +81,18 @@ setOpen(false);
                                         className="flex items-center justify-between gap-3 rounded-btn border border-border bg-bg px-3 py-2.5"
                                     >
                                         <p className="min-w-0 font-body text-sm">
-                                            <span className="font-display font-semibold text-foreground">{s.code}</span>{' '}
-                                            <span className="text-muted-foreground">· {s.sectorName}</span>
+                                            <span className="font-display font-semibold text-foreground">
+                                                {s.code}
+                                            </span>{' '}
+                                            <span className="text-muted-foreground">
+                                                · {s.sectorName}
+                                            </span>
                                         </p>
                                         <div className="flex items-center gap-2">
-                                            <Price value={s.price} className="text-sm text-muted-foreground" />
+                                            <Price
+                                                value={s.price}
+                                                className="text-sm text-muted-foreground"
+                                            />
                                             <button
                                                 type="button"
                                                 aria-label={`Remover ${s.code}`}
@@ -87,8 +107,13 @@ setOpen(false);
                             </ul>
 
                             <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-                                <span className="font-body text-sm text-muted-foreground">Subtotal</span>
-                                <Price value={total} className="text-lg text-foreground" />
+                                <span className="font-body text-sm text-muted-foreground">
+                                    Subtotal
+                                </span>
+                                <Price
+                                    value={total}
+                                    className="text-lg text-foreground"
+                                />
                             </div>
 
                             <div className="mt-3 flex flex-col gap-2">
@@ -106,11 +131,20 @@ setOpen(false);
                                     ) : (
                                         <>
                                             Ir para o checkout
-                                            <Icon name="arrow-right" size={18} />
+                                            <Icon
+                                                name="arrow-right"
+                                                size={18}
+                                            />
                                         </>
                                     )}
                                 </Button>
-                                <Button variant="ghost" block size="sm" onClick={onClear} disabled={submitting}>
+                                <Button
+                                    variant="ghost"
+                                    block
+                                    size="sm"
+                                    onClick={onClear}
+                                    disabled={submitting}
+                                >
                                     Limpar seleção
                                 </Button>
                             </div>
@@ -119,8 +153,8 @@ setOpen(false);
                 )}
             </AnimatePresence>
 
-            {/* barra recolhida (peek) — acima do tab bar no mobile (<md), no rodapé a partir de md */}
-            <div className="fixed inset-x-0 bottom-[60px] z-40 rounded-t-[18px] border-t border-border bg-surface px-4 pt-2 pb-3 shadow-[0_-8px_24px_rgba(0,0,0,0.4)] md:bottom-0 md:pb-[max(1.125rem,env(safe-area-inset-bottom))]">
+            {/* barra recolhida (peek), presa ao rodapé da tela */}
+            <div className="fixed inset-x-0 bottom-0 z-40 rounded-t-[18px] border-t border-border bg-surface px-4 pt-2 pb-[max(1.125rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
                 <button
                     type="button"
                     aria-label={count > 0 ? 'Abrir seleção' : undefined}
@@ -140,13 +174,20 @@ setOpen(false);
                                 ? 'Nenhum assento'
                                 : `${count} ${count === 1 ? 'assento' : 'assentos'} · ${codes}`}
                         </span>
-                        <Price value={total} className="text-lg text-foreground" />
+                        <Price
+                            value={total}
+                            className="text-lg text-foreground"
+                        />
                     </button>
 
                     {count > 0 ? (
                         <Button variant="success" onClick={() => setOpen(true)}>
                             Continuar
-                            <Icon name="chevron-right" size={16} className="-rotate-90" />
+                            <Icon
+                                name="chevron-right"
+                                size={16}
+                                className="-rotate-90"
+                            />
                         </Button>
                     ) : (
                         <Button variant="success" disabled>
