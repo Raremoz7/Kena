@@ -118,7 +118,12 @@ class CheckInService
             return [CheckIn::RESULT_DENIED, 'Ingresso já utilizado'.($when ? " ({$when})" : '').'.'];
         }
 
-        return [CheckIn::RESULT_DENIED, 'Ingresso '.$ticket->status.'.'];
+        return [CheckIn::RESULT_DENIED, match ($ticket->status) {
+            Ticket::STATUS_TRANSFERRED => 'Ingresso transferido: vale o ingresso novo, com quem recebeu.',
+            Ticket::STATUS_REFUNDED => 'Ingresso reembolsado.',
+            Ticket::STATUS_CANCELLED => 'Ingresso cancelado.',
+            default => 'Ingresso inválido.',
+        }];
     }
 
     /**

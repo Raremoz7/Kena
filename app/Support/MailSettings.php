@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Setting;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Configuração de e-mail (SMTP) editável pelo painel. O que foi salvo no Setting
@@ -14,15 +13,9 @@ final class MailSettings
     /** Aplica as configurações salvas no painel ao config do mailer (se houver). */
     public static function apply(): void
     {
-        try {
-            // hasTable() toca o banco: no boot sem banco (ex.: package:discover
-            // antes das migrações) ele lança — cai para o .env.
-            if (! Schema::hasTable('settings')) {
-                return;
-            }
-
-            $map = Setting::map();
-        } catch (\Throwable) {
+        // Sem banco/tabela cai para o .env.
+        $map = Setting::forBoot();
+        if ($map === null) {
             return;
         }
 

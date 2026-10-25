@@ -30,6 +30,13 @@ export function BuyerTicketList({
     const [refundingId, setRefundingId] = useState<number | null>(null);
     const [refundTicket, setRefundTicket] = useState<TicketInfo | null>(null);
 
+    /** Lugares do mesmo pedido (o reembolso é do pedido inteiro). */
+    function orderSeats(t: TicketInfo): string[] {
+        return tickets
+            .filter((other) => other.refundUrl === t.refundUrl)
+            .map((other) => other.seatLabel);
+    }
+
     async function requestRefund(t: TicketInfo) {
         if (refundingId !== null) {
             return;
@@ -239,10 +246,10 @@ export function BuyerTicketList({
             <Modal
                 open={!!refundTicket}
                 onOpenChange={(o) => !o && setRefundTicket(null)}
-                title="Reembolsar ingresso?"
+                title="Reembolsar o pedido?"
                 description={
                     refundTicket
-                        ? `${refundTicket.sectorName} · ${refundTicket.seatLabel}`
+                        ? orderSeats(refundTicket).join(', ')
                         : undefined
                 }
             >
@@ -254,7 +261,9 @@ export function BuyerTicketList({
                                 size={14}
                                 className="mt-px text-warning"
                             />
-                            Os ingressos deste pedido serão cancelados.
+                            {orderSeats(refundTicket).length === 1
+                                ? 'O reembolso cancela este ingresso.'
+                                : `O reembolso vale para o pedido inteiro: os ${orderSeats(refundTicket).length} ingressos dele serão cancelados.`}
                         </p>
                         <div className="flex justify-end gap-3">
                             <Button

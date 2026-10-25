@@ -44,8 +44,6 @@ class CheckoutController extends Controller
                 ->with('warning', 'Sua reserva expirou e os assentos foram liberados. Escolha novamente.');
         }
 
-        $quote = $this->pricing->quoteForReservation($reservation);
-
         // Refresh com Pix vivo: devolve o pagamento pendente pro front
         // restaurar o QR e o polling em vez de perder o estado.
         //
@@ -62,6 +60,12 @@ class CheckoutController extends Controller
             $pendingPayment = $this->orderStatusPayload($pendingOrder);
         }
 
+        // Recarregar não perde o cupom/cortesia do pedido em aberto: o resumo
+        // vem com o desconto e a próxima tentativa manda o mesmo código (sem
+        // isso o pedido era recriado a preço cheio).
+        $appliedCoupon = $pendingOrder?->coupon;
+        $quote = $this->pricing->quoteForReservation($reservation, $appliedCoupon);
+
         return Inertia::render('buyer/checkout', [
             'reservation' => CheckoutPresenter::reservation($reservation),
             'priceSummary' => ['lines' => $quote['lines'], 'total' => $quote['total']],
@@ -72,6 +76,7 @@ class CheckoutController extends Controller
             'extendUrl' => route('checkout.extend', $reservation),
             'mpPublicKey' => MercadoPagoSettings::publicKey(),
             'pendingPayment' => $pendingPayment,
+            'appliedCoupon' => $appliedCoupon?->code,
             // Comprador sem CPF cadastrado precisa informar no checkout —
             // o Mercado Pago exige o documento do pagador no cartão.
             'needsDocument' => blank($reservation->user->cpf),

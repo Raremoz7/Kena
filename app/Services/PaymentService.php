@@ -254,7 +254,14 @@ class PaymentService
             return;
         }
 
-        if (! $result->isPending() && $order->status !== Order::STATUS_PAID) {
+        // Só um pedido ainda aberto pode falhar, e só se nenhum outro pagamento
+        // dele estiver vivo: o webhook do Pix que o próprio Kena cancelou (troca
+        // por cartão em análise) não pode derrubar o pedido do cartão.
+        $otherLive = Payment::where('order_id', $order->id)
+            ->whereKeyNot($payment->id)
+            ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_APPROVED])
+            ->exists();
+        if (! $result->isPending() && $order->status === Order::STATUS_PENDING && ! $otherLive) {
             $order->update(['status' => Order::STATUS_FAILED]);
             // Pedido morreu sem virar venda: devolve o uso do cupom pro retry.
             $this->coupons->release($order);

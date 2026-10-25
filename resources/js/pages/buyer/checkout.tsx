@@ -52,6 +52,8 @@ interface CheckoutPageProps {
     needsDocument: boolean;
     /** Pagamento pendente vivo (ex.: refresh com Pix aguardando) — restaura QR e polling. */
     pendingPayment: PayResponse | null;
+    /** Cupom do pedido em aberto (recarregar a página não perde o desconto). */
+    appliedCoupon?: string | null;
     /** Lugares escolhidos depois que a venda paga esgotou: só fecham com código de cortesia. */
     courtesyRequired: number;
 }
@@ -144,10 +146,13 @@ export default function CheckoutPage({
     mpPublicKey,
     needsDocument,
     pendingPayment,
+    appliedCoupon: restoredCoupon = null,
     courtesyRequired,
 }: CheckoutPageProps) {
     const [summary, setSummary] = useState<PriceSummary>(priceSummary);
-    const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<string | null>(
+        restoredCoupon,
+    );
     const [couponBusy, setCouponBusy] = useState(false);
     const [couponFeedback, setCouponFeedback] = useState<CouponFeedback | null>(
         null,
@@ -528,11 +533,24 @@ export default function CheckoutPage({
                     return;
                 }
 
-                if (res.status === 'cancelled' || res.status === 'refunded') {
-                    // Pix expirou/cancelado: os assentos foram liberados no servidor.
+                if (res.status === 'refunded') {
+                    // Aprovado tarde demais (reserva já tinha acabado): estornado sozinho.
                     veludoToast.warning(
-                        'Pagamento expirado',
-                        'O prazo do Pix terminou e os assentos foram liberados. Escolha novamente.',
+                        'Pagamento estornado',
+                        'O pagamento foi aprovado depois que a reserva acabou, então devolvemos o valor. Escolha os lugares de novo.',
+                    );
+                    router.visit('/eventos');
+
+                    return;
+                }
+
+                if (res.status === 'cancelled') {
+                    // Pix venceu ou o pagamento foi cancelado: assentos liberados no servidor.
+                    veludoToast.warning(
+                        'Pagamento não concluído',
+                        method === 'pix'
+                            ? 'O prazo do Pix terminou e os assentos foram liberados. Escolha novamente.'
+                            : 'O pagamento foi cancelado e os assentos foram liberados. Escolha novamente.',
                     );
                     router.visit('/eventos');
                 }
@@ -545,7 +563,7 @@ export default function CheckoutPage({
             active = false;
             window.clearInterval(id);
         };
-    }, [awaitingPayment, statusUrl]);
+    }, [awaitingPayment, statusUrl, method]);
 
     const stepList: { key: typeof step; label: string }[] = isFree
         ? [
@@ -605,7 +623,7 @@ export default function CheckoutPage({
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
                     <nav
                         aria-label="Caminho"
-                        className="flex min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground"
+                        className="hidden min-w-0 items-center gap-1.5 font-body text-sm text-muted-foreground sm:flex"
                     >
                         <Link href="/eventos" className="hover:text-foreground">
                             Eventos
@@ -617,14 +635,20 @@ export default function CheckoutPage({
                         />
                         <span className="text-foreground">Pagamento</span>
                     </nav>
-                    <div className="flex items-center gap-3">
+                    {/* No celular a trilha some: o botão e o prazo ocupam a linha sem quebrar. */}
+                    <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
                         {!awaitingPayment && (
                             <button
                                 type="button"
                                 onClick={chooseOtherSeats}
-                                className="font-body text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                                className="font-body text-sm whitespace-nowrap text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
                             >
-                                Escolher outros lugares
+                                <span className="sm:hidden">
+                                    Trocar lugares
+                                </span>
+                                <span className="hidden sm:inline">
+                                    Escolher outros lugares
+                                </span>
                             </button>
                         )}
                         <div className="flex items-center gap-2 rounded-btn border border-border bg-bg px-3 py-1.5">
