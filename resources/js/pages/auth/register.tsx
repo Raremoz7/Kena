@@ -122,6 +122,7 @@ export default function Register({ passwordRules, emailCodeUrl }: Props) {
                                     label="Senha"
                                     htmlFor="password"
                                     error={errors.password}
+                                    helper="Mínimo de 8 caracteres, com letras e números."
                                 >
                                     <PasswordInput
                                         id="password"

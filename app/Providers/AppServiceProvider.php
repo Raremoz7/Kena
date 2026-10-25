@@ -116,15 +116,13 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // Padrão comum: 8 caracteres com letra e número, sem exigir símbolo nem maiúscula.
+        // Em produção também recusa senhas que já vazaram (ex.: "senha123").
+        Password::defaults(function (): Password {
+            $rule = Password::min(8)->letters()->numbers();
+
+            return app()->isProduction() ? $rule->uncompromised() : $rule;
+        });
     }
 
     /** Texto do limite estourado (o padrão do Laravel é "Too Many Attempts."). */
