@@ -43,12 +43,16 @@ return new class extends Migration
                 ->reject(fn (string $c): bool => in_array($c, self::WALL_CLOCK[$name] ?? [], true));
 
             foreach ($columns as $column) {
-                $expression = match ($driver) {
-                    'sqlite' => DB::raw("datetime(\"{$column}\", '{$hours} hours')"),
-                    default => DB::raw("DATE_ADD(`{$column}`, INTERVAL {$hours} HOUR)"),
-                };
+                // Nomes vindos do próprio esquema, escapados pela gramática do banco;
+                // o deslocamento vai como parâmetro.
+                $grammar = DB::getQueryGrammar();
+                $t = $grammar->wrapTable($name);
+                $c = $grammar->wrap($column);
+                $sql = $driver === 'sqlite'
+                    ? "UPDATE {$t} SET {$c} = datetime({$c}, ? || ' hours') WHERE {$c} IS NOT NULL"
+                    : "UPDATE {$t} SET {$c} = DATE_ADD({$c}, INTERVAL ? HOUR) WHERE {$c} IS NOT NULL";
 
-                DB::table($name)->whereNotNull($column)->update([$column => $expression]);
+                DB::update($sql, [$hours]);
             }
         }
     }
