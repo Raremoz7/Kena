@@ -39,6 +39,7 @@ class CheckInController extends Controller
         return Inertia::render('admin/checkin', [
             'sessions' => $sessions,
             'scanUrl' => route('admin.checkin.scan'),
+            'previewUrl' => route('admin.checkin.preview'),
             'lookupUrl' => route('admin.checkin.lookup'),
             'admitUrl' => route('admin.checkin.admit'),
         ]);
@@ -89,6 +90,23 @@ class CheckInController extends Controller
         $ticket = Ticket::findOrFail((int) $data['ticket_id']);
 
         return response()->json($this->checkins->admit($ticket, $session, $request->user('painel')));
+    }
+
+    /**
+     * Confere um QR sem consumir o ingresso: a portaria vê quem é e confirma
+     * a entrada (via admit) ou cancela. Leituras negadas já ficam registradas.
+     */
+    public function preview(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string', 'max:255'],
+            'session_id' => ['required', 'integer'],
+        ]);
+
+        /** @var EventSession $session */
+        $session = EventSession::findOrFail((int) $data['session_id']);
+
+        return response()->json($this->checkins->preview($data['token'], $session, $request->user('painel')));
     }
 
     public function scan(Request $request): JsonResponse

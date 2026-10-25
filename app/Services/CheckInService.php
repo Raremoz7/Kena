@@ -37,6 +37,37 @@ class CheckInService
     }
 
     /**
+     * Conferência do QR antes de liberar: valida assinatura, sessão e estado sem
+     * marcar o ingresso. Válido → `pending` com o id para confirmar via admit();
+     * negado → registra a leitura como hoje e devolve o motivo.
+     *
+     * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
+     */
+    public function preview(string $token, EventSession $session, ?PanelUser $operator): array
+    {
+        if (! $this->qr->verify($token)) {
+            return $this->record($session, $operator, CheckIn::RESULT_DENIED, 'QR inválido.', null, mb_substr($token, 0, 40));
+        }
+
+        $ticket = Ticket::where('qr_token', $token)->first();
+        if ($ticket === null) {
+            return $this->record($session, $operator, CheckIn::RESULT_DENIED, 'Ingresso não encontrado.', null, mb_substr($token, 0, 40));
+        }
+
+        $reason = $this->denialReason($ticket, $session);
+        if ($reason !== null) {
+            return $this->record($session, $operator, CheckIn::RESULT_DENIED, $reason, $ticket, $ticket->code);
+        }
+
+        return [
+            'result' => 'pending',
+            'reason' => null,
+            'ticket' => $this->ticketPayload($ticket),
+            'progress' => $this->progress($session),
+        ];
+    }
+
+    /**
      * Admissão manual de um ingresso já localizado (busca por nome/código).
      *
      * @return array{result: string, reason: ?string, ticket: ?array<string, mixed>, progress: array{checkedIn: int, total: int}}
@@ -112,13 +143,27 @@ class CheckInService
         // Perdeu a corrida (ou nunca foi válido): relê o estado real pra negar com motivo.
         $ticket->refresh();
 
+        return [CheckIn::RESULT_DENIED, $this->denialReason($ticket, $session) ?? 'Ingresso '.$ticket->status.'.'];
+    }
+
+    /** Motivo para negar a entrada, ou null se o ingresso pode entrar agora. */
+    private function denialReason(Ticket $ticket, EventSession $session): ?string
+    {
+        if ($ticket->session_id !== $session->id) {
+            return 'Ingresso de outra sessão.';
+        }
+
         if ($ticket->status === Ticket::STATUS_USED) {
             $when = $ticket->checked_in_at?->format('d/m H:i');
 
-            return [CheckIn::RESULT_DENIED, 'Ingresso já utilizado'.($when ? " ({$when})" : '').'.'];
+            return 'Ingresso já utilizado'.($when ? " ({$when})" : '').'.';
         }
 
-        return [CheckIn::RESULT_DENIED, 'Ingresso '.$ticket->status.'.'];
+        if ($ticket->status !== Ticket::STATUS_VALID) {
+            return 'Ingresso '.$ticket->status.'.';
+        }
+
+        return null;
     }
 
     /**
@@ -148,6 +193,7 @@ class CheckInService
     private function ticketPayload(Ticket $ticket): array
     {
         return [
+            'id' => $ticket->id,
             'code' => $ticket->code,
             'holderName' => $ticket->holder_name,
             'sectorName' => $ticket->sector_name,

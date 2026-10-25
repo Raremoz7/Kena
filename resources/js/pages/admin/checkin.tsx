@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
+import { CheckinResultDialog } from '@/components/organisms/CheckinResultDialog';
+import type { CheckinOutcome } from '@/components/organisms/CheckinResultDialog';
 import { api, ApiError } from '@/lib/veludo/api';
 import { veludoToast } from '@/lib/veludo/toast';
 
@@ -20,6 +22,7 @@ interface SessionOption {
 }
 
 interface ScanTicket {
+    id: number;
     code: string;
     holderName: string;
     sectorName: string;
@@ -28,7 +31,7 @@ interface ScanTicket {
 }
 
 interface ScanResult {
-    result: 'ok' | 'denied';
+    result: 'ok' | 'denied' | 'pending';
     reason: string | null;
     ticket: ScanTicket | null;
     progress: SessionProgress;
@@ -59,16 +62,44 @@ interface LookupResult {
 
 interface CheckinPageProps {
     sessions: SessionOption[];
-    scanUrl: string;
+    previewUrl: string;
     lookupUrl: string;
     admitUrl: string;
 }
 
-export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: CheckinPageProps) {
+function toOutcome(res: ScanResult): CheckinOutcome {
+    if (res.result === 'pending' && res.ticket) {
+        return { kind: 'pending', ticket: res.ticket };
+    }
+
+    if (res.result === 'ok') {
+        return { kind: 'ok', ticket: res.ticket };
+    }
+
+    return { kind: 'denied', reason: res.reason, ticket: res.ticket };
+}
+
+/** Vibração curta no celular da portaria: um toque libera, três negam. */
+function buzz(success: boolean) {
+    navigator.vibrate?.(success ? 60 : [80, 60, 80, 60, 80]);
+}
+
+export default function CheckinPage({
+    sessions,
+    previewUrl,
+    lookupUrl,
+    admitUrl,
+}: CheckinPageProps) {
     const [sessionId, setSessionId] = useState<number>(sessions[0]?.id ?? 0);
     const [token, setToken] = useState('');
     const [busy, setBusy] = useState(false);
-    const [result, setResult] = useState<ScanResult | null>(null);
+    const [outcome, setOutcome] = useState<CheckinOutcome | null>(null);
+    const [confirming, setConfirming] = useState(false);
+    // A câmera lê em loop: trava enquanto o popup está aberto e ignora o mesmo
+    // QR por alguns segundos depois de fechar (senão ele reabre na hora).
+    const lockRef = useRef(false);
+    const lastScanRef = useRef<{ code: string; at: number } | null>(null);
+    const scannedRef = useRef<string | null>(null);
     const [progress, setProgress] = useState<SessionProgress>(
         sessions[0]?.progress ?? { checkedIn: 0, total: 0 },
     );
@@ -95,40 +126,89 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
             });
             setLookupResults(res.results);
         } catch (e) {
-            const message = e instanceof ApiError ? e.message : 'Falha na busca.';
+            const message =
+                e instanceof ApiError ? e.message : 'Falha na busca.';
             veludoToast.error('Erro', message);
         } finally {
             setLookingUp(false);
         }
     }
 
-    async function admit(ticketId: number) {
-        if (busy) {
+    function showOutcome(next: CheckinOutcome) {
+        lockRef.current = true;
+        setOutcome(next);
+
+        if (next.kind !== 'pending') {
+            buzz(next.kind === 'ok');
+        }
+    }
+
+    function closeOutcome() {
+        if (scannedRef.current) {
+            lastScanRef.current = { code: scannedRef.current, at: Date.now() };
+        }
+
+        scannedRef.current = null;
+
+        setOutcome(null);
+        lockRef.current = false;
+    }
+
+    // Entrada liberada fecha sozinha para a fila andar; negado espera o toque.
+    useEffect(() => {
+        if (outcome?.kind !== 'ok') {
             return;
         }
 
-        setBusy(true);
+        const timer = window.setTimeout(closeOutcome, 2200);
+
+        return () => window.clearTimeout(timer);
+    }, [outcome]);
+
+    /** Busca manual: abre o mesmo popup de confirmação da leitura por QR. */
+    function reviewLookup(r: LookupResult) {
+        const [sectorName, seatLabel] = r.seat.split(' · ');
+        showOutcome({
+            kind: 'pending',
+            ticket: {
+                id: r.id,
+                code: r.code,
+                holderName: r.holder,
+                sectorName: sectorName ?? r.seat,
+                seatLabel: seatLabel ?? '',
+            },
+        });
+    }
+
+    async function confirmEntry() {
+        if (outcome?.kind !== 'pending' || confirming) {
+            return;
+        }
+
+        setConfirming(true);
 
         try {
             const res = await api.post<ScanResult>(admitUrl, {
                 session_id: sessionId,
-                ticket_id: ticketId,
+                ticket_id: outcome.ticket.id,
             });
-            setResult(res);
             setProgress(res.progress);
             setLookupResults([]);
             setLookupQuery('');
+            showOutcome(toOutcome(res));
         } catch (e) {
-            const message = e instanceof ApiError ? e.message : 'Falha ao admitir.';
+            const message =
+                e instanceof ApiError ? e.message : 'Falha ao admitir.';
             veludoToast.error('Erro', message);
         } finally {
-            setBusy(false);
+            setConfirming(false);
         }
     }
 
     function selectSession(id: number) {
         setSessionId(id);
-        setResult(null);
+        setOutcome(null);
+        lockRef.current = false;
         setProgress(
             sessions.find((s) => s.id === id)?.progress ?? {
                 checkedIn: 0,
@@ -140,21 +220,30 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
     async function doScan(value: string) {
         const code = value.trim();
 
-        if (!code || busy || !sessionId) {
+        if (!code || busy || lockRef.current || !sessionId) {
             return;
         }
 
+        const last = lastScanRef.current;
+
+        if (last && last.code === code && Date.now() - last.at < 3000) {
+            return;
+        }
+
+        lockRef.current = true;
+        scannedRef.current = code;
         setBusy(true);
 
         try {
-            const res = await api.post<ScanResult>(scanUrl, {
+            const res = await api.post<ScanResult>(previewUrl, {
                 token: code,
                 session_id: sessionId,
             });
-            setResult(res);
             setProgress(res.progress);
             setToken('');
+            showOutcome(toOutcome(res));
         } catch (e) {
+            lockRef.current = false;
             const message =
                 e instanceof ApiError
                     ? e.message
@@ -206,7 +295,7 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                 formats: ['qr_code'],
             });
             timer = window.setInterval(async () => {
-                if (!videoRef.current || busy) {
+                if (!videoRef.current || lockRef.current) {
                     return;
                 }
 
@@ -275,12 +364,6 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
         progress.total > 0
             ? Math.round((progress.checkedIn / progress.total) * 100)
             : 0;
-    const tint =
-        result?.result === 'ok'
-            ? 'border-success/50 bg-success/10'
-            : result?.result === 'denied'
-              ? 'border-danger/50 bg-danger/10'
-              : 'border-border bg-surface';
 
     return (
         <>
@@ -369,7 +452,8 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                 <div className="rounded-card border border-border bg-surface p-4">
                     <p className="kicker text-faint">Busca manual</p>
                     <p className="mt-1 font-body text-xs text-muted-foreground">
-                        Sem o QR? Busque por nome, código ou assento e admita na mão.
+                        Sem o QR? Busque por nome, código ou assento e admita na
+                        mão.
                     </p>
                     <form
                         onSubmit={(e) => {
@@ -384,7 +468,12 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                             placeholder="Nome, código ou assento"
                             aria-label="Buscar ingresso"
                         />
-                        <Button type="submit" variant="secondary" className="shrink-0" disabled={lookingUp}>
+                        <Button
+                            type="submit"
+                            variant="secondary"
+                            className="shrink-0"
+                            disabled={lookingUp}
+                        >
                             Buscar
                         </Button>
                     </form>
@@ -405,9 +494,14 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                                         </p>
                                     </div>
                                     {r.used ? (
-                                        <span className="shrink-0 font-body text-xs text-faint">Já usado</span>
+                                        <span className="shrink-0 font-body text-xs text-faint">
+                                            Já usado
+                                        </span>
                                     ) : (
-                                        <Button size="sm" onClick={() => void admit(r.id)} disabled={busy}>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => reviewLookup(r)}
+                                        >
                                             Admitir
                                         </Button>
                                     )}
@@ -416,81 +510,6 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                         </ul>
                     )}
                 </div>
-
-                {/* Resultado */}
-                {result && (
-                    <div className={`rounded-card border p-5 ${tint}`}>
-                        <div className="flex items-center gap-3">
-                            <span
-                                className={`flex size-12 items-center justify-center rounded-full ${
-                                    result.result === 'ok'
-                                        ? 'bg-success text-white'
-                                        : 'bg-danger text-white'
-                                }`}
-                            >
-                                <Icon
-                                    name={
-                                        result.result === 'ok'
-                                            ? 'check'
-                                            : 'close'
-                                    }
-                                    size={26}
-                                />
-                            </span>
-                            <div>
-                                <p className="font-display text-display-sm text-foreground uppercase">
-                                    {result.result === 'ok'
-                                        ? 'Entrada liberada'
-                                        : 'Acesso negado'}
-                                </p>
-                                {result.reason && (
-                                    <p className="font-body text-sm text-muted-foreground">
-                                        {result.reason}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {result.ticket && (
-                            <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 font-body text-sm">
-                                <div>
-                                    <dt className="kicker text-faint">
-                                        Titular
-                                    </dt>
-                                    <dd className="text-foreground">
-                                        {result.ticket.holderName}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="kicker text-faint">
-                                        Assento
-                                    </dt>
-                                    <dd className="text-foreground">
-                                        {result.ticket.sectorName} ·{' '}
-                                        {result.ticket.seatLabel}
-                                    </dd>
-                                </div>
-                                <div className="col-span-2">
-                                    <dt className="kicker text-faint">
-                                        Código
-                                    </dt>
-                                    <dd className="font-mono text-xs text-muted-foreground">
-                                        {result.ticket.code}
-                                    </dd>
-                                </div>
-                            </dl>
-                        )}
-
-                        <Button
-                            variant="secondary"
-                            block
-                            className="mt-4"
-                            onClick={() => setResult(null)}
-                        >
-                            Próxima leitura
-                        </Button>
-                    </div>
-                )}
 
                 {/* Progresso */}
                 <div className="rounded-card border border-border bg-surface p-4">
@@ -508,6 +527,13 @@ export default function CheckinPage({ sessions, scanUrl, lookupUrl, admitUrl }: 
                     </div>
                 </div>
             </div>
+
+            <CheckinResultDialog
+                outcome={outcome}
+                confirming={confirming}
+                onConfirm={() => void confirmEntry()}
+                onClose={closeOutcome}
+            />
         </>
     );
 }
