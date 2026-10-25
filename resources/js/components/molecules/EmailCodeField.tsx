@@ -227,7 +227,11 @@ export function EmailCodeField({
                 label="Código de confirmação"
                 htmlFor={id}
                 error={sendError ?? error}
-                helper={message ?? undefined}
+                helper={
+                    message
+                        ? `${message} Não chegou em 1 minuto? Confira se o e-mail está certo e olhe o spam.`
+                        : undefined
+                }
                 action={
                     <button
                         type="button"

@@ -6,6 +6,7 @@ import { Input } from '@/components/atoms/Input';
 import { Price } from '@/components/atoms/Price';
 import { Spinner } from '@/components/atoms/Spinner';
 import { EmailCodeField } from '@/components/molecules/EmailCodeField';
+import { EmailSuggestion } from '@/components/molecules/EmailSuggestion';
 import { FormField } from '@/components/molecules/FormField';
 import { Modal } from '@/components/molecules/Modal';
 import { SeatSheet } from '@/components/molecules/SeatSheet';
@@ -477,6 +478,10 @@ export function SeatSelection({
                             }
                             placeholder="nome@email.com"
                             required
+                        />
+                        <EmailSuggestion
+                            email={guest.email}
+                            onAccept={(email) => setGuest({ ...guest, email })}
                         />
                     </FormField>
                     <FormField
