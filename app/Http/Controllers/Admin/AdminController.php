@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\Order;
 use App\Models\SessionSeat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -28,7 +29,10 @@ class AdminController extends Controller
         $capacity = SessionSeat::count();
         $sold = SessionSeat::where('status', SessionSeat::STATUS_SOLD)->count();
         $available = SessionSeat::where('status', SessionSeat::STATUS_AVAILABLE)->count();
-        $revenueCents = (int) SessionSeat::where('status', SessionSeat::STATUS_SOLD)->sum('price_cents');
+        // Receita = o que foi pago de fato (total dos pedidos pagos, já com cupons
+        // e cortesias descontados). Somar o preço dos assentos vendidos contava
+        // cortesia como se tivesse sido paga.
+        $revenueCents = (int) Order::where('status', Order::STATUS_PAID)->sum('total_cents');
 
         return Inertia::render('admin/overview', [
             'kpis' => [
