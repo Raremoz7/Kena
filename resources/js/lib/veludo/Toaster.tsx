@@ -7,7 +7,16 @@ import { Toaster as Sonner } from 'sonner';
  *
  * O visual vem inteiro de `veludoToast` (sonner.custom), então não configuramos
  * tema nem as CSS vars do toast padrão do sonner.
+ *
+ * No celular os toasts sobem acima da barra de navegação inferior.
  */
 export function Toaster() {
-    return <Sonner position="bottom-right" />;
+    return (
+        <Sonner
+            position="bottom-right"
+            mobileOffset={{
+                bottom: 'calc(5.25rem + env(safe-area-inset-bottom))',
+            }}
+        />
+    );
 }

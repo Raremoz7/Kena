@@ -269,11 +269,11 @@ export default function AdminSeats({
             <div className="px-4 py-6 sm:px-8 sm:py-8">
                 <Link
                     href="/painel/pedidos"
-                    className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
+                    className="-ml-1 inline-flex min-h-9 items-center gap-1 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Painel
                 </Link>
-                <h1 className="mt-3 font-display text-display-lg text-foreground uppercase">
+                <h1 className="mt-2 font-display text-display-md text-foreground uppercase sm:text-display-lg">
                     Assentos
                 </h1>
                 <p className="mt-1 max-w-prose font-body text-sm text-muted-foreground">

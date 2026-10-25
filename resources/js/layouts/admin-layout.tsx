@@ -1,60 +1,41 @@
-import { useState } from 'react';
+import { Head } from '@inertiajs/react';
 import type { ReactNode } from 'react';
-import { Icon } from '@/components/atoms/Icon';
 import { SkipLink } from '@/components/atoms/SkipLink';
-import { Drawer } from '@/components/molecules/Drawer';
-import {
-    AdminBrand,
-    AdminNavList,
-    AdminSidebar,
-} from '@/components/organisms/AdminSidebar';
+import { AdminBottomNav } from '@/components/organisms/AdminBottomNav';
+import { AdminBrand, AdminSidebar } from '@/components/organisms/AdminSidebar';
 import { useFlashToasts } from '@/lib/veludo/use-flash-toasts';
 
 /**
- * Shell do painel admin: sidebar fixa (desktop) + barra compacta no mobile, onde
- * a navegação vive numa gaveta — a sidebar some abaixo de md.
+ * Shell do painel admin: sidebar fixa no desktop; no mobile vira app, com barra
+ * superior compacta e navegação inferior (a sidebar some abaixo de md).
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
     useFlashToasts();
-    const [menuOpen, setMenuOpen] = useState(false);
 
     return (
         <div className="flex min-h-dvh bg-bg">
+            <Head>
+                <link rel="manifest" href="/painel.webmanifest" />
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <meta name="mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-title" content="Kena Painel" />
+            </Head>
             <SkipLink />
             <AdminSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-                <header className="flex h-14 items-center gap-2.5 border-b border-border px-4 md:hidden">
-                    <button
-                        type="button"
-                        onClick={() => setMenuOpen(true)}
-                        aria-label="Abrir menu"
-                        aria-expanded={menuOpen}
-                        className="-ml-1.5 rounded-btn p-1.5 text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
-                    >
-                        <Icon name="menu" size={20} />
-                    </button>
+                <header className="sticky top-0 z-30 flex h-14 items-center gap-2.5 border-b border-border bg-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden">
                     <AdminBrand />
                 </header>
-
-                <Drawer
-                    open={menuOpen}
-                    onOpenChange={setMenuOpen}
-                    title="Kena · Painel"
-                    description="Navegação do painel"
-                >
-                    <div className="flex h-full flex-col">
-                        <AdminNavList onNavigate={() => setMenuOpen(false)} />
-                    </div>
-                </Drawer>
 
                 <main
                     id="conteudo"
                     tabIndex={-1}
-                    className="min-w-0 flex-1 outline-none"
+                    className="min-w-0 flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] outline-none md:pb-0"
                 >
                     {children}
                 </main>
             </div>
+            <AdminBottomNav />
         </div>
     );
 }

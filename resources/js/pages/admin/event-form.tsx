@@ -6,6 +6,7 @@ import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
+import { FormActions } from '@/components/molecules/FormActions';
 import { FormField } from '@/components/molecules/FormField';
 import { bannerGradient } from '@/lib/veludo/banner';
 
@@ -50,17 +51,27 @@ const presets = [
 ];
 
 /** Hex válido para o <input type="color"> (valor antigo fora do padrão vira preto). */
-const asHex = (value: string) => (/^#[0-9a-f]{6}$/i.test(value) ? value : '#000000');
+const asHex = (value: string) =>
+    /^#[0-9a-f]{6}$/i.test(value) ? value : '#000000';
 
-export default function EventForm({ venues, event }: { venues: Venue[]; event: EventData | null }) {
+export default function EventForm({
+    venues,
+    event,
+}: {
+    venues: Venue[];
+    event: EventData | null;
+}) {
     const editing = !!event;
     // Prévia da imagem escolhida antes de salvar (URL local, liberada ao trocar/sair).
     const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-    useEffect(() => () => {
-        if (bannerPreview) {
-            URL.revokeObjectURL(bannerPreview);
-        }
-    }, [bannerPreview]);
+    useEffect(
+        () => () => {
+            if (bannerPreview) {
+                URL.revokeObjectURL(bannerPreview);
+            }
+        },
+        [bannerPreview],
+    );
     const form = useForm({
         venue_id: event?.venue_id ?? venues[0]?.id ?? 0,
         title: event?.title ?? '',
@@ -95,11 +106,16 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
     function setSession(i: number, patch: Partial<SessionField>) {
         form.setData(
             'sessions',
-            form.data.sessions.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+            form.data.sessions.map((s, idx) =>
+                idx === i ? { ...s, ...patch } : s,
+            ),
         );
     }
     function addSession() {
-        form.setData('sessions', [...form.data.sessions, { starts_at: '', doors_at: '' }]);
+        form.setData('sessions', [
+            ...form.data.sessions,
+            { starts_at: '', doors_at: '' },
+        ]);
     }
     function removeSession(i: number) {
         form.setData(
@@ -113,24 +129,29 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
     return (
         <>
             <Head title={editing ? 'Editar evento' : 'Novo evento'} />
-            <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
+            <div className="mx-auto max-w-2xl px-4 pt-5 pb-8 sm:px-8 sm:py-8">
                 <Link
                     href="/painel/eventos"
-                    className="inline-flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-foreground"
+                    className="-ml-1 inline-flex min-h-9 items-center gap-1 font-body text-sm text-muted-foreground hover:text-foreground"
                 >
                     <Icon name="chevron-left" size={16} /> Eventos
                 </Link>
-                <h1 className="mt-3 font-display text-display-lg text-foreground uppercase">
+                <h1 className="mt-2 font-display text-display-md text-foreground uppercase sm:text-display-lg">
                     {editing ? 'Editar evento' : 'Novo evento'}
                 </h1>
 
                 <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
-                    <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
+                    <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:p-6">
                         <FormField label="Local" htmlFor="venue">
                             <Select
                                 id="venue"
                                 value={form.data.venue_id}
-                                onChange={(e) => form.setData('venue_id', Number(e.target.value))}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'venue_id',
+                                        Number(e.target.value),
+                                    )
+                                }
                             >
                                 {venues.map((v) => (
                                     <option key={v.id} value={v.id}>
@@ -141,32 +162,51 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                         </FormField>
                         {venue && venue.seats === 0 && (
                             <p className="font-body text-xs text-warning-text">
-                                Esse local não tem assentos cadastrados — o mapa ficará vazio.
+                                Esse local não tem assentos cadastrados — o mapa
+                                ficará vazio.
                             </p>
                         )}
 
-                        <FormField label="Título" htmlFor="title" error={form.errors.title}>
+                        <FormField
+                            label="Título"
+                            htmlFor="title"
+                            error={form.errors.title}
+                        >
                             <Input
                                 id="title"
                                 value={form.data.title}
-                                onChange={(e) => form.setData('title', e.target.value)}
+                                onChange={(e) =>
+                                    form.setData('title', e.target.value)
+                                }
                                 placeholder="O Quebra-Nozes"
                             />
                         </FormField>
-                        <FormField label="Categoria (kicker)" htmlFor="kicker" error={form.errors.kicker}>
+                        <FormField
+                            label="Categoria (kicker)"
+                            htmlFor="kicker"
+                            error={form.errors.kicker}
+                        >
                             <Input
                                 id="kicker"
                                 value={form.data.kicker}
-                                onChange={(e) => form.setData('kicker', e.target.value)}
+                                onChange={(e) =>
+                                    form.setData('kicker', e.target.value)
+                                }
                                 placeholder="Ballet · Clássico"
                             />
                         </FormField>
-                        <FormField label="Descrição" htmlFor="description" error={form.errors.description}>
+                        <FormField
+                            label="Descrição"
+                            htmlFor="description"
+                            error={form.errors.description}
+                        >
                             <Textarea
                                 id="description"
                                 rows={4}
                                 value={form.data.description}
-                                onChange={(e) => form.setData('description', e.target.value)}
+                                onChange={(e) =>
+                                    form.setData('description', e.target.value)
+                                }
                                 placeholder="Sobre o espetáculo…"
                             />
                         </FormField>
@@ -176,7 +216,12 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 <Input
                                     id="duration"
                                     value={form.data.duration_label}
-                                    onChange={(e) => form.setData('duration_label', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'duration_label',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="1h50 · com intervalo"
                                 />
                             </FormField>
@@ -184,10 +229,16 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 <Select
                                     id="status"
                                     value={form.data.status}
-                                    onChange={(e) => form.setData('status', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData('status', e.target.value)
+                                    }
                                 >
-                                    <option value="draft">Rascunho (oculto)</option>
-                                    <option value="on_sale">À venda (público)</option>
+                                    <option value="draft">
+                                        Rascunho (oculto)
+                                    </option>
+                                    <option value="on_sale">
+                                        À venda (público)
+                                    </option>
                                 </Select>
                             </FormField>
                         </div>
@@ -207,7 +258,11 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 <span className="relative block h-28 w-full overflow-hidden rounded-btn border border-border bg-[#0d0806]">
                                     {(bannerPreview ?? event?.banner_image) && (
                                         <img
-                                            src={bannerPreview ?? event?.banner_image ?? ''}
+                                            src={
+                                                bannerPreview ??
+                                                event?.banner_image ??
+                                                ''
+                                            }
                                             alt=""
                                             className="absolute inset-0 size-full object-cover"
                                         />
@@ -217,9 +272,12 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                         style={{
                                             background: bannerGradient({
                                                 from: form.data.banner_from,
-                                                fromOpacity: form.data.banner_from_opacity,
+                                                fromOpacity:
+                                                    form.data
+                                                        .banner_from_opacity,
                                                 to: form.data.banner_to,
-                                                toOpacity: form.data.banner_to_opacity,
+                                                toOpacity:
+                                                    form.data.banner_to_opacity,
                                             }),
                                         }}
                                     />
@@ -231,26 +289,50 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     {(
                                         [
-                                            ['banner_from', 'banner_from_opacity', 'Esquerda'],
-                                            ['banner_to', 'banner_to_opacity', 'Direita'],
+                                            [
+                                                'banner_from',
+                                                'banner_from_opacity',
+                                                'Esquerda',
+                                            ],
+                                            [
+                                                'banner_to',
+                                                'banner_to_opacity',
+                                                'Direita',
+                                            ],
                                         ] as const
                                     ).map(([colorKey, opacityKey, side]) => (
-                                        <div key={colorKey} className="flex flex-col gap-2 rounded-btn border border-border p-3">
-                                            <span className="font-body text-xs font-semibold text-foreground">{side}</span>
+                                        <div
+                                            key={colorKey}
+                                            className="flex flex-col gap-2 rounded-btn border border-border p-3"
+                                        >
+                                            <span className="font-body text-xs font-semibold text-foreground">
+                                                {side}
+                                            </span>
                                             <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
                                                 <input
                                                     type="color"
                                                     aria-label={`Cor da ${side.toLowerCase()} do degradê`}
-                                                    value={asHex(form.data[colorKey])}
-                                                    onChange={(e) => form.setData(colorKey, e.target.value)}
+                                                    value={asHex(
+                                                        form.data[colorKey],
+                                                    )}
+                                                    onChange={(e) =>
+                                                        form.setData(
+                                                            colorKey,
+                                                            e.target.value,
+                                                        )
+                                                    }
                                                     className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
                                                 />
-                                                <span className="font-mono text-xs uppercase">{asHex(form.data[colorKey])}</span>
+                                                <span className="font-mono text-xs uppercase">
+                                                    {asHex(form.data[colorKey])}
+                                                </span>
                                             </label>
                                             <label className="flex flex-col gap-1 font-body text-xs text-muted-foreground">
                                                 <span className="flex items-center justify-between">
                                                     Opacidade
-                                                    <span className="text-foreground tabular-nums">{form.data[opacityKey]}%</span>
+                                                    <span className="text-foreground tabular-nums">
+                                                        {form.data[opacityKey]}%
+                                                    </span>
                                                 </span>
                                                 <input
                                                     type="range"
@@ -258,8 +340,17 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                     max={100}
                                                     step={1}
                                                     aria-label={`Opacidade da ${side.toLowerCase()} do degradê`}
-                                                    value={form.data[opacityKey]}
-                                                    onChange={(e) => form.setData(opacityKey, Number(e.target.value))}
+                                                    value={
+                                                        form.data[opacityKey]
+                                                    }
+                                                    onChange={(e) =>
+                                                        form.setData(
+                                                            opacityKey,
+                                                            Number(
+                                                                e.target.value,
+                                                            ),
+                                                        )
+                                                    }
                                                     className="w-full accent-[var(--accent)]"
                                                 />
                                             </label>
@@ -268,7 +359,9 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-body text-xs text-faint">Atalhos:</span>
+                                    <span className="font-body text-xs text-faint">
+                                        Atalhos:
+                                    </span>
                                     {presets.map((p) => (
                                         <button
                                             key={p.label}
@@ -276,7 +369,10 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                             aria-label={`Degradê ${p.label}`}
                                             title={p.label}
                                             onClick={() => {
-                                                form.setData('banner_from', p.from);
+                                                form.setData(
+                                                    'banner_from',
+                                                    p.from,
+                                                );
                                                 form.setData('banner_to', p.to);
                                             }}
                                             className="h-8 w-12 rounded-btn border border-border"
@@ -293,9 +389,11 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                 </div>
 
                                 <p className="font-body text-[11px] text-faint">
-                                    O degradê aparece só no topo da página do evento, da esquerda para a direita, por cima
-                                    da foto. Na lista de eventos o cartão mostra só a foto. Deixe a esquerda mais forte
-                                    para o título continuar legível.
+                                    O degradê aparece só no topo da página do
+                                    evento, da esquerda para a direita, por cima
+                                    da foto. Na lista de eventos o cartão mostra
+                                    só a foto. Deixe a esquerda mais forte para
+                                    o título continuar legível.
                                 </p>
 
                                 <label className="flex cursor-pointer items-center gap-2 rounded-btn border border-dashed border-border px-3 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-accent hover:text-foreground">
@@ -310,46 +408,72 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                         accept="image/png,image/jpeg,image/webp"
                                         className="hidden"
                                         onChange={(e) => {
-                                            const file = e.target.files?.[0] ?? null;
+                                            const file =
+                                                e.target.files?.[0] ?? null;
                                             form.setData('banner_image', file);
-                                            setBannerPreview(file ? URL.createObjectURL(file) : null);
+                                            setBannerPreview(
+                                                file
+                                                    ? URL.createObjectURL(file)
+                                                    : null,
+                                            );
                                         }}
                                     />
                                 </label>
                                 <p className="font-body text-[11px] text-faint">
-                                    Foto do banner: JPG, PNG ou WebP, até 4 MB. Aparece no topo do evento e no cartão da lista.
+                                    Foto do banner: JPG, PNG ou WebP, até 4 MB.
+                                    Aparece no topo do evento e no cartão da
+                                    lista.
                                 </p>
                             </div>
                         </FormField>
                     </div>
 
-                    <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
+                    <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <FormField label="Setor" htmlFor="sector_name">
                                 <Input
                                     id="sector_name"
                                     value={form.data.sector_name}
-                                    onChange={(e) => form.setData('sector_name', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'sector_name',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="Plateia"
                                 />
                             </FormField>
-                            <FormField label="Preço (R$)" htmlFor="price" error={form.errors.price}>
+                            <FormField
+                                label="Preço (R$)"
+                                htmlFor="price"
+                                error={form.errors.price}
+                            >
                                 <Input
                                     id="price"
                                     type="number"
                                     step="0.01"
                                     inputMode="decimal"
                                     value={form.data.price}
-                                    onChange={(e) => form.setData('price', e.target.value)}
+                                    onChange={(e) =>
+                                        form.setData('price', e.target.value)
+                                    }
                                     placeholder="45"
                                 />
                             </FormField>
                         </div>
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center justify-between">
-                                <span className="kicker text-faint">Sessões</span>
-                                <Button type="button" variant="ghost" size="sm" onClick={addSession}>
-                                    <Icon name="plus" size={15} /> Adicionar sessão
+                                <span className="kicker text-faint">
+                                    Sessões
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={addSession}
+                                >
+                                    <Icon name="plus" size={15} /> Adicionar
+                                    sessão
                                 </Button>
                             </div>
 
@@ -361,21 +485,36 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                     <FormField
                                         label="Início"
                                         htmlFor={`starts_at_${i}`}
-                                        error={form.errors[`sessions.${i}.starts_at` as keyof typeof form.errors]}
+                                        error={
+                                            form.errors[
+                                                `sessions.${i}.starts_at` as keyof typeof form.errors
+                                            ]
+                                        }
                                     >
                                         <Input
                                             id={`starts_at_${i}`}
                                             type="datetime-local"
                                             value={s.starts_at}
-                                            onChange={(e) => setSession(i, { starts_at: e.target.value })}
+                                            onChange={(e) =>
+                                                setSession(i, {
+                                                    starts_at: e.target.value,
+                                                })
+                                            }
                                         />
                                     </FormField>
-                                    <FormField label="Abertura dos portões" htmlFor={`doors_at_${i}`}>
+                                    <FormField
+                                        label="Abertura dos portões"
+                                        htmlFor={`doors_at_${i}`}
+                                    >
                                         <Input
                                             id={`doors_at_${i}`}
                                             type="datetime-local"
                                             value={s.doors_at}
-                                            onChange={(e) => setSession(i, { doors_at: e.target.value })}
+                                            onChange={(e) =>
+                                                setSession(i, {
+                                                    doors_at: e.target.value,
+                                                })
+                                            }
                                         />
                                     </FormField>
                                     <div className="flex items-end gap-1">
@@ -391,7 +530,10 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                         href={`/painel/sessoes/${s.id}/assentos`}
                                                         title="Gerenciar assentos (bloquear/liberar)"
                                                     >
-                                                        <Icon name="map-pin" size={16} />
+                                                        <Icon
+                                                            name="map-pin"
+                                                            size={16}
+                                                        />
                                                     </Link>
                                                 </Button>
                                                 <Button
@@ -404,7 +546,10 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                         href={`/painel/sessoes/${s.id}/lotes`}
                                                         title="Lotes de venda (preço e quantidade)"
                                                     >
-                                                        <Icon name="ticket" size={16} />
+                                                        <Icon
+                                                            name="ticket"
+                                                            size={16}
+                                                        />
                                                     </Link>
                                                 </Button>
                                                 <Button
@@ -417,7 +562,10 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                                         href={`/painel/pedidos?session=${s.id}`}
                                                         title="Ver pedidos desta sessão"
                                                     >
-                                                        <Icon name="agenda" size={16} />
+                                                        <Icon
+                                                            name="agenda"
+                                                            size={16}
+                                                        />
                                                     </Link>
                                                 </Button>
                                             </>
@@ -426,7 +574,9 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            disabled={form.data.sessions.length === 1}
+                                            disabled={
+                                                form.data.sessions.length === 1
+                                            }
                                             onClick={() => removeSession(i)}
                                             aria-label="Remover sessão"
                                         >
@@ -444,14 +594,18 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                         </p>
                     </div>
 
-                    <div className="flex justify-end gap-3">
+                    <FormActions>
                         <Button asChild variant="secondary">
                             <Link href="/painel/eventos">Cancelar</Link>
                         </Button>
                         <Button type="submit" disabled={form.processing}>
-                            {form.processing ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar evento'}
+                            {form.processing
+                                ? 'Salvando…'
+                                : editing
+                                  ? 'Salvar alterações'
+                                  : 'Criar evento'}
                         </Button>
-                    </div>
+                    </FormActions>
                 </form>
             </div>
         </>

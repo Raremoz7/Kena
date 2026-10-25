@@ -39,7 +39,12 @@ export type IconName =
     | 'trash'
     | 'eye'
     | 'logout'
-    | 'image';
+    | 'image'
+    | 'gift'
+    | 'users'
+    | 'settings'
+    | 'receipt'
+    | 'grid';
 
 const paths: Record<IconName, ReactElement> = {
     check: <path d="M4 12.5l5 5 11-11" />,
@@ -204,6 +209,41 @@ const paths: Record<IconName, ReactElement> = {
         <>
             <path d="M4.5 7h15M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7" />
             <path d="M6 7l1 12.5A1.5 1.5 0 008.5 21h7a1.5 1.5 0 001.5-1.5L18 7" />
+        </>
+    ),
+    gift: (
+        <>
+            <rect x="4" y="8.5" width="16" height="4" rx="1" />
+            <path d="M5.5 12.5V20h13v-7.5M12 8.5V20" />
+            <path d="M12 8.5S10.5 4 8 4.5 6.5 8.5 12 8.5zM12 8.5S13.5 4 16 4.5s1.5 4-4 4z" />
+        </>
+    ),
+    users: (
+        <>
+            <circle cx="9" cy="8.5" r="3.2" />
+            <path d="M3 19.5a6 6 0 0112 0" />
+            <path d="M15.5 5.6a3.2 3.2 0 010 5.8M17.5 14a6 6 0 013.5 5.5" />
+        </>
+    ),
+    settings: (
+        <>
+            <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+            <circle cx="15" cy="7" r="2" />
+            <circle cx="9" cy="17" r="2" />
+        </>
+    ),
+    receipt: (
+        <>
+            <path d="M6 3.5h12v17l-2.5-1.5-2 1.5-1.5-1.5-1.5 1.5-2-1.5L6 20.5v-17z" />
+            <path d="M9 8.5h6M9 12h6M9 15.5h3.5" />
+        </>
+    ),
+    grid: (
+        <>
+            <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+            <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+            <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+            <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
         </>
     ),
     eye: (

@@ -8,6 +8,8 @@ import { Input } from '@/components/atoms/Input';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
 import { FormField } from '@/components/molecules/FormField';
+import { MobileList, MobileListItem } from '@/components/molecules/MobileList';
+import { AdminPage, PageHeader } from '@/components/molecules/PageHeader';
 import { veludoToast } from '@/lib/veludo/toast';
 
 type Status = 'redeemed' | 'pending' | 'expired';
@@ -78,7 +80,7 @@ function GenerateForm({
     return (
         <form
             onSubmit={submit}
-            className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5"
+            className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:p-5"
         >
             <p className="kicker text-faint">Gerar cortesias</p>
             <FormField
@@ -216,53 +218,50 @@ export default function AdminCourtesies({
     return (
         <>
             <Head title="Painel — Cortesias" />
-            <div className="px-6 py-8 sm:px-8">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <h1 className="font-display text-display-lg text-foreground uppercase">
-                            Cortesias
-                        </h1>
-                        <p className="mt-1 max-w-prose font-body text-sm text-muted-foreground">
-                            Um código por pessoa, que vale ingressos grátis até
-                            o prazo. Acompanhe quem já retirou para avisar os
-                            pais que faltam.
-                        </p>
-                    </div>
-                    {events.length > 1 && (
-                        <Select
-                            aria-label="Evento"
-                            value={eventId ?? ''}
-                            onChange={(e) =>
-                                router.get('/painel/cortesias', {
-                                    event: e.target.value,
-                                })
-                            }
-                            className="w-64"
-                        >
-                            {events.map((e) => (
-                                <option key={e.id} value={e.id}>
-                                    {e.title}
-                                </option>
-                            ))}
-                        </Select>
-                    )}
-                </div>
+            <AdminPage>
+                <PageHeader
+                    title="Cortesias"
+                    description="Um código por pessoa, que vale ingressos grátis até o prazo. Acompanhe quem já retirou para avisar os pais que faltam."
+                    actions={
+                        events.length > 1 ? (
+                            <Select
+                                aria-label="Evento"
+                                value={eventId ?? ''}
+                                onChange={(e) =>
+                                    router.get('/painel/cortesias', {
+                                        event: e.target.value,
+                                    })
+                                }
+                                className="sm:w-64"
+                            >
+                                {events.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.title}
+                                    </option>
+                                ))}
+                            </Select>
+                        ) : undefined
+                    }
+                />
 
                 {eventId === null ? (
-                    <p className="mt-6 font-body text-sm text-muted-foreground">
+                    <p className="font-body text-sm text-muted-foreground">
                         Cadastre um evento primeiro.
                     </p>
                 ) : (
                     <>
-                        <div className="mt-6">
+                        <div>
                             {generating ? (
                                 <GenerateForm
                                     eventId={eventId}
                                     onDone={() => setGenerating(false)}
                                 />
                             ) : (
-                                <div className="flex flex-wrap gap-3">
-                                    <Button onClick={() => setGenerating(true)}>
+                                <div className="flex flex-wrap gap-2 sm:gap-3 [&>*]:flex-1 sm:[&>*]:flex-none">
+                                    <Button
+                                        onClick={() => setGenerating(true)}
+                                        className="basis-full sm:basis-auto"
+                                    >
                                         <Icon name="plus" size={16} /> Gerar
                                         cortesias
                                     </Button>
@@ -290,30 +289,32 @@ export default function AdminCourtesies({
                         {courtesies.length > 0 && (
                             <>
                                 <div className="mt-6 flex flex-wrap items-center gap-2">
-                                    {(
-                                        [
-                                            'all',
-                                            'pending',
-                                            'redeemed',
-                                            'expired',
-                                        ] as const
-                                    ).map((key) => (
-                                        <Button
-                                            key={key}
-                                            size="sm"
-                                            variant={
-                                                filter === key
-                                                    ? 'primary'
-                                                    : 'secondary'
-                                            }
-                                            onClick={() => setFilter(key)}
-                                        >
-                                            {key === 'all'
-                                                ? 'Todas'
-                                                : STATUS[key].label}{' '}
-                                            ({counts[key]})
-                                        </Button>
-                                    ))}
+                                    <div className="-mx-4 flex w-[calc(100%+2rem)] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:overflow-visible sm:p-0">
+                                        {(
+                                            [
+                                                'all',
+                                                'pending',
+                                                'redeemed',
+                                                'expired',
+                                            ] as const
+                                        ).map((key) => (
+                                            <Button
+                                                key={key}
+                                                size="sm"
+                                                variant={
+                                                    filter === key
+                                                        ? 'primary'
+                                                        : 'secondary'
+                                                }
+                                                onClick={() => setFilter(key)}
+                                            >
+                                                {key === 'all'
+                                                    ? 'Todas'
+                                                    : STATUS[key].label}{' '}
+                                                ({counts[key]})
+                                            </Button>
+                                        ))}
+                                    </div>
                                     {groups.length > 0 && (
                                         <Select
                                             aria-label="Grupo"
@@ -321,7 +322,7 @@ export default function AdminCourtesies({
                                             onChange={(e) =>
                                                 setGroup(e.target.value)
                                             }
-                                            className="w-56"
+                                            className="sm:w-56"
                                         >
                                             <option value="">
                                                 Todos os grupos
@@ -335,7 +336,47 @@ export default function AdminCourtesies({
                                     )}
                                 </div>
 
-                                <div className="mt-4 overflow-x-auto rounded-card border border-border">
+                                <MobileList className="mt-4">
+                                    {rows.map((c) => (
+                                        <MobileListItem
+                                            key={c.id}
+                                            title={c.beneficiary ?? '—'}
+                                            subtitle={
+                                                <>
+                                                    <span className="font-mono">
+                                                        {c.code}
+                                                    </span>{' '}
+                                                    · {c.tickets} ingresso
+                                                    {c.tickets === 1 ? '' : 's'}
+                                                    {c.group && ` · ${c.group}`}
+                                                </>
+                                            }
+                                            meta={
+                                                c.redeemedBy ? (
+                                                    <>
+                                                        Retirado por{' '}
+                                                        {c.redeemedBy.name}
+                                                        {c.redeemedAt &&
+                                                            ` em ${dateTime(c.redeemedAt)}`}
+                                                        {c.seats.length > 0 &&
+                                                            ` · ${c.seats.join(', ')}`}
+                                                    </>
+                                                ) : c.expiresAt ? (
+                                                    `Vale até ${new Date(c.expiresAt).toLocaleDateString('pt-BR')}`
+                                                ) : undefined
+                                            }
+                                            aside={
+                                                <Badge
+                                                    tone={STATUS[c.status].tone}
+                                                >
+                                                    {STATUS[c.status].label}
+                                                </Badge>
+                                            }
+                                        />
+                                    ))}
+                                </MobileList>
+
+                                <div className="mt-4 hidden overflow-x-auto rounded-card border border-border md:block">
                                     <table className="w-full font-body text-sm">
                                         <thead className="bg-surface-2 text-left text-xs text-faint">
                                             <tr>
@@ -443,7 +484,7 @@ export default function AdminCourtesies({
                         )}
                     </>
                 )}
-            </div>
+            </AdminPage>
         </>
     );
 }

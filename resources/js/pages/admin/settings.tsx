@@ -274,8 +274,8 @@ export default function Settings({
     return (
         <>
             <Head title="Painel — Configurações" />
-            <div className="mx-auto max-w-2xl px-6 py-8 sm:px-8">
-                <h1 className="font-display text-display-lg text-foreground uppercase">
+            <div className="mx-auto max-w-2xl px-4 pt-5 pb-8 sm:px-8 sm:py-8">
+                <h1 className="font-display text-display-md text-foreground uppercase sm:text-display-lg">
                     Configurações
                 </h1>
                 <p className="mt-1 font-body text-sm text-muted-foreground">
@@ -284,7 +284,7 @@ export default function Settings({
                 </p>
 
                 {/* Checklist */}
-                <div className="mt-6 rounded-card border border-border bg-surface p-6">
+                <div className="mt-6 rounded-card border border-border bg-surface p-4 sm:p-6">
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="font-display text-display-sm text-foreground uppercase">
                             Pronto para vender
@@ -389,15 +389,17 @@ export default function Settings({
 
                     <p className="mt-4 flex items-start gap-1.5 font-body text-[11px] text-faint">
                         <Icon name="info" size={14} className="mt-px" />
-                        Os e-mails são enviados em segundo plano — mantenha um{' '}
-                        <strong>worker de fila</strong> rodando no servidor
-                        (`php artisan queue:work`).
+                        <span>
+                            Os e-mails são enviados em segundo plano — mantenha
+                            um <strong>worker de fila</strong> rodando no
+                            servidor (`php artisan queue:work`).
+                        </span>
                     </p>
                 </div>
 
                 <form onSubmit={submit} className="mt-6 flex flex-col gap-6">
                     {/* Mercado Pago */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
@@ -541,7 +543,7 @@ export default function Settings({
                     </div>
 
                     {/* E-mail (SMTP) */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
@@ -947,7 +949,7 @@ export default function Settings({
                     </div>
 
                     {/* Google Wallet (opcional) */}
-                    <div className="rounded-card border border-border bg-surface p-6">
+                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
                             <div className="flex items-center gap-2">
                                 <Icon
