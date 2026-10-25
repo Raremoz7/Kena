@@ -45,6 +45,7 @@ class EventController extends Controller
                 'duration_label' => $data['duration_label'] ?? null,
                 'banner_from' => $data['banner_from'],
                 'banner_to' => $data['banner_to'],
+                'banner_opacity' => (int) ($data['banner_opacity'] ?? 0),
                 'banner_image' => $this->storeBanner($request),
             ]);
 
@@ -88,6 +89,7 @@ class EventController extends Controller
                 'duration_label' => $event->duration_label,
                 'banner_from' => $event->banner_from,
                 'banner_to' => $event->banner_to,
+                'banner_opacity' => $event->banner_opacity,
                 'banner_image' => $event->banner_image,
                 'sector_name' => $sector !== null ? $sector->name : 'Plateia',
                 'price' => $sector ? $sector->price_cents / 100 : 0,
@@ -114,6 +116,7 @@ class EventController extends Controller
                 'duration_label' => $data['duration_label'] ?? null,
                 'banner_from' => $data['banner_from'],
                 'banner_to' => $data['banner_to'],
+                'banner_opacity' => (int) ($data['banner_opacity'] ?? 0),
             ];
             $banner = $this->storeBanner($request);
             if ($banner !== null) {
@@ -157,8 +160,10 @@ class EventController extends Controller
             'description' => ['required', 'string', 'max:2000'],
             'status' => ['required', Rule::in(['draft', 'on_sale'])],
             'duration_label' => ['nullable', 'string', 'max:60'],
-            'banner_from' => ['required', 'string', 'max:60'],
-            'banner_to' => ['required', 'string', 'max:60'],
+            // Cor em hex (#rrggbb), vinda do seletor de cor do painel.
+            'banner_from' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'banner_to' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'banner_opacity' => ['nullable', 'integer', 'min:0', 'max:100'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'sector_name' => ['required', 'string', 'max:60'],
             'price' => ['required', 'numeric', 'min:0', 'max:100000'],

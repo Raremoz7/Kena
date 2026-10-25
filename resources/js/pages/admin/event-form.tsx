@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import type {FormEvent} from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
@@ -28,21 +29,33 @@ interface EventData {
     duration_label: string | null;
     banner_from: string;
     banner_to: string;
+    banner_opacity: number;
     banner_image: string | null;
     sector_name: string;
     price: number;
     sessions: { id: number; starts_at: string; doors_at: string | null }[];
 }
 
+// Atalhos de degradê (hex, para o seletor de cor do navegador).
 const presets = [
-    { label: 'Roxo', from: 'oklch(0.32 0.08 285)', to: 'oklch(0.14 0.012 48)' },
-    { label: 'Vinho', from: 'oklch(0.3 0.08 22)', to: 'oklch(0.14 0.012 48)' },
-    { label: 'Azul', from: 'oklch(0.26 0.05 250)', to: 'oklch(0.14 0.012 48)' },
-    { label: 'Verde', from: 'oklch(0.27 0.06 160)', to: 'oklch(0.14 0.012 48)' },
+    { label: 'Roxo', from: '#2f2b59', to: '#0d0806' },
+    { label: 'Vinho', from: '#4f1a1b', to: '#0d0806' },
+    { label: 'Azul', from: '#0f253b', to: '#0d0806' },
+    { label: 'Verde', from: '#012f1c', to: '#0d0806' },
 ];
+
+/** Hex válido para o <input type="color"> (valor antigo fora do padrão vira preto). */
+const asHex = (value: string) => (/^#[0-9a-f]{6}$/i.test(value) ? value : '#000000');
 
 export default function EventForm({ venues, event }: { venues: Venue[]; event: EventData | null }) {
     const editing = !!event;
+    // Prévia da imagem escolhida antes de salvar (URL local, liberada ao trocar/sair).
+    const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+    useEffect(() => () => {
+        if (bannerPreview) {
+            URL.revokeObjectURL(bannerPreview);
+        }
+    }, [bannerPreview]);
     const form = useForm({
         venue_id: event?.venue_id ?? venues[0]?.id ?? 0,
         title: event?.title ?? '',
@@ -52,6 +65,7 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
         duration_label: event?.duration_label ?? '',
         banner_from: event?.banner_from ?? presets[0].from,
         banner_to: event?.banner_to ?? presets[0].to,
+        banner_opacity: event?.banner_opacity ?? 0,
         banner_image: null as File | null,
         sector_name: event?.sector_name ?? 'Plateia',
         price: event ? String(event.price) : '',
@@ -172,29 +186,60 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                             </FormField>
                         </div>
 
-                        <FormField label="Banner" error={form.errors.banner_image}>
+                        <FormField label="Banner" error={form.errors.banner_image ?? form.errors.banner_from ?? form.errors.banner_to}>
                             <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className="relative h-10 w-28 shrink-0 overflow-hidden rounded-btn border border-border"
-                                        style={{
-                                            background: `linear-gradient(160deg, ${form.data.banner_from}, ${form.data.banner_to})`,
-                                        }}
-                                    >
-                                        {event?.banner_image && !form.data.banner_image && (
+                                {/* Prévia: imagem por baixo, degradê por cima na opacidade escolhida. */}
+                                <span
+                                    className="relative h-24 w-full overflow-hidden rounded-btn border border-border"
+                                    style={{ background: `linear-gradient(160deg, ${form.data.banner_from}, ${form.data.banner_to})` }}
+                                >
+                                    {(bannerPreview ?? event?.banner_image) && (
+                                        <>
                                             <img
-                                                src={event.banner_image}
+                                                src={bannerPreview ?? event?.banner_image ?? ''}
                                                 alt=""
                                                 className="absolute inset-0 size-full object-cover"
                                             />
-                                        )}
-                                    </span>
+                                            <span
+                                                className="absolute inset-0"
+                                                style={{
+                                                    background: `linear-gradient(160deg, ${form.data.banner_from}, ${form.data.banner_to})`,
+                                                    opacity: form.data.banner_opacity / 100,
+                                                }}
+                                            />
+                                        </>
+                                    )}
+                                </span>
+
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                                        <input
+                                            type="color"
+                                            aria-label="Cor inicial do degradê"
+                                            value={asHex(form.data.banner_from)}
+                                            onChange={(e) => form.setData('banner_from', e.target.value)}
+                                            className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
+                                        />
+                                        Início
+                                    </label>
+                                    <label className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                                        <input
+                                            type="color"
+                                            aria-label="Cor final do degradê"
+                                            value={asHex(form.data.banner_to)}
+                                            onChange={(e) => form.setData('banner_to', e.target.value)}
+                                            className="size-9 cursor-pointer rounded-btn border border-border-strong bg-transparent p-0.5"
+                                        />
+                                        Fim
+                                    </label>
+                                    <span className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
                                     <div className="flex gap-2">
                                         {presets.map((p) => (
                                             <button
                                                 key={p.label}
                                                 type="button"
-                                                aria-label={p.label}
+                                                aria-label={`Degradê ${p.label}`}
+                                                title={p.label}
                                                 onClick={() => {
                                                     form.setData('banner_from', p.from);
                                                     form.setData('banner_to', p.to);
@@ -205,6 +250,25 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                         ))}
                                     </div>
                                 </div>
+
+                                <label className="flex flex-col gap-1.5 font-body text-sm text-muted-foreground">
+                                    <span className="flex items-center justify-between">
+                                        Opacidade do degradê sobre a imagem
+                                        <span className="tabular-nums text-foreground">{form.data.banner_opacity}%</span>
+                                    </span>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={100}
+                                        step={5}
+                                        value={form.data.banner_opacity}
+                                        onChange={(e) => form.setData('banner_opacity', Number(e.target.value))}
+                                        className="w-full accent-[var(--accent)]"
+                                    />
+                                    <span className="text-[11px] text-faint">
+                                        0% mostra a foto pura; 100% cobre a foto com o degradê. Sem imagem, o degradê aparece inteiro.
+                                    </span>
+                                </label>
 
                                 <label className="flex cursor-pointer items-center gap-2 rounded-btn border border-dashed border-border px-3 py-2 font-body text-sm text-muted-foreground transition-colors hover:border-accent hover:text-foreground">
                                     <Icon name="image" size={16} />
@@ -217,7 +281,11 @@ export default function EventForm({ venues, event }: { venues: Venue[]; event: E
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
                                         className="hidden"
-                                        onChange={(e) => form.setData('banner_image', e.target.files?.[0] ?? null)}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] ?? null;
+                                            form.setData('banner_image', file);
+                                            setBannerPreview(file ? URL.createObjectURL(file) : null);
+                                        }}
                                     />
                                 </label>
                                 <p className="font-body text-[11px] text-faint">
