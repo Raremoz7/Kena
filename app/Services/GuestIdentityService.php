@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\CpfInUseException;
 use App\Exceptions\GuestAccountExistsException;
 use App\Models\User;
+use App\Support\AccountNotice;
 
 /**
  * Identidade do comprador convidado (checkout sem senha). Só é chamado depois
@@ -24,9 +25,11 @@ class GuestIdentityService
     {
         $email = EmailVerificationCodeService::normalize($data['email']);
 
+        // Conta que já entra com Google ou senha: o código não serve para entrar
+        // nela — a pessoa faz login. Conta de convidado anterior segue com o código.
         $existing = User::where('email', $email)->first();
         if ($existing !== null) {
-            if ($existing->password !== null || $existing->google_id !== null) {
+            if (AccountNotice::forUser($existing) !== null) {
                 throw new GuestAccountExistsException;
             }
 

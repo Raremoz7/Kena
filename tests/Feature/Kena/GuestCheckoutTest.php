@@ -46,13 +46,14 @@ class GuestCheckoutTest extends TestCase
         $this->assertSame(1, Reservation::where('user_id', $user->id)->count());
     }
 
-    public function test_guest_email_with_password_account_must_log_in(): void
+    public function test_guest_email_that_already_logs_in_is_sent_to_login(): void
     {
         $session = $this->makeSession(1);
         $session->load('event');
-        User::factory()->create(['email' => 'has@pass.test']); // factory define senha
+        // Conta do Google: o código é para criar conta, não para entrar nela.
+        User::factory()->create(['email' => 'has@pass.test', 'google_id' => 'g-1', 'password' => null]);
 
-        $response = $this->post(
+        $this->post(
             route('sessions.reserve', ['slug' => $session->event->slug, 'session' => $session->id]),
             [
                 'seats' => $this->availableSeatIds($session, 1),
@@ -63,9 +64,8 @@ class GuestCheckoutTest extends TestCase
                     'code' => app(EmailVerificationCodeService::class)->issue('has@pass.test'),
                 ],
             ],
-        );
+        )->assertSessionHasErrors(['guest.email']);
 
-        $response->assertSessionHasErrors('guest.email');
         $this->assertGuest();
     }
 

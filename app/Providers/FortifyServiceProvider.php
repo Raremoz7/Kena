@@ -4,12 +4,16 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
+use App\Services\EmailVerificationCodeService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Features;
@@ -49,6 +53,27 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        // Login com senha. Conta sem senha não tem como acertar: em vez de
+        // "credenciais inválidas", diz o caminho certo (Google ou criar senha).
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $field = Fortify::username();
+            $user = User::where($field, EmailVerificationCodeService::normalize((string) $request->input($field)))->first();
+
+            if ($user === null) {
+                return null;
+            }
+
+            if ($user->password === null) {
+                throw ValidationException::withMessages([
+                    $field => $user->google_id !== null
+                        ? 'Este e-mail entra pelo Google. Use o botão “Continuar com Google” acima.'
+                        : 'Esta conta foi criada numa compra, sem senha. Use “Esqueci minha senha” para criar uma.',
+                ]);
+            }
+
+            return Hash::check((string) $request->input('password'), $user->password) ? $user : null;
+        });
     }
 
     /**
@@ -73,7 +98,6 @@ class FortifyServiceProvider extends ServiceProvider
             'email' => $request->email,
             'token' => $request->route('token'),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'emailCodeUrl' => route('email-code.send'),
         ]));
 
         Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
@@ -86,6 +110,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            // Sem isso o "Enviar código" do cadastro não tinha para onde mandar.
+            'emailCodeUrl' => route('email-code.send'),
         ]));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));

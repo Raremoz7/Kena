@@ -38,18 +38,31 @@ class EmailVerificationCodeTest extends TestCase
         $this->assertTrue($this->codes()->verify('pai@escola.test', (string) $sent));
     }
 
-    public function test_send_endpoint_answers_the_same_for_existing_accounts(): void
+    public function test_send_endpoint_points_existing_accounts_to_login_without_sending(): void
     {
         Mail::fake();
-        User::factory()->create(['email' => 'existe@escola.test']);
+        User::factory()->create(['email' => 'google@escola.test', 'google_id' => 'g-1', 'password' => null]);
+        User::factory()->create(['email' => 'senha@escola.test']);
 
-        $existing = $this->postJson(route('email-code.send'), ['email' => 'existe@escola.test'])->assertOk();
-        $missing = $this->postJson(route('email-code.send'), ['email' => 'novo@escola.test'])->assertOk();
+        $this->postJson(route('email-code.send'), ['email' => 'google@escola.test'])
+            ->assertStatus(409)
+            ->assertJsonPath('account.google', true)
+            ->assertJsonPath('account.password', false);
+        $this->postJson(route('email-code.send'), ['email' => 'senha@escola.test'])
+            ->assertStatus(409)
+            ->assertJsonPath('account.password', true);
 
-        $this->assertSame(
-            str_replace('existe@', 'X@', $existing->json('message')),
-            str_replace('novo@', 'X@', $missing->json('message')),
-        );
+        Mail::assertNothingSent();
+    }
+
+    public function test_guest_buyer_account_still_gets_a_code(): void
+    {
+        Mail::fake();
+        User::factory()->create(['email' => 'convidado@escola.test', 'google_id' => null, 'password' => null]);
+
+        $this->postJson(route('email-code.send'), ['email' => 'convidado@escola.test'])->assertOk();
+
+        Mail::assertSent(EmailVerificationCodeMail::class, 1);
     }
 
     public function test_send_is_limited_per_email(): void

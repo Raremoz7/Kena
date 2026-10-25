@@ -22,6 +22,65 @@ interface EmailCodeFieldProps {
     /** `name` do input quando o formulário é enviado nativamente (Inertia <Form>). */
     name?: string;
     id?: string;
+    /** Para onde voltar depois de entrar (ex.: a tela de assentos). */
+    loginRedirect?: string;
+}
+
+interface ExistingAccount {
+    message: string;
+    google: boolean;
+    password: boolean;
+}
+
+/** E-mail que já entra com Google/senha: o código não serve, mostra como entrar. */
+function ExistingAccountNotice({
+    account,
+    email,
+    loginRedirect,
+}: {
+    account: ExistingAccount;
+    email: string;
+    loginRedirect?: string;
+}) {
+    const back = loginRedirect
+        ? `&redirect=${encodeURIComponent(loginRedirect)}`
+        : '';
+
+    return (
+        <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-btn border border-warning bg-warning/15 p-4"
+        >
+            <p className="font-body text-sm text-foreground">
+                {account.message}
+            </p>
+            <div className="flex flex-wrap gap-2">
+                {account.google && (
+                    <Button asChild size="sm">
+                        <a href="/auth/google/redirect">Continuar com Google</a>
+                    </Button>
+                )}
+                {account.password && (
+                    <Button
+                        asChild
+                        size="sm"
+                        variant={account.google ? 'secondary' : 'primary'}
+                    >
+                        <a
+                            href={`/login?email=${encodeURIComponent(email.trim())}${back}`}
+                        >
+                            Entrar com senha
+                        </a>
+                    </Button>
+                )}
+                {account.password && (
+                    <Button asChild size="sm" variant="ghost">
+                        <a href="/forgot-password">Esqueci minha senha</a>
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -37,12 +96,17 @@ export function EmailCodeField({
     error,
     name,
     id = 'email-code',
+    loginRedirect,
 }: EmailCodeFieldProps) {
     const [sentTo, setSentTo] = useState<string | null>(null);
     const [sending, setSending] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [sendError, setSendError] = useState<string | null>(null);
     const [cooldown, setCooldown] = useState(0);
+    const [existing, setExisting] = useState<{
+        email: string;
+        account: ExistingAccount;
+    } | null>(null);
     // Anúncio para leitor de tela (WCAG 4.1.3): "código enviado" e erros de envio.
     const [announcement, setAnnouncement] = useState('');
 
@@ -72,6 +136,7 @@ export function EmailCodeField({
 
         setSending(true);
         setSendError(null);
+        setExisting(null);
 
         try {
             const res = await api.post<{ message: string }>(sendUrl, { email });
@@ -83,6 +148,17 @@ export function EmailCodeField({
             setCooldown(RESEND_COOLDOWN_SECONDS);
             onCodeChange('');
         } catch (e) {
+            // 409: o e-mail já entra com Google/senha — mostra como entrar.
+            if (e instanceof ApiError && e.status === 409 && e.data.account) {
+                setExisting({
+                    email: normalized,
+                    account: e.data.account as ExistingAccount,
+                });
+                setAnnouncement(e.message);
+
+                return;
+            }
+
             const msg =
                 e instanceof ApiError
                     ? e.message
@@ -100,6 +176,20 @@ export function EmailCodeField({
             {announcement}
         </p>
     );
+
+    // O aviso vale só para o e-mail que gerou ele; trocar o e-mail volta ao normal.
+    if (existing !== null && existing.email === normalized) {
+        return (
+            <>
+                {liveRegion}
+                <ExistingAccountNotice
+                    account={existing.account}
+                    email={email}
+                    loginRedirect={loginRedirect}
+                />
+            </>
+        );
+    }
 
     if (!sent) {
         return (
