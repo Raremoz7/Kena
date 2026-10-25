@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\Payments\MercadoPagoDiagnostic;
 use App\Support\GoogleWalletSettings;
 use App\Support\MailSettings;
+use App\Support\MailUsage;
 use App\Support\MercadoPagoSettings;
 use App\Support\SampleTicketOrder;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,8 @@ class SettingsController extends Controller
                 'pixExpiration' => MercadoPagoSettings::pixExpirationMinutes(),
             ],
             'mail' => MailSettings::display(),
+            'mailBackup' => MailSettings::backupDisplay(),
+            'mailUsage' => MailUsage::summary(),
             'gw' => [
                 'issuerId' => (string) GoogleWalletSettings::issuerId(),
                 'classId' => (string) GoogleWalletSettings::classId(),
@@ -69,6 +72,14 @@ class SettingsController extends Controller
             'mail_encryption' => ['nullable', Rule::in(['tls', 'ssl', 'none'])],
             'mail_from_address' => ['nullable', 'email', 'max:120'],
             'mail_from_name' => ['nullable', 'string', 'max:80'],
+            'mail_daily_limit' => ['nullable', 'integer', 'min:1', 'max:1000000'],
+
+            // SMTP secundário: usado se o principal recusar (ex.: cota do dia acabou).
+            'mail_backup_host' => ['nullable', 'string', 'max:120'],
+            'mail_backup_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'mail_backup_username' => ['nullable', 'string', 'max:180'],
+            'mail_backup_password' => ['nullable', 'string', 'max:255'],
+            'mail_backup_encryption' => ['nullable', Rule::in(['tls', 'ssl', 'none'])],
 
             'gw_issuer_id' => ['nullable', 'string', 'max:60'],
             'gw_class_id' => ['nullable', 'string', 'max:120'],
@@ -77,7 +88,7 @@ class SettingsController extends Controller
         ]);
 
         // Segredos: só sobrescreve quando um novo valor é enviado (em branco = manter).
-        foreach (['mp_access_token', 'mp_webhook_secret', 'mail_password', 'gw_private_key'] as $secret) {
+        foreach (['mp_access_token', 'mp_webhook_secret', 'mail_password', 'mail_backup_password', 'gw_private_key'] as $secret) {
             if (filled($data[$secret] ?? null)) {
                 Setting::put($secret, $data[$secret]);
             }
@@ -96,6 +107,18 @@ class SettingsController extends Controller
         }
         if (filled($data['mail_port'] ?? null)) {
             Setting::put('mail_port', (string) $data['mail_port']);
+        }
+        if (filled($data['mail_daily_limit'] ?? null)) {
+            Setting::put('mail_daily_limit', (string) $data['mail_daily_limit']);
+        }
+
+        // SMTP secundário. Servidor em branco = desligado (a senha some junto).
+        foreach (['mail_backup_host', 'mail_backup_username', 'mail_backup_encryption'] as $key) {
+            Setting::put($key, $data[$key] ?? null);
+        }
+        Setting::put('mail_backup_port', filled($data['mail_backup_port'] ?? null) ? (string) $data['mail_backup_port'] : null);
+        if (blank($data['mail_backup_host'] ?? null)) {
+            Setting::put('mail_backup_password', null);
         }
 
         // Google Wallet (não-secretos).
