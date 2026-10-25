@@ -117,7 +117,9 @@ class CheckoutController extends Controller
         $courtesyMissing = count($coupon?->courtesyKeys(
             $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
         ) ?? []) < $reservation->seats->where('requires_courtesy', true)->count();
-        $requiresCpf = blank($reservation->user->cpf)
+        // Pix: sempre o CPF de quem paga (não é necessariamente o do login).
+        // Cartão: só quando a conta não tem CPF.
+        $requiresCpf = (blank($reservation->user->cpf) || $request->input('method') === 'pix')
             && ! $courtesyMissing
             && $this->pricing->quoteForReservation($reservation, $coupon)['total_cents'] > 0;
 
