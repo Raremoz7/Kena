@@ -214,7 +214,13 @@ class PaymentService
 
     private function extendHold(Reservation $reservation, CarbonInterface $until): void
     {
-        $buffered = $until->copy()->addMinutes(5);
+        $buffered = $until->copy()->setTimezone((string) config('app.timezone'))->addMinutes(5);
+
+        // Estender nunca encurta: uma data de vencimento estranha não pode
+        // derrubar a reserva antes do prazo que ela já tinha.
+        if ($buffered->lessThanOrEqualTo($reservation->expires_at)) {
+            return;
+        }
 
         $reservation->update(['expires_at' => $buffered]);
         SessionSeat::query()
