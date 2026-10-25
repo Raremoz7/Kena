@@ -21,13 +21,19 @@ export default function DeleteUser() {
             />
             <div className="space-y-4 rounded-card border border-danger/40 bg-danger/10 p-4">
                 <div className="relative space-y-0.5">
-                    <p className="font-body font-medium text-danger-text">Atenção</p>
+                    <p className="font-body font-medium text-danger-text">
+                        Atenção
+                    </p>
                     <p className="font-body text-sm text-muted-foreground">
                         Esta ação não pode ser desfeita.
                     </p>
                 </div>
 
-                <Button variant="danger" data-test="delete-user-button" onClick={() => setOpen(true)}>
+                <Button
+                    variant="danger"
+                    data-test="delete-user-button"
+                    onClick={() => setOpen(true)}
+                >
                     Excluir conta
                 </Button>
 
@@ -47,7 +53,10 @@ export default function DeleteUser() {
                         {({ resetAndClearErrors, processing, errors }) => (
                             <>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="password" className="sr-only">
+                                    <Label
+                                        htmlFor="password"
+                                        className="sr-only"
+                                    >
                                         Senha
                                     </Label>
 
@@ -62,7 +71,7 @@ export default function DeleteUser() {
                                     <InputError message={errors.password} />
                                 </div>
 
-                                <div className="flex justify-end gap-3">
+                                <div className="flex flex-col-reverse gap-2 *:w-full sm:flex-row sm:justify-end sm:gap-3 sm:*:w-auto">
                                     <Button
                                         type="button"
                                         variant="secondary"
