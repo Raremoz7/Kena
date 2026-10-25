@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon';
 import type { IconName } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
@@ -142,8 +143,98 @@ function SecureFieldBox({ id, invalid }: { id: string; invalid?: boolean }) {
     );
 }
 
-function copy(text: string) {
-    void navigator.clipboard?.writeText(text);
+/**
+ * Copia pelo próprio campo: seleciona o texto e usa execCommand. Plano B do
+ * Safari (iPad/iPhone), que às vezes recusa o navigator.clipboard.
+ */
+function copyFromField(field: HTMLTextAreaElement): boolean {
+    field.readOnly = false;
+    field.focus();
+    field.setSelectionRange(0, field.value.length);
+
+    let ok = false;
+
+    try {
+        ok = document.execCommand('copy');
+    } catch {
+        ok = false;
+    }
+
+    field.readOnly = true;
+
+    return ok;
+}
+
+/** Código Pix copia e cola: botão que copia (com aviso) e o código inteiro à mão. */
+function PixCopyBox({ code }: { code: string }) {
+    const field = useRef<HTMLTextAreaElement>(null);
+    const [state, setState] = useState<'idle' | 'copied' | 'manual'>('idle');
+
+    async function copy() {
+        let ok = false;
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(code);
+                ok = true;
+            }
+        } catch {
+            ok = false;
+        }
+
+        if (!ok && field.current) {
+            ok = copyFromField(field.current);
+        }
+
+        setState(ok ? 'copied' : 'manual');
+
+        if (ok) {
+            window.setTimeout(() => setState('idle'), 3000);
+        }
+    }
+
+    return (
+        <div className="flex w-full flex-col gap-2 text-left">
+            <label
+                htmlFor="pix-copy-paste"
+                className="font-body text-xs font-medium text-muted-foreground"
+            >
+                Pix copia e cola
+            </label>
+            <textarea
+                ref={field}
+                id="pix-copy-paste"
+                readOnly
+                rows={3}
+                value={code}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full resize-none rounded-input border border-border-strong bg-bg px-3 py-2 font-mono text-xs break-all text-foreground"
+            />
+            <button
+                type="button"
+                onClick={() => void copy()}
+                className={cn(
+                    'flex w-full items-center justify-center gap-2 rounded-btn border py-2.5 font-body text-sm font-semibold transition-colors',
+                    state === 'copied'
+                        ? 'border-success bg-success text-white'
+                        : 'border-border-strong text-foreground hover:bg-surface-2',
+                )}
+            >
+                <Icon name={state === 'copied' ? 'check' : 'copy'} size={16} />
+                {state === 'copied' ? 'Código copiado' : 'Copiar código Pix'}
+            </button>
+            <p
+                role="status"
+                aria-live="polite"
+                className="font-body text-xs text-muted-foreground"
+            >
+                {state === 'copied' &&
+                    'Agora cole no app do seu banco, na opção Pix copia e cola.'}
+                {state === 'manual' &&
+                    'Não deu para copiar sozinho. Toque no código acima, selecione tudo e copie.'}
+            </p>
+        </div>
+    );
 }
 
 /**
@@ -284,15 +375,7 @@ export function PaymentBrick({
                             esta página.
                         </p>
                     </div>
-                    {pix.copyPaste && (
-                        <button
-                            type="button"
-                            onClick={() => copy(pix.copyPaste as string)}
-                            className="w-full truncate rounded-btn border border-border-strong py-2.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-surface-2"
-                        >
-                            {pix.copyPaste.slice(0, 28)}… · toque para copiar
-                        </button>
-                    )}
+                    {pix.copyPaste && <PixCopyBox code={pix.copyPaste} />}
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">

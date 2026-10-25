@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
  */
 export type IconName =
     | 'check'
+    | 'copy'
     | 'close'
     | 'alert'
     | 'lock'
@@ -42,6 +43,12 @@ export type IconName =
 
 const paths: Record<IconName, ReactElement> = {
     check: <path d="M4 12.5l5 5 11-11" />,
+    copy: (
+        <>
+            <rect x="8.5" y="8.5" width="12" height="12" rx="2.5" />
+            <path d="M15.5 8.5V6a2.5 2.5 0 00-2.5-2.5H6A2.5 2.5 0 003.5 6v7A2.5 2.5 0 006 15.5h2.5" />
+        </>
+    ),
     image: (
         <>
             <rect x="3" y="5" width="18" height="14" rx="2" />
