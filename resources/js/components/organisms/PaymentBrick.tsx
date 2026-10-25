@@ -243,6 +243,27 @@ export function PaymentBrick({
                 )
             ) : (
                 <div className="mt-5 flex flex-col items-center gap-4 rounded-card border border-border bg-bg px-5 py-7 text-center">
+                    {needsDocument && !pix?.qrBase64 && (
+                        <FormField
+                            label="CPF de quem paga"
+                            htmlFor="pix-doc"
+                            error={errors?.document}
+                            helper="Exigido pelo Mercado Pago para gerar o Pix."
+                            className="w-full text-left"
+                        >
+                            <Input
+                                id="pix-doc"
+                                inputMode="numeric"
+                                placeholder="000.000.000-00"
+                                value={card.document}
+                                onChange={(e) =>
+                                    onCardChange({
+                                        document: maskCpf(e.target.value),
+                                    })
+                                }
+                            />
+                        </FormField>
+                    )}
                     {pix?.qrBase64 ? (
                         <img
                             src={`data:image/png;base64,${pix.qrBase64}`}

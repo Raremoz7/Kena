@@ -103,9 +103,13 @@ class CheckoutController extends Controller
         $this->ensureOwnerActive($reservation);
         $reservation->loadMissing('user');
 
-        // CPF é obrigatório no cartão quando o comprador ainda não tem um
-        // cadastrado — o Mercado Pago exige o documento do pagador.
-        $requiresCpf = ($request->input('method') === 'card') && blank($reservation->user->cpf);
+        // CPF é obrigatório (cartão e Pix) quando o comprador ainda não tem um
+        // cadastrado — o Mercado Pago exige o documento do pagador. Pedido de
+        // R$ 0 (cortesia) não passa pelo Mercado Pago e dispensa.
+        $code = $request->input('coupon_code');
+        $coupon = $this->coupons->resolveForReservation(is_string($code) ? $code : null, $reservation);
+        $requiresCpf = blank($reservation->user->cpf)
+            && $this->pricing->quoteForReservation($reservation, $coupon)['total_cents'] > 0;
 
         $data = $request->validate([
             'method' => ['required', Rule::in(['card', 'pix'])],

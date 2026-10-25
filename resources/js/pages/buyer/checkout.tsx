@@ -292,9 +292,20 @@ export default function CheckoutPage({
 
         try {
             if (method === 'pix') {
+                // Sem CPF cadastrado (ex.: entrou com Google), o Pix também pede o documento.
+                const pixDoc = card.document.replace(/\D/g, '');
+
+                if (needsDocument && summary.total > 0 && !isValidCpf(pixDoc)) {
+                    setCardErrors({ document: 'Informe um CPF válido.' });
+                    setSubmitting(false);
+
+                    return;
+                }
+
                 const res = await api.post<PayResponse>(payUrl, {
                     method: 'pix',
                     coupon_code: appliedCoupon ?? undefined,
+                    document: needsDocument ? pixDoc : undefined,
                 });
                 handlePay(res);
 
