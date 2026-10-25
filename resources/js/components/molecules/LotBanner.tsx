@@ -7,14 +7,32 @@ export interface LotInfo {
     soldOut: boolean;
 }
 
-/** Lote vendendo agora (e o próximo), quando a sessão vende por lotes. */
+/**
+ * Lote vendendo agora (e o próximo), quando a sessão vende por lotes. Com
+ * `courtesyOnly`, a venda paga esgotou e só restam lugares da cota de cortesia.
+ */
 export function LotBanner({
     lot,
+    courtesyOnly = false,
     className,
 }: {
     lot: LotInfo | null;
+    courtesyOnly?: boolean;
     className?: string;
 }) {
+    if (courtesyOnly) {
+        return (
+            <p
+                role="status"
+                className={`font-body text-sm text-muted-foreground ${className ?? ''}`}
+            >
+                <Badge tone="warning">Só cortesia</Badge> Os ingressos à venda
+                esgotaram. Os lugares livres são da cota de cortesia: escolha
+                seus lugares e informe o código de cortesia no pagamento.
+            </p>
+        );
+    }
+
     if (!lot) {
         return null;
     }

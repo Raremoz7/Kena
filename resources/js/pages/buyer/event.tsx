@@ -44,6 +44,8 @@ interface EventPageProps {
     emailCodeUrl: string;
     /** Lote vendendo agora (sessão única com lotes). */
     lot: LotInfo | null;
+    /** Venda paga esgotada: só restam lugares da cota de cortesia. */
+    courtesyOnly: boolean;
 }
 
 export default function EventPage({
@@ -57,6 +59,7 @@ export default function EventPage({
     availabilityUrl,
     emailCodeUrl,
     lot,
+    courtesyOnly,
 }: EventPageProps) {
     const multi = sessions.length > 1;
 
@@ -143,7 +146,7 @@ export default function EventPage({
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
                                 {sessionLabel} · {event.venue.name}, {event.venue.city}
                             </p>
-                            <LotBanner lot={lot} className="mt-3" />
+                            <LotBanner lot={lot} courtesyOnly={courtesyOnly} className="mt-3" />
                             <Deferred
                                 data="seatMap"
                                 fallback={<SeatSelectionSkeleton className="mt-6" />}

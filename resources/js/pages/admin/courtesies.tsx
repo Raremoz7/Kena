@@ -30,7 +30,6 @@ interface CourtesiesProps {
     events: { id: number; title: string }[];
     eventId: number | null;
     courtesies: CourtesyRow[];
-    defaultPrefix: string;
 }
 
 const STATUS: Record<
@@ -52,11 +51,9 @@ const dateTime = (iso: string) =>
 
 function GenerateForm({
     eventId,
-    defaultPrefix,
     onDone,
 }: {
     eventId: number;
-    defaultPrefix: string;
     onDone: () => void;
 }) {
     const form = useForm({
@@ -64,7 +61,6 @@ function GenerateForm({
         people: '',
         tickets: '2',
         expires_at: '',
-        prefix: defaultPrefix,
     });
 
     const lines = form.data.people
@@ -101,7 +97,11 @@ function GenerateForm({
                     }
                 />
             </FormField>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <p className="font-body text-xs text-muted-foreground">
+                O código é o nome completo da criança, sem espaço, mais 3
+                caracteres. Ex.: Maria Silva Santos → MARIASILVASANTOS7Q2
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                     label="Ingressos por código"
                     htmlFor="tickets"
@@ -133,22 +133,6 @@ function GenerateForm({
                         }
                     />
                 </FormField>
-                <FormField
-                    label="Prefixo do código"
-                    htmlFor="prefix"
-                    error={form.errors.prefix}
-                    helper="Ex.: QN-7Q2XJ1"
-                >
-                    <Input
-                        id="prefix"
-                        value={form.data.prefix}
-                        onChange={(e) =>
-                            form.setData('prefix', e.target.value.toUpperCase())
-                        }
-                        className="uppercase"
-                        maxLength={8}
-                    />
-                </FormField>
             </div>
             <div className="flex justify-end gap-3">
                 <Button
@@ -172,7 +156,6 @@ export default function AdminCourtesies({
     events,
     eventId,
     courtesies,
-    defaultPrefix,
 }: CourtesiesProps) {
     const [generating, setGenerating] = useState(false);
     const [filter, setFilter] = useState<Status | 'all'>('all');
@@ -275,7 +258,6 @@ export default function AdminCourtesies({
                             {generating ? (
                                 <GenerateForm
                                     eventId={eventId}
-                                    defaultPrefix={defaultPrefix}
                                     onDone={() => setGenerating(false)}
                                 />
                             ) : (

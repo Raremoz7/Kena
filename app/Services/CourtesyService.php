@@ -51,18 +51,16 @@ class CourtesyService
     }
 
     /**
-     * Cria um código por pessoa.
+     * Cria um código por pessoa, a partir do nome dela (ver Codes::courtesy).
      *
      * @param  array<int, array{name: string, group: string|null}>  $people
      * @return Collection<int, Coupon>
      */
-    public function generate(Event $event, array $people, int $tickets, ?CarbonInterface $expiresAt, string $prefix): Collection
+    public function generate(Event $event, array $people, int $tickets, ?CarbonInterface $expiresAt): Collection
     {
-        $prefix = self::normalizePrefix($prefix);
-
         return DB::transaction(fn (): Collection => collect($people)->map(fn (array $person): Coupon => Coupon::create([
             'event_id' => $event->id,
-            'code' => $this->uniqueCode($prefix),
+            'code' => $this->uniqueCode($person['name']),
             'beneficiary' => $person['name'],
             'group_name' => $person['group'],
             'type' => Coupon::TYPE_TICKETS,
@@ -127,17 +125,10 @@ class CourtesyService
         })->values()->all();
     }
 
-    public static function normalizePrefix(string $prefix): string
-    {
-        $clean = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $prefix));
-
-        return $clean !== '' ? substr($clean, 0, 8) : 'CORT';
-    }
-
-    private function uniqueCode(string $prefix): string
+    private function uniqueCode(string $name): string
     {
         do {
-            $code = Codes::courtesy($prefix);
+            $code = Codes::courtesy($name);
         } while (Coupon::where('code', $code)->exists());
 
         return $code;

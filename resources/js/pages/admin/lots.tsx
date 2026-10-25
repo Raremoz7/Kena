@@ -18,12 +18,22 @@ interface LotRow {
     state: 'current' | 'next' | 'sold_out';
 }
 
+interface CourtesyReserve {
+    reserve: number;
+    capacity: number;
+    paidUsed: number;
+    paidLeft: number | null;
+    courtesyUsed: number;
+    reserveLeft: number;
+}
+
 interface LotsPageProps {
     event: { id: number; title: string; slug: string };
     session: { id: number; label: string };
     lots: LotRow[];
     sectorPriceCents: number;
     seatCount: number;
+    courtesyReserve: CourtesyReserve;
 }
 
 const brl = (cents: number) =>
@@ -140,12 +150,104 @@ function LotForm({
     );
 }
 
+/** Cota de cortesia: só a quantidade fica guardada, o lugar o pai escolhe. */
+function ReserveForm({
+    sessionId,
+    summary,
+}: {
+    sessionId: number;
+    summary: CourtesyReserve;
+}) {
+    const form = useForm({
+        courtesy_reserve: String(summary.reserve),
+    });
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        form.put(`/painel/sessoes/${sessionId}/cota-cortesia`, {
+            preserveScroll: true,
+        });
+    }
+
+    return (
+        <form
+            onSubmit={submit}
+            className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-5"
+        >
+            <div>
+                <p className="kicker text-faint">Cota de cortesia</p>
+                <p className="mt-1 max-w-prose font-body text-sm text-muted-foreground">
+                    Lugares guardados para quem tem código de cortesia. Nenhum
+                    lugar fica separado: a venda paga para quando sobrar só a
+                    cota, e os pais escolhem qualquer lugar livre e informam o
+                    código no pagamento.
+                </p>
+            </div>
+            <div className="flex flex-wrap items-end gap-4">
+                <FormField
+                    label="Lugares para cortesia"
+                    htmlFor="courtesy-reserve"
+                    error={form.errors.courtesy_reserve}
+                    helper="0 = sem cota."
+                >
+                    <Input
+                        id="courtesy-reserve"
+                        type="number"
+                        min="0"
+                        max={summary.capacity}
+                        value={form.data.courtesy_reserve}
+                        onChange={(e) =>
+                            form.setData('courtesy_reserve', e.target.value)
+                        }
+                        placeholder="160"
+                        className="w-32"
+                    />
+                </FormField>
+                <Button type="submit" disabled={form.processing}>
+                    Salvar cota
+                </Button>
+            </div>
+            {summary.reserve > 0 && (
+                <dl className="grid gap-3 font-body text-sm sm:grid-cols-3">
+                    <div>
+                        <dt className="text-xs text-faint">
+                            Cortesias retiradas
+                        </dt>
+                        <dd className="text-foreground tabular-nums">
+                            {summary.courtesyUsed} / {summary.reserve}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="text-xs text-faint">Restam na cota</dt>
+                        <dd className="text-foreground tabular-nums">
+                            {summary.reserveLeft}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="text-xs text-faint">
+                            Ingressos pagos à venda
+                        </dt>
+                        <dd className="text-foreground tabular-nums">
+                            {summary.paidLeft ?? '—'}
+                            <span className="text-faint">
+                                {' '}
+                                ({summary.paidUsed} vendidos ou reservados)
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            )}
+        </form>
+    );
+}
+
 export default function AdminLots({
     event,
     session,
     lots,
     sectorPriceCents,
     seatCount,
+    courtesyReserve,
 }: LotsPageProps) {
     const [editing, setEditing] = useState<LotRow | 'new' | null>(
         lots.length === 0 ? 'new' : null,
@@ -175,6 +277,8 @@ export default function AdminLots({
                     {lots.length === 0 &&
                         ` Sem lotes, vale o preço do setor (${brl(sectorPriceCents)}).`}
                 </p>
+
+                <ReserveForm sessionId={session.id} summary={courtesyReserve} />
 
                 {lots.length > 0 && (
                     <div className="mt-6 overflow-hidden rounded-card border border-border">

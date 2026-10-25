@@ -74,8 +74,13 @@ Route::middleware(['auth:web'])->group(function () {
         ->name('reservations.release');
 
     Route::get('/checkout/{reservation}', [CheckoutController::class, 'show'])->name('checkout');
-    Route::post('/checkout/{reservation}/cupom', [CheckoutController::class, 'coupon'])->name('checkout.coupon');
-    Route::post('/checkout/{reservation}/pagar', [CheckoutController::class, 'pay'])->name('checkout.pay');
+    // Cortesia é nome da criança + 3 caracteres: limita tentativas para não adivinharem o final.
+    Route::post('/checkout/{reservation}/cupom', [CheckoutController::class, 'coupon'])
+        ->middleware('throttle:10,1')
+        ->name('checkout.coupon');
+    Route::post('/checkout/{reservation}/pagar', [CheckoutController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('checkout.pay');
     Route::post('/checkout/{reservation}/mais-tempo', [CheckoutController::class, 'extend'])->name('checkout.extend');
     Route::get('/checkout/{reservation}/status', [CheckoutController::class, 'status'])->name('checkout.status');
 
@@ -153,6 +158,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::post('/painel/sessoes/{session}/lotes', [LotController::class, 'store'])->name('admin.lots.store');
         Route::put('/painel/lotes/{lot}', [LotController::class, 'update'])->name('admin.lots.update');
         Route::delete('/painel/lotes/{lot}', [LotController::class, 'destroy'])->name('admin.lots.destroy');
+        Route::put('/painel/sessoes/{session}/cota-cortesia', [LotController::class, 'reserve'])->name('admin.lots.reserve');
         Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
         Route::post('/painel/sessoes/{session}/assentos/varios', [SeatController::class, 'bulk'])->name('admin.seats.bulk');
         Route::post('/painel/sessoes/{session}/assentos/emitir', [SeatController::class, 'issue'])->name('admin.seats.issue');

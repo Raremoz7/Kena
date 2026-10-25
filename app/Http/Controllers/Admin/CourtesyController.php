@@ -9,7 +9,6 @@ use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +36,6 @@ class CourtesyController extends Controller
             'events' => $events->map(fn (Event $e): array => ['id' => $e->id, 'title' => $e->title])->values(),
             'eventId' => $event?->id,
             'courtesies' => $event !== null ? $this->courtesies->report($event) : [],
-            'defaultPrefix' => $event !== null ? self::prefixFor($event->title) : 'CORT',
         ]);
     }
 
@@ -48,7 +46,6 @@ class CourtesyController extends Controller
             'people' => ['required', 'string', 'max:20000'],
             'tickets' => ['required', 'integer', 'min:1', 'max:10'],
             'expires_at' => ['nullable', 'date'],
-            'prefix' => ['nullable', 'string', 'max:12'],
         ]);
 
         $people = CourtesyService::parseList($data['people']);
@@ -69,7 +66,6 @@ class CourtesyController extends Controller
             $people,
             (int) $data['tickets'],
             $expiresAt,
-            (string) ($data['prefix'] ?? self::prefixFor($event->title)),
         );
 
         return redirect()
@@ -109,19 +105,5 @@ class CourtesyController extends Controller
             }
             fclose($out);
         }, 'cortesias-'.$event->slug.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
-    }
-
-    /** Iniciais do evento: "O Quebra-Nozes" → "QN" (ignora artigos curtos). */
-    public static function prefixFor(string $title): string
-    {
-        $words = preg_split('/[\s\-]+/u', $title) ?: [];
-        $initials = '';
-        foreach ($words as $word) {
-            if (mb_strlen($word) > 2) {
-                $initials .= mb_substr($word, 0, 1);
-            }
-        }
-
-        return CourtesyService::normalizePrefix(Str::ascii($initials));
     }
 }

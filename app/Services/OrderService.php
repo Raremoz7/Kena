@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\CouponExhaustedException;
+use App\Exceptions\CourtesyRequiredException;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -38,6 +39,15 @@ class OrderService
                 $this->coupons->release($existing);
             }
 
+            // Lugares que passaram da venda paga precisam sair como cortesia.
+            $courtesyIds = $coupon?->courtesyKeys(
+                $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
+            ) ?? [];
+            $required = $reservation->seats->where('requires_courtesy', true)->count();
+            if (count($courtesyIds) < $required) {
+                throw new CourtesyRequiredException($required);
+            }
+
             $quote = $this->pricing->quoteForReservation($reservation, $coupon);
 
             $order = Order::create([
@@ -54,10 +64,6 @@ class OrderService
             ]);
 
             // Cortesia: os ingressos que saem de graça não contam no lote.
-            $courtesyIds = $coupon?->courtesyKeys(
-                $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
-            ) ?? [];
-
             foreach ($reservation->seats as $rs) {
                 $courtesy = in_array($rs->id, $courtesyIds, true);
                 $rs->update(['courtesy' => $courtesy]);

@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\CouponRedemption;
 use App\Models\Order;
 use App\Models\Reservation;
+use Illuminate\Support\Str;
 
 /** Validação e resgate de cupons. */
 class CouponService
@@ -18,12 +19,20 @@ class CouponService
             return null;
         }
 
-        $coupon = Coupon::where('code', $code)->first();
+        // Cortesia é o nome da criança: aceita digitado com espaço ou acento
+        // ("Maria Silva 7q2", "JOÃO…") além do código exato.
+        $coupon = Coupon::where('code', $code)->first()
+            ?? Coupon::where('code', self::compact($code))->first();
         if ($coupon === null || ! $coupon->isRedeemable($eventId)) {
             return null;
         }
 
         return $coupon;
+    }
+
+    private static function compact(string $code): string
+    {
+        return strtoupper((string) preg_replace('/\s+/', '', Str::ascii($code)));
     }
 
     /**
