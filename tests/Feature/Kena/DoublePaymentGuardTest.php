@@ -64,7 +64,8 @@ class DoublePaymentGuardTest extends TestCase
 
         $response = $this->actingAs($reservation->user)->postJson(
             route('checkout.pay', $reservation),
-            ['method' => 'pix'],
+            // Comprador sem CPF cadastrado informa o documento (o Pix também exige).
+            ['method' => 'pix', 'document' => '52998224725'],
         );
 
         $response->assertOk();

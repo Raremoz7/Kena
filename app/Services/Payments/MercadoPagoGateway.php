@@ -28,7 +28,8 @@ class MercadoPagoGateway implements PaymentGateway
         $body = [
             'transaction_amount' => $this->amount($order),
             'token' => $cardToken,
-            'installments' => max(1, $installments),
+            // Débito (debelo, debvisa, debmaster…) é sempre à vista: parcela recusa no MP.
+            'installments' => self::isDebit($paymentMethodId) ? 1 : max(1, $installments),
             'description' => 'Kena · '.$order->reference,
             'statement_descriptor' => MercadoPagoSettings::statementDescriptor(),
             'external_reference' => $order->reference,
@@ -104,6 +105,11 @@ class MercadoPagoGateway implements PaymentGateway
             ->put('/v1/payments/'.$gatewayPaymentId, ['status' => 'cancelled']);
 
         return $response->successful();
+    }
+
+    public static function isDebit(?string $paymentMethodId): bool
+    {
+        return $paymentMethodId !== null && str_starts_with($paymentMethodId, 'deb');
     }
 
     private function amount(Order $order): float
