@@ -10,12 +10,25 @@ export function EventHero({ event }: { event: EventInfo }) {
             style={{ background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})` }}
         >
             {event.bannerImage && (
-                <img
-                    src={event.bannerImage}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 size-full object-cover"
-                />
+                <>
+                    <img
+                        src={event.bannerImage}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 size-full object-cover"
+                    />
+                    {/* Degradê do evento por cima da foto, na opacidade escolhida no painel. */}
+                    {event.bannerOpacity > 0 && (
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0"
+                            style={{
+                                background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})`,
+                                opacity: event.bannerOpacity / 100,
+                            }}
+                        />
+                    )}
+                </>
             )}
             <div
                 className="absolute inset-0"

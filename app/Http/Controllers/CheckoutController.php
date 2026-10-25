@@ -111,7 +111,14 @@ class CheckoutController extends Controller
         // R$ 0 (cortesia) não passa pelo Mercado Pago e dispensa.
         $code = $request->input('coupon_code');
         $coupon = $this->coupons->resolveForReservation(is_string($code) ? $code : null, $reservation);
+        // Lugar da cota de cortesia sem código suficiente: o pay() recusa com a
+        // mensagem da cortesia — pedir CPF antes só confundiria (com o código, sai R$ 0).
+        $reservation->loadMissing('seats');
+        $courtesyMissing = count($coupon?->courtesyKeys(
+            $reservation->seats->mapWithKeys(fn ($rs): array => [$rs->id => (int) $rs->price_cents])->all(),
+        ) ?? []) < $reservation->seats->where('requires_courtesy', true)->count();
         $requiresCpf = blank($reservation->user->cpf)
+            && ! $courtesyMissing
             && $this->pricing->quoteForReservation($reservation, $coupon)['total_cents'] > 0;
 
         $data = $request->validate([

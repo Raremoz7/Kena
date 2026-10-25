@@ -41,6 +41,7 @@ final class CatalogPresenter
             'bannerFrom' => $event->banner_from,
             'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
+            'bannerOpacity' => (int) $event->banner_opacity,
             'priceFrom' => Money::toReais((int) $priceFrom),
         ];
     }
@@ -68,6 +69,7 @@ final class CatalogPresenter
             'bannerFrom' => $event->banner_from,
             'bannerTo' => $event->banner_to,
             'bannerImage' => $event->banner_image,
+            'bannerOpacity' => (int) $event->banner_opacity,
         ];
     }
 

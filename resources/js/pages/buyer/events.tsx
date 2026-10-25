@@ -20,6 +20,7 @@ interface ListedEvent {
     dateLabel: string;
     timeLabel: string;
     bannerFrom: string;
+    bannerOpacity: number;
     bannerTo: string;
     bannerImage?: string;
     priceFrom: number;
@@ -62,6 +63,16 @@ function EventCard({ event }: { event: ListedEvent }) {
                         alt=""
                         aria-hidden="true"
                         className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                )}
+                {event.bannerImage && event.bannerOpacity > 0 && (
+                    <div
+                        aria-hidden="true"
+                        className="absolute inset-0"
+                        style={{
+                            background: `linear-gradient(160deg, ${event.bannerFrom}, ${event.bannerTo})`,
+                            opacity: event.bannerOpacity / 100,
+                        }}
                     />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
