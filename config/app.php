@@ -65,7 +65,10 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Horário de Brasília: datas digitadas no painel (sessões, prazos) e geradas
+    // pelo sistema (pedidos, reservas) ficam no mesmo relógio. O Brasil não tem
+    // mais horário de verão, então o deslocamento é sempre -03:00.
+    'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
 
     /*
     |--------------------------------------------------------------------------
