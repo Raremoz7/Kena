@@ -338,6 +338,22 @@
     }
 }
 
+/*
+ * iPhone: o Safari dá zoom ao focar campo com fonte menor que 16px, e o zoom
+ * fica nas telas seguintes (o Inertia troca de página sem recarregar). Como
+ * login e painel focam o campo ao abrir, o site parecia "abrir com zoom".
+ * Em tela de toque, todo campo tem 16px. Fora de camada de propósito: vence
+ * as utilities (text-sm) sem !important. Não usar maximum-scale=1 no
+ * viewport: isso tiraria o zoom de quem precisa ampliar.
+ */
+@media (hover: none) and (pointer: coarse) {
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
 /* respeita quem prefere menos movimento */
 @media (prefers-reduced-motion: reduce) {
     *,
