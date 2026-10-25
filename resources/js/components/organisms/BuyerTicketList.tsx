@@ -226,7 +226,7 @@ export function BuyerTicketList({
                                 placeholder="nome@email.com"
                             />
                         </FormField>
-                        <div className="flex justify-end gap-3">
+                        <div className="flex flex-col-reverse gap-2 *:w-full sm:flex-row sm:justify-end sm:gap-3 sm:*:w-auto">
                             <Button
                                 type="button"
                                 variant="secondary"
@@ -265,7 +265,7 @@ export function BuyerTicketList({
                                 ? 'O reembolso cancela este ingresso.'
                                 : `O reembolso vale para o pedido inteiro: os ${orderSeats(refundTicket).length} ingressos dele serão cancelados.`}
                         </p>
-                        <div className="flex justify-end gap-3">
+                        <div className="flex flex-col-reverse gap-2 *:w-full sm:flex-row sm:justify-end sm:gap-3 sm:*:w-auto">
                             <Button
                                 type="button"
                                 variant="secondary"

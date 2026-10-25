@@ -404,7 +404,7 @@ export function SeatSelection({
                             required
                         />
                     </FormField>
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse gap-2 *:w-full sm:flex-row sm:justify-end sm:gap-3 sm:*:w-auto">
                         <Button
                             type="button"
                             variant="secondary"
@@ -537,7 +537,7 @@ export function SeatSelection({
                         </a>
                         .
                     </p>
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse gap-2 *:w-full sm:flex-row sm:justify-end sm:gap-3 sm:*:w-auto">
                         <Button
                             type="button"
                             variant="secondary"
