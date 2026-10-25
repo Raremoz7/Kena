@@ -122,6 +122,26 @@ class MailAndPaymentFixesTest extends TestCase
             ->assertOk();
     }
 
+    public function test_pix_always_asks_the_payer_cpf_and_keeps_the_account_cpf(): void
+    {
+        $gateway = new FakeGateway;
+        $this->app->instance(PaymentGateway::class, $gateway);
+        $session = $this->makeSession(1);
+        $user = User::factory()->create(['cpf' => '11144477735']);
+        $reservation = app(SeatReservationService::class)->hold($session, $user, $this->availableSeatIds($session, 1));
+
+        // Mesmo com CPF na conta, o Pix pede o CPF de quem paga.
+        $this->actingAs($user)->postJson(route('checkout.pay', $reservation), ['method' => 'pix'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('document');
+
+        // Quem paga pode ser outra pessoa: o CPF vai pro Mercado Pago e a conta segue igual.
+        $this->actingAs($user)->postJson(route('checkout.pay', $reservation), ['method' => 'pix', 'document' => '529.982.247-25'])
+            ->assertOk();
+        $this->assertSame('52998224725', $gateway->lastPixDoc);
+        $this->assertSame('11144477735', $user->fresh()?->cpf);
+    }
+
     public function test_json_endpoints_answer_validation_errors_as_json_not_redirect(): void
     {
         // Antes: 302 para "/", que o fetch do front tratava como sucesso.

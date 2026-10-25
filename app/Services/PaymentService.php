@@ -70,11 +70,18 @@ class PaymentService
 
         $order->loadMissing('user');
         $email = (string) $order->user->email;
-        $doc = $this->resolvePayerDocument($order, $input['document'] ?? null);
-
         $method = ($input['method'] ?? 'card') === Payment::METHOD_PIX
             ? Payment::METHOD_PIX
             : Payment::METHOD_CARD;
+
+        // Pix: o CPF digitado é de quem paga (pode ser outra pessoa) — vai só
+        // para o Mercado Pago, sem trocar o CPF da conta.
+        $informedPixDoc = $method === Payment::METHOD_PIX
+            ? preg_replace('/\D/', '', (string) ($input['document'] ?? ''))
+            : '';
+        $doc = $informedPixDoc !== '' && strlen($informedPixDoc) === 11
+            ? $informedPixDoc
+            : $this->resolvePayerDocument($order, $input['document'] ?? null);
 
         // Um comprador não pode acumular dois meios de pagamento vivos —
         // inclui pagamentos de pedidos substituídos (ex.: cupom mudou).

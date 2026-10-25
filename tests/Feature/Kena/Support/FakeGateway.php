@@ -42,9 +42,13 @@ class FakeGateway implements PaymentGateway
         return true;
     }
 
+    /** CPF enviado no último Pix (espião). */
+    public ?string $lastPixDoc = null;
+
     public function createPix(Order $order, string $payerEmail, ?string $payerDoc): PaymentResult
     {
         $this->pixCreated++;
+        $this->lastPixDoc = $payerDoc;
 
         return new PaymentResult(
             'FAKE-PIX-'.$order->id,
