@@ -38,7 +38,7 @@ class MailVisualIdentityTest extends TestCase
     {
         $html = (new TicketsIssuedMail($this->paidOrder()))->render();
 
-        $this->assertStringContainsString('#120C08', $html);
+        $this->assertStringContainsString('#F3EEE6', $html);
         $this->assertStringContainsString('KENA', $html);
         $this->assertStringContainsString('Pagamento aprovado', $html);
     }
@@ -50,7 +50,7 @@ class MailVisualIdentityTest extends TestCase
 
         $html = (new TicketTransferredMail($ticket, 'Ana Souza'))->render();
 
-        $this->assertStringContainsString('#120C08', $html);
+        $this->assertStringContainsString('#F3EEE6', $html);
         $this->assertStringContainsString('Ana Souza', $html);
     }
 
@@ -60,7 +60,7 @@ class MailVisualIdentityTest extends TestCase
 
         $html = (new EventReminderMail($order->session, $order->user))->render();
 
-        $this->assertStringContainsString('#120C08', $html);
+        $this->assertStringContainsString('#F3EEE6', $html);
     }
 
     public function test_refund_confirmed_uses_kena_dark_theme(): void
@@ -69,7 +69,7 @@ class MailVisualIdentityTest extends TestCase
 
         $html = (new RefundConfirmedMail($order))->render();
 
-        $this->assertStringContainsString('#120C08', $html);
+        $this->assertStringContainsString('#F3EEE6', $html);
         $this->assertStringContainsString('R$', $html);
     }
 }
