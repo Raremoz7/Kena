@@ -26,6 +26,9 @@ final class KenaQrRenderer extends QRGdImagePNG
 
     private const LOGO_FRACTION = 0.30;
 
+    /** Fração da área limpa central que a marca ocupa; o resto é zona de silêncio. */
+    private const LOGO_MARK_FRACTION = 0.68;
+
     private const DEFAULT_LOGO_PATH = 'img/kena-qr-mark.png';
 
     /** @param SettingsContainerInterface|QROptions|iterable<string, mixed> $options */
@@ -159,7 +162,12 @@ final class KenaQrRenderer extends QRGdImagePNG
         $logoSizePx = ($logoEnd - $logoStart) * $this->scale;
         $logoOffsetPx = $logoStart * $this->scale;
 
-        imagecopyresampled($this->image, $im, $logoOffsetPx, $logoOffsetPx, 0, 0, $logoSizePx, $logoSizePx, $w, $h);
+        // A marca ocupa só parte da área limpa: a margem em volta é a zona de silêncio
+        // entre o logo e os módulos do QR.
+        $markPx = (int) round($logoSizePx * self::LOGO_MARK_FRACTION);
+        $markOffsetPx = $logoOffsetPx + (int) round(($logoSizePx - $markPx) / 2);
+
+        imagecopyresampled($this->image, $im, $markOffsetPx, $markOffsetPx, 0, 0, $markPx, $markPx, $w, $h);
 
         $imageData = $this->dumpImage();
 

@@ -16,7 +16,7 @@
 <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;font-family:'Hanken Grotesk',Arial,sans-serif;">
 <tr>
 <td style="padding-bottom:20px;">
-<span style="font-family:'Oswald','Arial Narrow','Helvetica Neue',Arial,sans-serif;color:#A8323B;text-transform:uppercase;letter-spacing:2px;font-size:13px;font-weight:700;">KENA</span>
+<a href="{{ url('/') }}" style="text-decoration:none;"><img src="{{ url('img/kena-qr-mark.png') }}" width="34" alt="Kena" style="display:block;width:34px;height:auto;border:0;"></a>
 </td>
 </tr>
 <tr>

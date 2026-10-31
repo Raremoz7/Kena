@@ -39,7 +39,7 @@ class MailVisualIdentityTest extends TestCase
         $html = (new TicketsIssuedMail($this->paidOrder()))->render();
 
         $this->assertStringContainsString('#F3EEE6', $html);
-        $this->assertStringContainsString('KENA', $html);
+        $this->assertStringContainsString('img/kena-qr-mark.png', $html);
         $this->assertStringContainsString('Pagamento aprovado', $html);
     }
 
