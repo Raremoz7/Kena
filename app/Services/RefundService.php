@@ -53,6 +53,35 @@ class RefundService
             ]);
         }
 
+        return $this->settle($order, $reason);
+    }
+
+    /**
+     * Estorno feito fora do Kena (painel do Mercado Pago ou chargeback do banco):
+     * o dinheiro já voltou, então só cancela ingressos e libera os assentos.
+     * Devolve null se o pedido já não estava pago (ex.: reembolso do painel do
+     * Kena, cujo webhook de "refunded" chega depois).
+     */
+    public function recordExternalRefund(Order $order, string $reason): ?Refund
+    {
+        $order->loadMissing(['payment', 'tickets', 'session']);
+
+        $claimed = Order::whereKey($order->id)
+            ->where('status', Order::STATUS_PAID)
+            ->update(['status' => Order::STATUS_REFUNDED]);
+
+        if ($claimed === 0) {
+            return null;
+        }
+
+        return $this->settle($order, $reason);
+    }
+
+    /** Registra o reembolso concluído, cancela ingressos, libera assentos e avisa o comprador. */
+    private function settle(Order $order, ?string $reason): Refund
+    {
+        $payment = $order->payment;
+
         $refund = DB::transaction(function () use ($order, $payment, $reason): Refund {
             $refund = Refund::create([
                 'order_id' => $order->id,

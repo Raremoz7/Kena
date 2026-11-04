@@ -61,9 +61,17 @@ class FakeGateway implements PaymentGateway
         );
     }
 
+    /** Status cru do Mercado Pago no payload consultado (ex.: charged_back). */
+    public ?string $fetchMpStatus = null;
+
     public function fetchPayment(string $gatewayPaymentId): PaymentResult
     {
-        return new PaymentResult($gatewayPaymentId, $this->fetchStatus, 'pix', ['id' => $gatewayPaymentId]);
+        $raw = ['id' => $gatewayPaymentId];
+        if ($this->fetchMpStatus !== null) {
+            $raw['status'] = $this->fetchMpStatus;
+        }
+
+        return new PaymentResult($gatewayPaymentId, $this->fetchStatus, 'pix', $raw);
     }
 
     /** @var list<string> IDs estornados (espião para asserções). */

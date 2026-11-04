@@ -27,6 +27,7 @@ class PaymentService
         private readonly CouponService $coupons,
         private readonly TicketIssuanceService $issuance,
         private readonly SeatReservationService $reservations,
+        private readonly RefundService $refunds,
     ) {}
 
     /**
@@ -250,6 +251,29 @@ class PaymentService
             if ($outcome->requiresRefund()) {
                 $this->refundLateApproval($payment, $order);
             }
+
+            return;
+        }
+
+        // Estorno ou chargeback feito fora do Kena (painel do MP, banco do
+        // comprador): o dinheiro voltou, então o ingresso não pode continuar
+        // valendo. Só conta se este era o pagamento que quitou o pedido.
+        $otherApproved = Payment::where('order_id', $order->id)
+            ->whereKeyNot($payment->id)
+            ->where('status', Payment::STATUS_APPROVED)
+            ->exists();
+        if ($result->status === PaymentResult::STATUS_REFUNDED && $order->status === Order::STATUS_PAID && ! $otherApproved) {
+            $chargeback = ($result->raw['status'] ?? null) === 'charged_back';
+            if ($chargeback) {
+                Log::warning('Chargeback recebido: ingressos do pedido cancelados.', [
+                    'order_id' => $order->id,
+                    'gateway_payment_id' => $payment->gateway_payment_id,
+                ]);
+            }
+
+            $this->refunds->recordExternalRefund($order, $chargeback
+                ? 'Contestação da compra junto ao banco (chargeback).'
+                : 'Estorno feito pelo Mercado Pago.');
 
             return;
         }
