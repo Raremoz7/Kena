@@ -6,6 +6,8 @@ import { Price } from '@/components/atoms/Price';
 import { AdminPage, PageHeader } from '@/components/molecules/PageHeader';
 import { AdminEventsTable } from '@/components/organisms/AdminEventsTable';
 import type { EventRow } from '@/components/organisms/AdminEventsTable';
+import { OverviewInsights } from '@/components/organisms/OverviewInsights';
+import type { OverviewInsightsData } from '@/components/organisms/OverviewInsights';
 
 interface Kpis {
     events: number;
@@ -54,9 +56,11 @@ const shortcuts: { label: string; href: string; icon: IconName }[] = [
 export default function Overview({
     kpis,
     events,
+    insights,
 }: {
     kpis: Kpis;
     events: EventRow[];
+    insights?: OverviewInsightsData;
 }) {
     const occupancy = Math.min(100, Math.max(0, kpis.occupancy));
 
@@ -104,6 +108,8 @@ export default function Overview({
                         />
                     </div>
                 </div>
+
+                {insights && <OverviewInsights data={insights} />}
 
                 <nav
                     aria-label="Atalhos"
