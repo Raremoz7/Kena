@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Order;
 use App\Models\SessionSeat;
+use App\Services\OverviewInsightsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class AdminController extends Controller
 
     private const EVENTS_PER_PAGE = 25;
 
-    public function overview(): Response|RedirectResponse
+    public function overview(OverviewInsightsService $insights): Response|RedirectResponse
     {
         // Staff não vê receita/ocupação — vai direto pro check-in.
         if (! Auth::guard('painel')->user()?->canManageOrganization()) {
@@ -44,6 +45,7 @@ class AdminController extends Controller
                 'occupancy' => $capacity > 0 ? (int) round($sold / $capacity * 100) : 0,
                 'revenue' => $revenueCents / 100,
             ],
+            'insights' => $insights->build(),
             // O overview é um resumo: mostra só os primeiros e linka "Ver todos".
             'events' => $this->rowsFor(
                 Event::query()->with(['venue', 'sessions'])->orderBy('title')->limit(self::OVERVIEW_EVENTS)->get()
