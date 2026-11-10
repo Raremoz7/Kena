@@ -16,3 +16,6 @@ Schedule::command('kena:reconcile-payments')->everyMinute()->withoutOverlapping(
 
 // Lembrete D-1 aos titulares (uma vez por dia).
 Schedule::command('kena:send-reminders')->dailyAt('09:00')->withoutOverlapping();
+
+// Lembrete no dia do evento ("É hoje"), de manhã, horário de Brasília.
+Schedule::command('kena:send-day-of-reminders')->dailyAt('08:00')->withoutOverlapping();

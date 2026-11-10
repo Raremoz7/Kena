@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property int $courtesy_reserve
  * @property Carbon|null $reminded_at
+ * @property Carbon|null $day_of_reminded_at
  * @property-read Event $event
  * @property-read Collection<int, TicketLot> $lots
  */
@@ -33,6 +34,7 @@ class EventSession extends Model
             'starts_at' => 'datetime',
             'doors_at' => 'datetime',
             'reminded_at' => 'datetime',
+            'day_of_reminded_at' => 'datetime',
         ];
     }
 
