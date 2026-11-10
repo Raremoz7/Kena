@@ -37,6 +37,13 @@ class CreateNewUser implements CreatesNewUsers
             throw ValidationException::withMessages(['email' => $notice['message']]);
         }
 
+        // O banco guarda o CPF só com dígitos: a checagem de "já está em uso"
+        // precisa comparar no mesmo formato, senão CPF com máscara passa e
+        // estoura no insert (erro 500 em vez do aviso no campo).
+        if (isset($input['cpf'])) {
+            $input['cpf'] = (string) preg_replace('/\D/', '', $input['cpf']);
+        }
+
         Validator::make($input, [
             'name' => $this->nameRules(),
             'email' => $this->emailRules($existing?->id),
@@ -47,6 +54,7 @@ class CreateNewUser implements CreatesNewUsers
         ], [
             'code.required' => 'Digite o código que enviamos para o seu e-mail.',
             'code.digits' => 'O código tem 6 números.',
+            'cpf.unique' => 'Esse CPF já está em outra conta. Entre com o e-mail dela para continuar.',
         ])->validate();
 
         // A conta só nasce (ou é completada) com o e-mail confirmado.
