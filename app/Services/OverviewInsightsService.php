@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
+use App\Models\EventSession;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Ticket;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -27,7 +30,184 @@ class OverviewInsightsService
             'coupons' => $this->coupons(),
             'courtesies' => $this->courtesies(),
             'activity' => $this->activity(),
+            'payments' => $this->payments(),
+            'funnel' => $this->funnel(),
+            'failures' => $this->failures(),
+            'averages' => $this->averages(),
+            'revenueByDay' => $this->revenueByDay(),
+            'checkIn' => $this->checkIn(),
+            'signups' => $this->signups(),
         ];
+    }
+
+    /**
+     * Forma de pagamento das compras pagas (pagamento aprovado de cada pedido).
+     *
+     * @return array<int, array{method: string, label: string, orders: int, amount: float}>
+     */
+    private function payments(): array
+    {
+        $labels = [
+            Payment::METHOD_PIX => 'Pix',
+            Payment::METHOD_CARD => 'Cartão',
+            Payment::METHOD_FREE => 'Cortesia (R$ 0)',
+        ];
+
+        return Payment::query()
+            ->where('status', Payment::STATUS_APPROVED)
+            ->whereHas('order', fn ($q) => $q->where('status', Order::STATUS_PAID))
+            ->selectRaw('method, count(distinct order_id) as orders, sum(amount_cents) as cents')
+            ->groupBy('method')
+            ->get()
+            ->map(fn (Payment $p): array => [
+                'method' => (string) $p->method,
+                'label' => $labels[$p->method] ?? ucfirst((string) $p->method),
+                'orders' => (int) $p->getAttribute('orders'),
+                'amount' => (int) $p->getAttribute('cents') / 100,
+            ])
+            ->sortByDesc('orders')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Pessoas em cada etapa: escolheram lugar → criaram pedido → pagaram.
+     *
+     * @return array{selected: int, ordered: int, paid: int}
+     */
+    private function funnel(): array
+    {
+        return [
+            'selected' => Reservation::query()->distinct()->count('user_id'),
+            'ordered' => Order::query()->distinct()->count('user_id'),
+            'paid' => Order::where('status', Order::STATUS_PAID)->distinct()->count('user_id'),
+        ];
+    }
+
+    /**
+     * Cartões recusados e Pix que venceram sem pagamento, e quantas dessas
+     * pessoas acabaram comprando mesmo assim.
+     *
+     * @return array{cardRejected: int, cardRejectedAmount: float, pixExpired: int, pixExpiredAmount: float, people: int, recovered: int}
+     */
+    private function failures(): array
+    {
+        $failed = Payment::query()
+            ->where(fn ($q) => $q
+                ->where(fn ($q) => $q->where('method', Payment::METHOD_CARD)->where('status', Payment::STATUS_REJECTED))
+                ->orWhere(fn ($q) => $q->where('method', Payment::METHOD_PIX)->where('status', Payment::STATUS_CANCELLED)))
+            ->with('order:id,user_id')
+            ->get(['id', 'order_id', 'method', 'amount_cents']);
+
+        $card = $failed->where('method', Payment::METHOD_CARD);
+        $pix = $failed->where('method', Payment::METHOD_PIX);
+        $people = $failed->map(fn (Payment $p): int => $p->order->user_id)->unique();
+        $recovered = $people->isEmpty() ? 0 : Order::query()
+            ->where('status', Order::STATUS_PAID)
+            ->whereIn('user_id', $people)
+            ->distinct()
+            ->count('user_id');
+
+        return [
+            'cardRejected' => $card->count(),
+            'cardRejectedAmount' => $card->sum(fn (Payment $p): int => $p->amount_cents) / 100,
+            'pixExpired' => $pix->count(),
+            'pixExpiredAmount' => $pix->sum(fn (Payment $p): int => $p->amount_cents) / 100,
+            'people' => $people->count(),
+            'recovered' => $recovered,
+        ];
+    }
+
+    /**
+     * Ticket médio (só compras com valor) e ingressos por compra paga.
+     *
+     * @return array{ticket: float, ticketsPerOrder: float}
+     */
+    private function averages(): array
+    {
+        $paid = Order::where('status', Order::STATUS_PAID);
+        $paidCount = (clone $paid)->count();
+        $withValue = (clone $paid)->where('total_cents', '>', 0);
+        $valueCount = (clone $withValue)->count();
+        $tickets = Ticket::whereIn('order_id', (clone $paid)->select('id'))->count();
+
+        return [
+            'ticket' => $valueCount > 0 ? round((int) $withValue->sum('total_cents') / $valueCount / 100, 2) : 0.0,
+            'ticketsPerOrder' => $paidCount > 0 ? round($tickets / $paidCount, 1) : 0.0,
+        ];
+    }
+
+    /**
+     * Receita paga por dia (data do pagamento) e acumulada.
+     *
+     * @return array<int, array{date: string, amount: float, cumulative: float}>
+     */
+    private function revenueByDay(): array
+    {
+        $byDay = Order::query()
+            ->where('status', Order::STATUS_PAID)
+            ->get(['paid_at', 'created_at', 'total_cents'])
+            ->groupBy(fn (Order $o): string => ($o->paid_at ?? $o->created_at ?? now())->toDateString())
+            ->map(fn (Collection $g): int => (int) $g->sum('total_cents'))
+            ->sortKeys();
+
+        $running = 0;
+        $rows = [];
+        foreach ($byDay as $date => $cents) {
+            $running += $cents;
+            $rows[] = ['date' => (string) $date, 'amount' => $cents / 100, 'cumulative' => $running / 100];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Check-in da próxima sessão (ou da que está rolando hoje). `live` liga a
+     * atualização automática no painel durante o dia do evento.
+     *
+     * @return array{session: string, live: bool, checkedIn: int, total: int}|null
+     */
+    private function checkIn(): ?array
+    {
+        $session = EventSession::query()
+            ->where('status', '!=', 'cancelled')
+            ->where('starts_at', '>=', now()->startOfDay())
+            ->orderBy('starts_at')
+            ->with('event:id,title')
+            ->first();
+
+        if ($session === null) {
+            return null;
+        }
+
+        $tickets = Ticket::query()
+            ->where('session_id', $session->id)
+            ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED]);
+
+        return [
+            'session' => $session->event->title.' · '.$session->starts_at->format('d/m H:i'),
+            'live' => $session->starts_at->isToday(),
+            'checkedIn' => (clone $tickets)->whereNotNull('checked_in_at')->count(),
+            'total' => $tickets->count(),
+        ];
+    }
+
+    /**
+     * Contas criadas por dia (últimos dias com cadastro).
+     *
+     * @return array<int, array{date: string, count: int}>
+     */
+    private function signups(): array
+    {
+        return User::query()
+            ->whereNotNull('created_at')
+            ->get(['created_at'])
+            ->countBy(fn (User $u): string => (string) $u->created_at?->toDateString())
+            ->sortKeys()
+            ->take(-self::DAYS)
+            ->map(fn (int $count, string $date): array => ['date' => $date, 'count' => $count])
+            ->values()
+            ->all();
     }
 
     /**

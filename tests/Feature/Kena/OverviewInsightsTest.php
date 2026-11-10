@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\CouponRedemption;
 use App\Models\Order;
 use App\Models\PanelUser;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,17 @@ class OverviewInsightsTest extends TestCase
         CouponRedemption::create(['coupon_id' => $courtesyA->id, 'order_id' => $paidCourtesy->id, 'user_id' => $user->id, 'discount_cents' => 9000]);
         CouponRedemption::create(['coupon_id' => $courtesyB->id, 'order_id' => $failed->id, 'user_id' => $user->id, 'discount_cents' => 9000]);
 
+        // Pagamentos: KNA-1 cortesia total, KNA-2 cartão, KNA-3 Pix depois de um Pix vencido; KNA-4 cartão recusado.
+        $pay = fn (Order $o, string $method, string $status, int $cents) => Payment::create([
+            'order_id' => $o->id, 'method' => $method, 'status' => $status, 'amount_cents' => $cents,
+        ]);
+        $pay($paidCourtesy, Payment::METHOD_FREE, Payment::STATUS_APPROVED, 0);
+        $pay(Order::where('reference', 'KNA-2')->firstOrFail(), Payment::METHOD_CARD, Payment::STATUS_APPROVED, 9000);
+        $kna3 = Order::where('reference', 'KNA-3')->firstOrFail();
+        $pay($kna3, Payment::METHOD_PIX, Payment::STATUS_CANCELLED, 9000);
+        $pay($kna3, Payment::METHOD_PIX, Payment::STATUS_APPROVED, 9000);
+        $pay($failed, Payment::METHOD_CARD, Payment::STATUS_REJECTED, 9000);
+
         foreach (['2026-11-09 10:05:00', '2026-11-09 10:30:00', '2026-11-08 18:00:00'] as $at) {
             Reservation::forceCreate([
                 'session_id' => $session->id, 'user_id' => $user->id,
@@ -72,6 +84,20 @@ class OverviewInsightsTest extends TestCase
                 ->where('insights.activity.byHour.10.selections', 2)
                 ->where('insights.activity.byHour.21.purchases', 1)
                 ->where('insights.activity.byHour.18.selections', 1)
+                ->where('insights.payments', fn ($rows) => collect($rows)->pluck('orders', 'method')->sortKeys()->all() === [
+                    'card' => 1, 'free' => 1, 'pix' => 1,
+                ])
+                ->where('insights.funnel', ['selected' => 1, 'ordered' => 1, 'paid' => 1])
+                ->where('insights.failures.cardRejected', 1)
+                ->where('insights.failures.pixExpired', 1)
+                ->where('insights.failures.people', 1)
+                ->where('insights.failures.recovered', 1)
+                ->where('insights.averages.ticket', 90)
+                ->where('insights.revenueByDay', [
+                    ['date' => '2026-11-09', 'amount' => 270, 'cumulative' => 270],
+                ])
+                ->where('insights.signups.0.count', fn ($c) => $c >= 1)
+                ->where('insights.checkIn.total', 0)
                 ->where('insights.activity.byDay', [
                     ['date' => '2026-11-08', 'purchases' => 0, 'selections' => 1],
                     ['date' => '2026-11-09', 'purchases' => 3, 'selections' => 2],
