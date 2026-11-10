@@ -331,37 +331,50 @@ function Columns({
 }) {
     const max = Math.max(1, ...rows.map((r) => r.value));
 
+    // A altura fixa vale só para a área das barras; rótulos ficam embaixo,
+    // fora dela, para não serem cortados no modo compacto.
     return (
-        <div
-            className={`flex items-end gap-2 ${expanded ? 'h-44' : 'h-24'}`}
-            role="img"
-            aria-label="Gráfico de colunas"
-        >
-            {rows.map((r) => (
-                <div
-                    key={r.key}
-                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-                >
-                    <span className="tabular font-body text-xs font-semibold text-foreground">
-                        {r.value}
-                    </span>
+        <div role="img" aria-label="Gráfico de colunas">
+            <div
+                className={`flex items-end gap-2 ${expanded ? 'h-40' : 'h-16'}`}
+            >
+                {rows.map((r) => (
                     <div
-                        className="mt-1 w-full max-w-16 rounded-t-md bg-accent"
-                        style={{ height: `${(r.value / max) * 100}%` }}
-                        title={
-                            r.sub ? `${r.value} · ${r.sub}` : String(r.value)
-                        }
-                    />
-                    <span className="mt-2 line-clamp-2 text-center font-body text-[11px] leading-tight text-muted-foreground">
-                        {r.label}
-                    </span>
-                    {expanded && r.sub && (
-                        <span className="tabular font-body text-[10px] text-faint">
-                            {r.sub}
+                        key={r.key}
+                        className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                    >
+                        <span className="tabular font-body text-xs font-semibold text-foreground">
+                            {r.value}
                         </span>
-                    )}
-                </div>
-            ))}
+                        <div
+                            className="mt-1 w-full max-w-16 rounded-t-md bg-accent"
+                            style={{ height: `${(r.value / max) * 100}%` }}
+                            title={
+                                r.sub
+                                    ? `${r.value} · ${r.sub}`
+                                    : String(r.value)
+                            }
+                        />
+                    </div>
+                ))}
+            </div>
+            <div className="mt-2 flex gap-2">
+                {rows.map((r) => (
+                    <div
+                        key={r.key}
+                        className="flex min-w-0 flex-1 flex-col items-center"
+                    >
+                        <span className="line-clamp-2 text-center font-body text-[11px] leading-tight text-muted-foreground">
+                            {r.label}
+                        </span>
+                        {expanded && r.sub && (
+                            <span className="tabular font-body text-[10px] text-faint">
+                                {r.sub}
+                            </span>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
@@ -377,10 +390,13 @@ function CumulativeLine({
     const W = 600;
     const H = expanded ? 160 : 70;
     const max = Math.max(1, ...rows.map((r) => r.cumulative));
-    const x = (i: number) =>
-        rows.length === 1 ? W / 2 : (i / (rows.length - 1)) * W;
+    // Começa em R$ 0 (antes da 1ª venda) e sobe dia a dia.
+    const x = (i: number) => ((i + 1) / rows.length) * W;
     const y = (v: number) => H - 4 - (v / max) * (H - 8);
-    const points = rows.map((r, i) => `${x(i)},${y(r.cumulative)}`).join(' ');
+    const points = [
+        `0,${y(0)}`,
+        ...rows.map((r, i) => `${x(i)},${y(r.cumulative)}`),
+    ].join(' ');
 
     return (
         <div>
@@ -404,17 +420,6 @@ function CumulativeLine({
                     strokeWidth={2.5}
                     vectorEffect="non-scaling-stroke"
                 />
-                {rows.map((r, i) => (
-                    <circle
-                        key={r.date}
-                        cx={x(i)}
-                        cy={y(r.cumulative)}
-                        r={3.5}
-                        fill="currentColor"
-                    >
-                        <title>{`${formatDay(r.date)}: +R$ ${r.amount.toLocaleString('pt-BR')} · total R$ ${r.cumulative.toLocaleString('pt-BR')}`}</title>
-                    </circle>
-                ))}
             </svg>
             {expanded && (
                 <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-body text-xs sm:grid-cols-3">
