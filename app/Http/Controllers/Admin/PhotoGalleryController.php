@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportPhotosFromDrive;
 use App\Jobs\RegeneratePhotoGalleryRenditions;
 use App\Models\Event;
 use App\Models\Photo;
 use App\Models\PhotoGallery;
 use App\Models\PhotoPerson;
+use App\Services\Photos\Drive\DriveClient;
+use App\Services\Photos\Drive\DriveFolderSource;
 use App\Services\Photos\PhotoRenditions;
 use App\Support\Money;
 use App\Support\PhotoPriceTiers;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -65,13 +69,15 @@ class PhotoGalleryController extends Controller
         return Inertia::render('admin/photos', ['events' => $rows]);
     }
 
-    public function edit(Event $event): Response
+    public function edit(Event $event, DriveClient $drive): Response
     {
         $gallery = $event->photoGallery;
 
         return Inertia::render('admin/photo-gallery-form', [
             'shell' => $this->shell($event, $gallery),
+            'drive' => $this->driveState($gallery, $drive),
             'form' => [
+                'driveFolder' => $gallery?->drive_folder ? self::driveUrl($gallery->drive_folder) : '',
                 'description' => $gallery?->description ?? '',
                 'copyright_holder' => $gallery?->copyright_holder ?? '',
                 'default_holder' => PhotoRenditions::defaultHolder(),
@@ -96,6 +102,11 @@ class PhotoGalleryController extends Controller
         }
 
         $data = $request->validate([
+            'drive_folder' => ['nullable', 'string', 'max:500', function (string $attribute, mixed $value, Closure $fail): void {
+                if (filled($value) && DriveFolderSource::extractId($value) === null) {
+                    $fail('Não entendi o link da pasta do Drive. Cole o link da pasta (drive.google.com/drive/folders/...).');
+                }
+            }],
             'description' => ['nullable', 'string', 'max:1000'],
             'copyright_holder' => ['nullable', 'string', 'max:80'],
             'tiers' => ['required', 'array', 'min:1', 'max:'.PhotoPriceTiers::MAX_TIERS],
@@ -130,6 +141,7 @@ class PhotoGalleryController extends Controller
                 'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
                 'copyright_holder' => filled($data['copyright_holder'] ?? null) ? trim($data['copyright_holder']) : null,
                 'price_tiers' => $tiers,
+                'drive_folder' => filled($data['drive_folder'] ?? null) ? DriveFolderSource::extractId($data['drive_folder']) : null,
             ],
         );
 
@@ -142,6 +154,28 @@ class PhotoGalleryController extends Controller
         }
 
         return redirect()->route('admin.photos.edit', $event)->with('status', $status);
+    }
+
+    /** Enfileira a importação da pasta do Drive; o resultado aparece na tela de ajustes. */
+    public function importDrive(Event $event, DriveClient $drive): RedirectResponse
+    {
+        $gallery = $this->galleryOf($event);
+
+        if (blank($gallery->drive_folder)) {
+            throw ValidationException::withMessages(['drive_folder' => 'Salve o link da pasta do Drive antes de importar.']);
+        }
+        if (! $drive->isConfigured()) {
+            throw ValidationException::withMessages(['drive_folder' => 'O Google Drive ainda não foi configurado neste servidor (veja docs/fotos/configurar-google-drive.md).']);
+        }
+        // Uma importação por vez; uma que travou há mais de 2 horas não bloqueia.
+        if (in_array($gallery->import_status, ['queued', 'running'], true) && $gallery->updated_at->gt(now()->subHours(2))) {
+            throw ValidationException::withMessages(['drive_folder' => 'Já tem uma importação em andamento. Aguarde terminar.']);
+        }
+
+        $gallery->update(['import_status' => 'queued', 'import_report' => null]);
+        ImportPhotosFromDrive::dispatch($gallery->id);
+
+        return back()->with('status', 'Importação iniciada. O resultado aparece aqui quando terminar.');
     }
 
     public function publish(Event $event): RedirectResponse
@@ -296,6 +330,40 @@ class PhotoGalleryController extends Controller
             'noGroupCount' => (int) ($groupCounts[''] ?? 0),
             'totalCount' => (int) $groupCounts->sum(),
         ]);
+    }
+
+    private static function driveUrl(string $id): string
+    {
+        return 'https://drive.google.com/drive/folders/'.$id;
+    }
+
+    /**
+     * Estado do Drive para a tela de ajustes: conta de serviço (o e-mail com
+     * quem a pasta é compartilhada) e o resultado da última importação.
+     *
+     * @return array<string, mixed>
+     */
+    private function driveState(?PhotoGallery $gallery, DriveClient $drive): array
+    {
+        $report = $gallery?->import_report;
+
+        return [
+            'configured' => $drive->isConfigured(),
+            'email' => $drive->serviceAccountEmail(),
+            'hasFolder' => filled($gallery?->drive_folder),
+            'status' => $gallery?->import_status,
+            'finishedAt' => $gallery?->import_finished_at?->format('d/m/Y H:i'),
+            'error' => is_array($report) ? ($report['error'] ?? null) : null,
+            'result' => is_array($report) && isset($report['imported']) ? [
+                'imported' => (int) $report['imported'],
+                'skipped' => (int) $report['skipped'],
+                'people' => (int) $report['people'],
+                'failed' => collect($report['failed'] ?? [])
+                    ->map(fn (string $reason, string $ref): array => ['ref' => $ref, 'reason' => $reason])
+                    ->values()->take(20)->all(),
+                'failedCount' => count($report['failed'] ?? []),
+            ] : null,
+        ];
     }
 
     private function galleryOf(Event $event): PhotoGallery

@@ -76,10 +76,15 @@ final class PhotoImporter
         array &$best,
         ImportResult $result,
     ): void {
-        $path = $item->localPath();
-        $metadata = $this->xmp->read($path);
+        try {
+            $path = $item->localPath();
+            $metadata = $this->xmp->read($path);
 
-        $image = $this->load($path, $metadata->orientation);
+            $image = $this->load($path, $metadata->orientation);
+        } finally {
+            // O arquivo já foi lido (XMP e pixels): o temporário do Drive pode sair.
+            $item->release();
+        }
 
         try {
             $base = sprintf('fotos/%d/%s', $gallery->id, substr(sha1($item->ref), 0, 16));

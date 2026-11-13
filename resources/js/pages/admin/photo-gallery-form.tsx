@@ -7,6 +7,8 @@ import { Input } from '@/components/atoms/Input';
 import { Textarea } from '@/components/atoms/Textarea';
 import { FormActions } from '@/components/molecules/FormActions';
 import { FormField } from '@/components/molecules/FormField';
+import { DriveImportSection } from '@/components/organisms/photos/DriveImportSection';
+import type { DriveState } from '@/components/organisms/photos/DriveImportSection';
 import { PhotoGalleryShell } from '@/components/organisms/photos/PhotoGalleryShell';
 import type { GalleryShellData } from '@/components/organisms/photos/PhotoGalleryShell';
 import {
@@ -20,7 +22,9 @@ import type { TierDraft } from '@/lib/photo-tiers';
 
 interface FormProps {
     shell: GalleryShellData;
+    drive: DriveState;
     form: {
+        driveFolder: string;
         description: string;
         copyright_holder: string;
         default_holder: string;
@@ -30,12 +34,18 @@ interface FormProps {
 
 const reais = (value: number) => value.toFixed(2).replace('.', ',');
 
-export default function PhotoGalleryForm({ shell, form: initial }: FormProps) {
+export default function PhotoGalleryForm({
+    shell,
+    drive,
+    form: initial,
+}: FormProps) {
     const form = useForm<{
+        drive_folder: string;
         description: string;
         copyright_holder: string;
         tiers: TierDraft[];
     }>({
+        drive_folder: initial.driveFolder,
         description: initial.description,
         copyright_holder: initial.copyright_holder,
         tiers: initial.tiers.map((t) => ({
@@ -115,11 +125,12 @@ export default function PhotoGalleryForm({ shell, form: initial }: FormProps) {
                 {!shell.exists && (
                     <p className="mb-5 rounded-card border border-border bg-surface px-4 py-3 font-body text-sm text-muted-foreground">
                         Defina o preço e salve para criar a galeria. Depois
-                        importe as fotos com o comando{' '}
+                        cole o link da pasta do Drive e importe as fotos
+                        (ou use o comando{' '}
                         <code className="font-mono text-foreground">
                             fotos:importar
                         </code>
-                        .
+                        ).
                     </p>
                 )}
 
@@ -163,6 +174,15 @@ export default function PhotoGalleryForm({ shell, form: initial }: FormProps) {
                             />
                         </FormField>
                     </section>
+
+                    <DriveImportSection
+                        drive={drive}
+                        eventId={shell.event.id}
+                        value={form.data.drive_folder}
+                        savedValue={initial.driveFolder}
+                        onChange={(value) => form.setData('drive_folder', value)}
+                        error={form.errors.drive_folder}
+                    />
 
                     <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-4 sm:p-6">
                         <div>

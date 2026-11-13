@@ -167,6 +167,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::get('/painel/fotos', [AdminPhotoGalleryController::class, 'index'])->name('admin.photos');
         Route::get('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'edit'])->name('admin.photos.edit');
         Route::put('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'save'])->name('admin.photos.save');
+        Route::post('/painel/fotos/{event}/importar-drive', [AdminPhotoGalleryController::class, 'importDrive'])->name('admin.photos.import-drive');
         Route::post('/painel/fotos/{event}/publicar', [AdminPhotoGalleryController::class, 'publish'])->name('admin.photos.publish');
         Route::post('/painel/fotos/{event}/despublicar', [AdminPhotoGalleryController::class, 'unpublish'])->name('admin.photos.unpublish');
         Route::get('/painel/fotos/{event}/pessoas', [AdminPhotoGalleryController::class, 'people'])->name('admin.photos.people');
