@@ -93,6 +93,14 @@ class TicketController extends Controller
     {
         abort_unless($order->user_id === Auth::id(), 403);
 
+        // Foto é entregue na hora (o download já aconteceu): o estorno fica
+        // com o organizador, pelo painel.
+        if ($order->isPhotos()) {
+            return response()->json([
+                'message' => 'Pedidos de fotos não são reembolsados por aqui. Fale com o organizador.',
+            ], 422);
+        }
+
         $order->loadMissing('session');
         if (now()->greaterThanOrEqualTo($order->session->refundLocksAt())) {
             return response()->json([

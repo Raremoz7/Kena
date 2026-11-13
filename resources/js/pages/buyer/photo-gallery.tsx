@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon';
 import { Tag } from '@/components/atoms/Tag';
@@ -8,6 +8,8 @@ import {
     PhotoCartPanel,
 } from '@/components/organisms/photos/PhotoCart';
 import { PhotoGrid } from '@/components/organisms/photos/PhotoGrid';
+import { PhotoGuestModal } from '@/components/organisms/photos/PhotoGuestModal';
+import type { PhotoGuest } from '@/components/organisms/photos/PhotoGuestModal';
 import { PhotoLightbox } from '@/components/organisms/photos/PhotoLightbox';
 import { photoCount, quotePhotos } from '@/lib/photos/pricing';
 import { firstName } from '@/lib/photos/types';
@@ -27,6 +29,11 @@ interface Props {
     groups: GalleryGroup[];
     people: GalleryPerson[];
     photos: GalleryPhoto[];
+    /** POST que transforma o carrinho em pedido (preço calculado no servidor). */
+    purchaseUrl: string;
+    emailCodeUrl: string;
+    /** Fotos que a pessoa logada já comprou: ficam fora do carrinho. */
+    ownedIds: number[];
 }
 
 /** Lê o filtro da URL, para o link compartilhado e o "voltar" abrirem do mesmo jeito. */
@@ -85,6 +92,9 @@ export default function PhotoGalleryPage({
     groups,
     people,
     photos,
+    purchaseUrl,
+    emailCodeUrl,
+    ownedIds,
 }: Props) {
     const { event, tiers } = gallery;
     const [initial] = useState(readFilters);
@@ -96,8 +106,62 @@ export default function PhotoGalleryPage({
     const [cartOpen, setCartOpen] = useState(false);
     const [viewing, setViewing] = useState<number | null>(null);
 
-    const allIds = useMemo(() => photos.map((p) => p.id), [photos]);
+    // Foto já comprada sai do carrinho sozinha (inclusive logo depois do pagamento).
+    const allIds = useMemo(() => {
+        const owned = new Set(ownedIds);
+
+        return photos.map((p) => p.id).filter((id) => !owned.has(id));
+    }, [photos, ownedIds]);
     const cart = usePhotoCart(gallery.id, allIds);
+
+    const page = usePage<{ auth: { user: { id: number } | null } }>();
+    const user = page.props.auth?.user ?? null;
+    const [submitting, setSubmitting] = useState(false);
+    const [guestOpen, setGuestOpen] = useState(false);
+    const [guest, setGuest] = useState<PhotoGuest>({
+        name: '',
+        email: '',
+        cpf: '',
+        code: '',
+    });
+    const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
+
+    function startPurchase(extra: Record<string, unknown> = {}) {
+        if (submitting || cart.ids.length === 0) {
+            return;
+        }
+
+        setSubmitting(true);
+        router.post(
+            purchaseUrl,
+            { photos: cart.ids, ...extra },
+            {
+                onError: (errors) => {
+                    setGuestErrors(errors as Record<string, string>);
+
+                    if (errors.photos && !guestOpen) {
+                        veludoToast.warning(
+                            'Não foi possível continuar',
+                            errors.photos,
+                        );
+                    }
+                },
+                onFinish: () => setSubmitting(false),
+            },
+        );
+    }
+
+    function checkout() {
+        if (user) {
+            startPurchase();
+
+            return;
+        }
+
+        setGuestErrors({});
+        setCartOpen(false);
+        setGuestOpen(true);
+    }
     const peopleById = useMemo(
         () => new Map(people.map((p) => [p.id, p])),
         [people],
@@ -450,12 +514,20 @@ export default function PhotoGalleryPage({
                 tiers={tiers}
                 onRemove={cart.remove}
                 onClear={cart.clear}
-                onCheckout={() =>
-                    veludoToast.info(
-                        'Pagamento ainda não está ligado',
-                        'Nesta versão local o carrinho para aqui.',
-                    )
-                }
+                onCheckout={checkout}
+                submitting={submitting}
+            />
+
+            <PhotoGuestModal
+                open={guestOpen}
+                onOpenChange={setGuestOpen}
+                guest={guest}
+                onGuestChange={setGuest}
+                errors={guestErrors}
+                emailCodeUrl={emailCodeUrl}
+                loginRedirect={`/fotos/${event.slug}`}
+                submitting={submitting}
+                onSubmit={() => startPurchase({ guest })}
             />
         </>
     );

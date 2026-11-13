@@ -24,22 +24,23 @@ class RefundConfirmedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        $this->order->loadMissing('session.event');
-
-        return new Envelope(subject: 'Reembolso confirmado — '.$this->order->session->event->title);
+        return new Envelope(subject: 'Reembolso confirmado — '.$this->order->event()?->title);
     }
 
     public function content(): Content
     {
-        $this->order->loadMissing(['user', 'session.event']);
-        $session = $this->order->session;
+        $this->order->loadMissing('user');
+        $photos = $this->order->isPhotos();
 
         return new Content(
             view: 'mail.refund-confirmed',
             with: [
                 'order' => $this->order,
-                'event' => $session->event,
-                'sessionLabel' => CatalogPresenter::sessionLabel($session),
+                'event' => $this->order->event(),
+                'sessionLabel' => $photos
+                    ? 'Fotos do espetáculo'
+                    : CatalogPresenter::sessionLabel($this->order->session),
+                'isPhotos' => $photos,
                 'amount' => Money::toReais($this->order->total_cents),
                 'reason' => $this->reason,
             ],

@@ -7,6 +7,8 @@ use App\Models\EventSession;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoGateway;
 use App\Services\Payments\PaymentGateway;
+use App\Services\Photos\LocalPhotoOriginalStore;
+use App\Services\Photos\PhotoOriginalStore;
 use App\Support\MailSettings;
 use App\Support\MailUsage;
 use App\Support\SessionOptionsCache;
@@ -29,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGateway::class, MercadoPagoGateway::class);
+        // Originais das fotos: pasta local por enquanto; o Google Drive entra aqui depois.
+        $this->app->bind(PhotoOriginalStore::class, LocalPhotoOriginalStore::class);
     }
 
     /**

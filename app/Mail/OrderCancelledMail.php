@@ -23,24 +23,28 @@ class OrderCancelledMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        $this->order->loadMissing('session.event');
-
-        return new Envelope(subject: 'Pedido cancelado — '.$this->order->session->event->title);
+        return new Envelope(subject: 'Pedido cancelado — '.$this->order->event()?->title);
     }
 
     public function content(): Content
     {
-        $this->order->loadMissing(['user', 'session.event']);
-        $session = $this->order->session;
+        $this->order->loadMissing('user');
+        $event = $this->order->event();
+        $photos = $this->order->isPhotos();
 
         return new Content(
             view: 'mail.order-cancelled',
             with: [
                 'order' => $this->order,
-                'event' => $session->event,
-                'sessionLabel' => CatalogPresenter::sessionLabel($session),
+                'event' => $event,
+                'sessionLabel' => $photos
+                    ? 'Fotos do espetáculo'
+                    : CatalogPresenter::sessionLabel($this->order->session),
                 'reason' => $this->reason,
-                'eventsUrl' => route('events.index'),
+                'eventsUrl' => $photos && $event !== null
+                    ? route('photos.show', $event->slug)
+                    : route('events.index'),
+                'ctaLabel' => $photos ? 'Voltar às fotos' : 'Ver eventos em cartaz',
             ],
         );
     }

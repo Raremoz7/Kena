@@ -26,7 +26,8 @@ class OrderController extends Controller
         $sessionId = $request->integer('session') ?: null;
 
         $orders = Order::query()
-            ->with(['user', 'session.event', 'items', 'refunds'])
+            ->with(['user', 'session.event', 'photoGallery.event', 'items', 'refunds'])
+            ->withCount('photoItems')
             ->when($sessionId, fn ($q) => $q->where('session_id', $sessionId))
             ->latest('id')
             ->paginate(25)
@@ -36,9 +37,14 @@ class OrderController extends Controller
                 'reference' => $o->reference,
                 'buyer' => $o->user->name,
                 'email' => $o->user->email,
-                'event' => $o->session->event->title,
-                'sessionLabel' => CatalogPresenter::sessionLabel($o->session),
-                'seats' => $o->items->pluck('seat_code')->implode(', '),
+                'event' => (string) $o->event()?->title,
+                // Pedido de fotos não tem sessão nem assento: mostra a quantidade de fotos.
+                'sessionLabel' => $o->isPhotos()
+                    ? 'Fotos do espetáculo'
+                    : CatalogPresenter::sessionLabel($o->session),
+                'seats' => $o->isPhotos()
+                    ? $o->photo_items_count.' '.($o->photo_items_count === 1 ? 'foto' : 'fotos')
+                    : $o->items->pluck('seat_code')->implode(', '),
                 'total' => Money::toReais($o->total_cents),
                 'status' => $o->status,
                 // Estorno recusado pelo gateway precisa de ação manual do organizador.

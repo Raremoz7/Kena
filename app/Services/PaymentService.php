@@ -13,7 +13,10 @@ use App\Models\SessionSeat;
 use App\Models\User;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
+use App\Services\Photos\PhotoOrderService;
+use App\Services\Photos\PhotoPricing;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -28,6 +31,8 @@ class PaymentService
         private readonly TicketIssuanceService $issuance,
         private readonly SeatReservationService $reservations,
         private readonly RefundService $refunds,
+        private readonly PhotoOrderService $photoOrders,
+        private readonly PhotoPricing $photoPricing,
     ) {}
 
     /**
@@ -69,6 +74,85 @@ class PaymentService
             return $order->fresh() ?? $order;
         }
 
+        // Um comprador não pode acumular dois meios de pagamento vivos —
+        // inclui pagamentos de pedidos substituídos (ex.: cupom mudou).
+        $pendingPayments = Payment::query()
+            ->whereIn('order_id', Order::where('reservation_id', $reservation->id)->select('id'))
+            ->where('status', Payment::STATUS_PENDING)
+            ->whereNotNull('gateway_payment_id')
+            ->get();
+
+        return $this->charge($order, $input, $pendingPayments, $reservation);
+    }
+
+    /**
+     * Paga um pedido de fotos já criado (preço calculado no servidor ao criar).
+     * Mesmo caminho do ingresso: Pix ou cartão no Mercado Pago, webhook,
+     * conciliação e estorno. Pedido recusado ou com Pix vencido pode tentar de
+     * novo: volta a pendente com o preço recalculado das faixas atuais.
+     *
+     * @param  array{method?: string, token?: string, installments?: int, payment_method_id?: string, document?: string}  $input
+     */
+    public function payPhotoOrder(Order $order, array $input): Order
+    {
+        if (! $order->isPhotos()) {
+            throw new PaymentException('Pedido inválido.');
+        }
+
+        $order = DB::transaction(function () use ($order): Order {
+            $fresh = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if (in_array($fresh->status, [Order::STATUS_FAILED, Order::STATUS_CANCELLED], true)) {
+                $fresh->loadMissing(['photoGallery', 'photoItems']);
+                $count = $fresh->photoItems->whereNotNull('photo_id')->count();
+                if ($fresh->photoGallery === null || $count === 0) {
+                    throw new PaymentException('As fotos deste pedido não estão mais à venda.');
+                }
+                $fresh->loadMissing('user');
+                $itemIds = $fresh->photoItems->pluck('photo_id')->filter()->map(fn ($id): int => (int) $id)->all();
+                if ($this->photoOrders->ownedPhotoIds($fresh->user, $itemIds) !== []) {
+                    throw new PaymentException('Você já comprou fotos deste pedido em outra compra. Monte o carrinho de novo pela galeria.');
+                }
+                $quote = $this->photoPricing->quote($fresh->photoGallery, $count);
+                $fresh->update([
+                    'status' => Order::STATUS_PENDING,
+                    'subtotal_cents' => $quote['subtotal_cents'],
+                    'discount_cents' => $quote['discount_cents'],
+                    'total_cents' => $quote['total_cents'],
+                ]);
+                $fresh->photoItems()->update(['unit_price_cents' => $quote['unit_price_cents']]);
+            }
+
+            return $fresh;
+        });
+
+        if ($order->status === Order::STATUS_PAID) {
+            return $order;
+        }
+        if ($order->status !== Order::STATUS_PENDING) {
+            throw new PaymentException('Este pedido não pode mais ser pago.');
+        }
+        if (($input['method'] ?? null) === Payment::METHOD_FREE || $order->total_cents <= 0) {
+            throw new PaymentException('Escolha uma forma de pagamento.');
+        }
+
+        $pendingPayments = Payment::query()
+            ->where('order_id', $order->id)
+            ->where('status', Payment::STATUS_PENDING)
+            ->whereNotNull('gateway_payment_id')
+            ->get();
+
+        return $this->charge($order, $input, $pendingPayments, null);
+    }
+
+    /**
+     * Cobra o pedido no gateway (Pix ou cartão), derrubando antes qualquer
+     * outro pagamento vivo do comprador para o mesmo pedido/reserva.
+     *
+     * @param  Collection<int, Payment>  $pendingPayments
+     * @param  array<string, mixed>  $input
+     */
+    private function charge(Order $order, array $input, Collection $pendingPayments, ?Reservation $reservation): Order
+    {
         $order->loadMissing('user');
         $email = (string) $order->user->email;
         $method = ($input['method'] ?? 'card') === Payment::METHOD_PIX
@@ -83,14 +167,6 @@ class PaymentService
         $doc = $informedPixDoc !== '' && strlen($informedPixDoc) === 11
             ? $informedPixDoc
             : $this->resolvePayerDocument($order, $input['document'] ?? null);
-
-        // Um comprador não pode acumular dois meios de pagamento vivos —
-        // inclui pagamentos de pedidos substituídos (ex.: cupom mudou).
-        $pendingPayments = Payment::query()
-            ->whereIn('order_id', Order::where('reservation_id', $reservation->id)->select('id'))
-            ->where('status', Payment::STATUS_PENDING)
-            ->whereNotNull('gateway_payment_id')
-            ->get();
 
         $reusablePix = $method === Payment::METHOD_PIX
             ? $pendingPayments->first(fn (Payment $p): bool => $p->method === Payment::METHOD_PIX && $p->order_id === $order->id)
@@ -140,7 +216,7 @@ class PaymentService
 
         // Pix pendente: estende o hold dos assentos até a expiração do Pix,
         // para o lugar não vencer (hold padrão = 10min) antes do pagamento (Pix ~30min).
-        if ($method === Payment::METHOD_PIX && $result->isPending() && $result->pixExpiresAt !== null) {
+        if ($reservation !== null && $method === Payment::METHOD_PIX && $result->isPending() && $result->pixExpiresAt !== null) {
             $this->extendHold($reservation, $result->pixExpiresAt);
         }
 
@@ -179,7 +255,9 @@ class PaymentService
             if ($order !== null && filled($order->user->email)) {
                 Mail::to($order->user->email)->queue(new OrderCancelledMail(
                     $order,
-                    'O prazo de pagamento do Pix terminou e os assentos foram liberados. Se ainda quiser ir, faça uma nova compra.',
+                    $order->isPhotos()
+                        ? 'O prazo de pagamento do Pix terminou. As fotos continuam na galeria: se ainda quiser, é só finalizar a compra de novo.'
+                        : 'O prazo de pagamento do Pix terminou e os assentos foram liberados. Se ainda quiser ir, faça uma nova compra.',
                 ));
             }
         }
@@ -244,7 +322,10 @@ class PaymentService
         $order = $payment->order;
 
         if ($result->isApproved()) {
-            $outcome = $this->issuance->issueForOrder($order);
+            // Ingresso: emite os ingressos. Foto: libera o download.
+            $outcome = $order->isPhotos()
+                ? $this->photoOrders->fulfill($order)
+                : $this->issuance->issueForOrder($order);
 
             // Aprovação chegou tarde (pedido cancelado ou assento revendido):
             // não há o que entregar — estorna o pagamento automaticamente.

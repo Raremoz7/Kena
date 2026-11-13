@@ -20,8 +20,10 @@ use App\Http\Controllers\Dev\MailPreviewController;
 use App\Http\Controllers\EmailCodeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\MyPhotosController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
+use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
@@ -41,6 +43,10 @@ Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->na
 // Fotos do espetáculo à venda
 Route::get('/fotos', [PhotoGalleryController::class, 'index'])->name('photos.index');
 Route::get('/fotos/{slug}', [PhotoGalleryController::class, 'show'])->name('photos.show');
+// Carrinho de fotos vira pedido. Público: aceita convidado (código por e-mail), como a reserva.
+Route::post('/fotos/{slug}/comprar', [PhotoCheckoutController::class, 'start'])
+    ->middleware('throttle:reserve')
+    ->name('photos.checkout.start');
 
 // Disponibilidade (polling do mapa) — público
 Route::get('/api/sessoes/{session}/disponibilidade', [AvailabilityController::class, 'show'])
@@ -97,6 +103,20 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/ingressos/{ticket}/agenda.ics', [TicketController::class, 'calendar'])->name('tickets.calendar');
     Route::get('/ingressos/{ticket}/google-wallet', [TicketController::class, 'googleWallet'])->name('tickets.google-wallet');
     Route::post('/api/pedidos/{order}/reembolso', [TicketController::class, 'refund'])->name('orders.refund');
+
+    // Fotos: pagamento do pedido e "Minhas fotos" (download sempre pelo servidor).
+    Route::get('/fotos/pedido/{reference}', [PhotoCheckoutController::class, 'show'])->name('photos.checkout');
+    Route::post('/fotos/pedido/{reference}/pagar', [PhotoCheckoutController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('photos.checkout.pay');
+    Route::get('/fotos/pedido/{reference}/status', [PhotoCheckoutController::class, 'status'])->name('photos.checkout.status');
+    Route::get('/minhas-fotos', [MyPhotosController::class, 'index'])->name('photos.mine');
+    Route::get('/minhas-fotos/{photo}/baixar', [MyPhotosController::class, 'download'])
+        ->middleware('throttle:120,1')
+        ->name('photos.mine.download');
+    Route::get('/minhas-fotos/galeria/{gallery}/zip', [MyPhotosController::class, 'zip'])
+        ->middleware('throttle:10,1')
+        ->name('photos.mine.zip');
 });
 
 // Preview local dos e-mails transacionais (bloqueado fora de local/testing)
