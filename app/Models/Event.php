@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -30,6 +31,12 @@ class Event extends Model
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
+    }
+
+    /** @return HasOne<PhotoGallery, $this> */
+    public function photoGallery(): HasOne
+    {
+        return $this->hasOne(PhotoGallery::class);
     }
 
     /** @return HasMany<Sector, $this> */

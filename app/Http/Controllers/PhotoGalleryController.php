@@ -67,6 +67,7 @@ class PhotoGalleryController extends Controller
                 ->filter(fn (array $g): bool => $g['count'] > 0)
                 ->values(),
             'people' => $gallery->people
+                ->reject(fn (PhotoPerson $p): bool => (bool) $p->hidden)
                 ->map(fn (PhotoPerson $p): array => [
                     'id' => $p->id,
                     'name' => $p->name,

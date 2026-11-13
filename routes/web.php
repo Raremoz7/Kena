@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\LotController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\PhotoGalleryController as AdminPhotoGalleryController;
 use App\Http\Controllers\Admin\SeatController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
@@ -131,6 +132,18 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::get('/painel/eventos/{event}/editar', [EventController::class, 'edit'])->name('admin.events.edit');
         Route::put('/painel/eventos/{event}', [EventController::class, 'update'])->name('admin.events.update');
         Route::delete('/painel/eventos/{event}', [EventController::class, 'destroy'])->name('admin.events.destroy');
+
+        // Fotos do espetáculo: galeria por evento, pessoas e conferência da importação
+        Route::get('/painel/fotos', [AdminPhotoGalleryController::class, 'index'])->name('admin.photos');
+        Route::get('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'edit'])->name('admin.photos.edit');
+        Route::put('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'save'])->name('admin.photos.save');
+        Route::post('/painel/fotos/{event}/publicar', [AdminPhotoGalleryController::class, 'publish'])->name('admin.photos.publish');
+        Route::post('/painel/fotos/{event}/despublicar', [AdminPhotoGalleryController::class, 'unpublish'])->name('admin.photos.unpublish');
+        Route::get('/painel/fotos/{event}/pessoas', [AdminPhotoGalleryController::class, 'people'])->name('admin.photos.people');
+        Route::get('/painel/fotos/{event}/galeria', [AdminPhotoGalleryController::class, 'photos'])->name('admin.photos.photos');
+        Route::put('/painel/fotos/pessoas/{person}', [AdminPhotoGalleryController::class, 'renamePerson'])->name('admin.photos.people.rename');
+        Route::post('/painel/fotos/pessoas/{person}/unir', [AdminPhotoGalleryController::class, 'mergePerson'])->name('admin.photos.people.merge');
+        Route::put('/painel/fotos/pessoas/{person}/filtro', [AdminPhotoGalleryController::class, 'togglePerson'])->name('admin.photos.people.toggle');
 
         // Pedidos + export de participantes + reembolso pelo organizador
         Route::get('/painel/pedidos', [OrderController::class, 'index'])->name('admin.orders');
