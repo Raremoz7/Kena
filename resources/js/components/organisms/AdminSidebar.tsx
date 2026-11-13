@@ -50,6 +50,12 @@ const groups: AdminNavGroup[] = [
                 organizerOnly: true,
                 primary: true,
             },
+            {
+                label: 'Fotos',
+                href: '/painel/fotos',
+                icon: 'image',
+                organizerOnly: true,
+            },
         ],
     },
     {
