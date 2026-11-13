@@ -193,7 +193,7 @@ class RefundService
                 $order,
                 $reason,
                 amountCents: $amount,
-                seatCodes: $tickets->pluck('seat_code')->values()->all(),
+                seatCodes: array_values(array_map(fn (Ticket $t): string => $t->seat_code, $tickets->all())),
                 partial: ! $completesOrder,
             ));
         }
