@@ -47,7 +47,7 @@ class PhotoGallery extends Model
         return $code;
     }
 
-    /** Ignora caixa, espaço e hífen: "nozes 4821" vale como NOZES-4821. */
+    /** Ignora caixa, espaço e hífen: "nozes 482193" vale como NOZES-482193. */
     public static function normalizeCode(string $code): string
     {
         return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $code));

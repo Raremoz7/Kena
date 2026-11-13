@@ -80,7 +80,7 @@ export default function PhotoGalleryLockedPage({
                             label="Código de acesso"
                             htmlFor="code"
                             error={form.errors.code}
-                            helper="Parecido com NOZES-4821. Maiúscula e hífen não importam."
+                            helper="Parecido com NOZES-482193. Maiúscula e hífen não importam."
                         >
                             <Input
                                 id="code"
@@ -92,7 +92,7 @@ export default function PhotoGalleryLockedPage({
                                         e.target.value.toUpperCase(),
                                     )
                                 }
-                                placeholder="PALAVRA-0000"
+                                placeholder="PALAVRA-000000"
                                 autoComplete="off"
                                 autoCapitalize="characters"
                                 autoCorrect="off"
