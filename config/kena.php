@@ -45,6 +45,10 @@ return [
         'disk' => env('PHOTOS_DISK', 'photos'),
         // Pasta local dos originais (o `original_ref` da foto é o caminho dentro dela).
         'originals_path' => env('KENA_PHOTOS_ORIGINALS_PATH', storage_path('app/private/fotos-originais')),
+        // Google Drive: JSON da conta de serviço (caminho absoluto ou relativo à raiz do projeto), fora do git.
+        'drive' => [
+            'credentials' => env('GOOGLE_DRIVE_CREDENTIALS'),
+        ],
     ],
 
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */

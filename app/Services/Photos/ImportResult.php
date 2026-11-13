@@ -14,4 +14,15 @@ final class ImportResult
 
     /** @var array<string, string> referência da foto => motivo */
     public array $failed = [];
+
+    /** @return array{imported: int, skipped: int, people: int, failed: array<string, string>} */
+    public function toArray(): array
+    {
+        return [
+            'imported' => $this->imported,
+            'skipped' => $this->skipped,
+            'people' => $this->people,
+            'failed' => $this->failed,
+        ];
+    }
 }

@@ -7,8 +7,9 @@ use App\Models\EventSession;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoGateway;
 use App\Services\Payments\PaymentGateway;
-use App\Services\Photos\LocalPhotoOriginalStore;
+use App\Services\Photos\Drive\DriveClient;
 use App\Services\Photos\PhotoOriginalStore;
+use App\Services\Photos\RoutingPhotoOriginalStore;
 use App\Support\MailSettings;
 use App\Support\MailUsage;
 use App\Support\SessionOptionsCache;
@@ -31,8 +32,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGateway::class, MercadoPagoGateway::class);
-        // Originais das fotos: pasta local por enquanto; o Google Drive entra aqui depois.
-        $this->app->bind(PhotoOriginalStore::class, LocalPhotoOriginalStore::class);
+        // Originais das fotos: o prefixo do original_ref escolhe entre a pasta local e o Google Drive.
+        $this->app->singleton(DriveClient::class, fn (): DriveClient => DriveClient::fromConfig());
+        $this->app->bind(PhotoOriginalStore::class, RoutingPhotoOriginalStore::class);
     }
 
     /**

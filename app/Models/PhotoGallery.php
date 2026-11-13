@@ -71,6 +71,8 @@ class PhotoGallery extends Model
         return [
             'price_tiers' => 'array',
             'published_at' => 'datetime',
+            'import_report' => 'array',
+            'import_finished_at' => 'datetime',
         ];
     }
 

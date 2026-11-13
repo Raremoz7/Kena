@@ -4,6 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\Event;
 use App\Models\PhotoGallery;
+use App\Services\Photos\Drive\DriveClient;
+use App\Services\Photos\Drive\DriveException;
+use App\Services\Photos\Drive\DriveFolderSource;
 use App\Services\Photos\LocalFolderSource;
 use App\Services\Photos\PhotoImporter;
 use Illuminate\Console\Command;
@@ -18,12 +21,12 @@ class ImportPhotoGallery extends Command
 {
     protected $signature = 'fotos:importar
         {slug : Slug do evento dono da galeria}
-        {pasta : Pasta com os JPGs exportados (uma subpasta por turma)}
+        {pasta : Pasta local com os JPGs exportados ou link da pasta no Google Drive (uma subpasta por turma)}
         {--publicar : Publica a galeria (se for criada agora, ela nasce em rascunho)}';
 
     protected $description = 'Importa as fotos exportadas do Lightroom para a galeria do evento';
 
-    public function handle(PhotoImporter $importer): int
+    public function handle(PhotoImporter $importer, DriveClient $drive): int
     {
         // Originais em alta ocupam bastante memória ao decodificar.
         $limit = ini_get('memory_limit');
@@ -38,8 +41,13 @@ class ImportPhotoGallery extends Command
             return self::FAILURE;
         }
 
+        $pasta = (string) $this->argument('pasta');
+
         try {
-            $source = new LocalFolderSource((string) $this->argument('pasta'));
+            // Pasta que existe no disco vence; senão, link ou id do Drive.
+            $source = ! is_dir($pasta) && DriveFolderSource::looksLikeDrive($pasta)
+                ? new DriveFolderSource($drive, $pasta)
+                : new LocalFolderSource($pasta);
         } catch (InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
@@ -59,11 +67,17 @@ class ImportPhotoGallery extends Command
         }
 
         $verbose = $this->output->isVerbose();
-        $result = $importer->import($gallery, $source, function ($item, string $status) use ($verbose): void {
-            if ($verbose || $status === 'falhou') {
-                $this->line(sprintf('  %-9s %s', $status, $item->ref));
-            }
-        });
+        try {
+            $result = $importer->import($gallery, $source, function ($item, string $status) use ($verbose): void {
+                if ($verbose || $status === 'falhou') {
+                    $this->line(sprintf('  %-9s %s', $status, $item->ref));
+                }
+            });
+        } catch (DriveException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
 
         if ($this->option('publicar') && $gallery->status !== 'published') {
             $gallery->update(['status' => 'published', 'published_at' => now()]);
