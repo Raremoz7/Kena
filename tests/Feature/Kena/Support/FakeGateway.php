@@ -77,12 +77,20 @@ class FakeGateway implements PaymentGateway
     /** @var list<string> IDs estornados (espião para asserções). */
     public array $refunds = [];
 
+    /** @var list<int|null> Valores estornados, na ordem (null = total). */
+    public array $refundAmounts = [];
+
+    /** @var list<string|null> Chaves de idempotência recebidas, na ordem. */
+    public array $refundKeys = [];
+
     /** Simula recusa de estorno pelo gateway quando false. */
     public bool $refundOk = true;
 
-    public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool
+    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): bool
     {
         $this->refunds[] = $gatewayPaymentId;
+        $this->refundAmounts[] = $amountCents;
+        $this->refundKeys[] = $idempotencyKey;
 
         return $this->refundOk;
     }

@@ -23,8 +23,12 @@ interface PaymentGateway
     /** Consulta o pagamento no gateway (fonte da verdade no webhook). */
     public function fetchPayment(string $gatewayPaymentId): PaymentResult;
 
-    /** Estorna (total se $amountCents for null). */
-    public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool;
+    /**
+     * Estorna (total se $amountCents for null). $idempotencyKey distingue
+     * estornos parciais de mesmo valor no mesmo pagamento (dois ingressos de
+     * preço igual); sem ela, o gateway derivaria a chave de pagamento + valor.
+     */
+    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): bool;
 
     /** Cancela um pagamento ainda pendente no gateway (ex.: Pix não pago). */
     public function cancelPayment(string $gatewayPaymentId): bool;
