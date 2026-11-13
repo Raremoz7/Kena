@@ -47,7 +47,7 @@ class SeedDemoPhotoGallery extends Command
         $event = Event::where('slug', $this->argument('slug'))->firstOrFail();
 
         PhotoGallery::where('event_id', $event->id)->get()->each(function (PhotoGallery $old): void {
-            Storage::disk('public')->deleteDirectory("fotos/{$old->id}");
+            Storage::disk(config('kena.photos.disk'))->deleteDirectory("fotos/{$old->id}");
             $old->delete();
         });
 
@@ -146,6 +146,7 @@ class SeedDemoPhotoGallery extends Command
         $bar->finish();
         $this->newLine(2);
         $this->info("Galeria criada: {$position} fotos, ".count($people)." pessoas. Abra /fotos/{$event->slug}");
+        $this->info("Código de acesso: {$gallery->access_code}");
 
         return self::SUCCESS;
     }

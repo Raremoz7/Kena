@@ -36,6 +36,11 @@ return [
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
     ],
 
+    /** Fotos do espetáculo: prévias, miniaturas e rostos ficam em disco privado. */
+    'photos' => [
+        'disk' => env('PHOTOS_DISK', 'photos'),
+    ],
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),

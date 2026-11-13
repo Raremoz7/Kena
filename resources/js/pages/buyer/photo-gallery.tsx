@@ -9,6 +9,7 @@ import {
 } from '@/components/organisms/photos/PhotoCart';
 import { PhotoGrid } from '@/components/organisms/photos/PhotoGrid';
 import { PhotoLightbox } from '@/components/organisms/photos/PhotoLightbox';
+import { PrivacyNotice } from '@/components/organisms/photos/PrivacyNotice';
 import { photoCount, quotePhotos } from '@/lib/photos/pricing';
 import { firstName } from '@/lib/photos/types';
 import type {
@@ -266,6 +267,11 @@ export default function PhotoGalleryPage({
                         />
                     </section>
                 )}
+
+                <PrivacyNotice
+                    slug={event.slug}
+                    childNames={people.map((p) => p.name)}
+                />
             </div>
 
             {/* Barra fixa: o filtro ativo continua à vista enquanto rola a grade. */}

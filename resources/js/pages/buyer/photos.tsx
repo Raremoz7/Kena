@@ -56,8 +56,10 @@ function GalleryCard({ gallery }: { gallery: GalleryListItem }) {
                     fallback={event.bannerImage}
                 />
                 <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 font-body text-xs font-semibold text-white backdrop-blur-sm">
-                    <Icon name="image" size={14} />
-                    {photoCount(gallery.photoCount)}
+                    <Icon name={gallery.locked ? 'lock' : 'image'} size={14} />
+                    {gallery.locked
+                        ? 'Com código ou ingresso'
+                        : photoCount(gallery.photoCount)}
                 </span>
             </div>
             <div className="p-5">
@@ -70,8 +72,8 @@ function GalleryCard({ gallery }: { gallery: GalleryListItem }) {
                     {event.dateLabel}
                 </p>
                 <p className="flex items-center gap-1.5 font-body text-sm text-muted-foreground">
-                    <Icon name="users" size={15} />
-                    {gallery.peopleCount} pessoas identificadas
+                    <Icon name="image" size={15} />
+                    {photoCount(gallery.photoCount)}
                 </p>
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                     <span className="font-body text-xs text-faint">
@@ -83,7 +85,7 @@ function GalleryCard({ gallery }: { gallery: GalleryListItem }) {
                             className="text-lg text-foreground"
                         />
                         <Icon
-                            name="arrow-right"
+                            name={gallery.locked ? 'lock' : 'arrow-right'}
                             size={16}
                             className="text-accent-text transition-transform group-hover:translate-x-0.5"
                         />

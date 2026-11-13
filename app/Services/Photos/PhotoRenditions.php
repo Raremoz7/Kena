@@ -133,7 +133,7 @@ final class PhotoRenditions
             throw new RuntimeException("Falha ao gerar {$path}");
         }
 
-        Storage::disk('public')->put($path, $bytes);
+        Storage::disk(config('kena.photos.disk'))->put($path, $bytes);
 
         return ['path' => $path, 'width' => imagesx($image), 'height' => imagesy($image)];
     }

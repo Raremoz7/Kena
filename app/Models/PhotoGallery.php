@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -11,12 +12,55 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $event_id
  * @property string $status
  * @property string|null $description
+ * @property string $access_code
  * @property array<int, array{min_qty: int, unit_price_cents: int}> $price_tiers
  * @property-read Event $event
  */
 class PhotoGallery extends Model
 {
     protected $guarded = [];
+
+    /** Palavras do ballet: fáceis de ditar e de ler em voz alta. */
+    private const CODE_WORDS = [
+        'NOZES', 'TUTU', 'PALCO', 'BALLET', 'CORTINA', 'SAPATILHA', 'ESTRELA', 'PIRUETA',
+        'ARABESCO', 'PLIE', 'BAILARINA', 'CISNE', 'FLOCO', 'LAREIRA', 'PRESENTE', 'ENSAIO',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (PhotoGallery $gallery): void {
+            $gallery->access_code ??= self::newAccessCode();
+        });
+    }
+
+    /** Código curto e único, no formato PALAVRA-1234. */
+    public static function newAccessCode(): string
+    {
+        do {
+            $code = self::CODE_WORDS[array_rand(self::CODE_WORDS)].'-'.random_int(1000, 9999);
+        } while (self::where('access_code', $code)->exists());
+
+        return $code;
+    }
+
+    /** Ignora caixa, espaço e hífen: "nozes 4821" vale como NOZES-4821. */
+    public static function normalizeCode(string $code): string
+    {
+        return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $code));
+    }
+
+    public function acceptsCode(string $code): bool
+    {
+        $given = self::normalizeCode($code);
+
+        return $given !== '' && hash_equals(self::normalizeCode($this->access_code), $given);
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function unlockedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'photo_gallery_user')->withPivot('created_at');
+    }
 
     protected function casts(): array
     {
