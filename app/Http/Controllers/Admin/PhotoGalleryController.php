@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RegeneratePhotoGalleryRenditions;
 use App\Models\Event;
 use App\Models\Photo;
 use App\Models\PhotoGallery;
 use App\Models\PhotoPerson;
+use App\Services\Photos\PhotoRenditions;
 use App\Support\Money;
 use App\Support\PhotoPriceTiers;
 use Illuminate\Http\RedirectResponse;
@@ -71,6 +73,8 @@ class PhotoGalleryController extends Controller
             'shell' => $this->shell($event, $gallery),
             'form' => [
                 'description' => $gallery?->description ?? '',
+                'copyright_holder' => $gallery?->copyright_holder ?? '',
+                'default_holder' => PhotoRenditions::defaultHolder(),
                 'tiers' => array_map(fn (array $t): array => [
                     'min_qty' => (int) $t['min_qty'],
                     'price' => Money::toReais((int) $t['unit_price_cents']),
@@ -93,10 +97,12 @@ class PhotoGalleryController extends Controller
 
         $data = $request->validate([
             'description' => ['nullable', 'string', 'max:1000'],
+            'copyright_holder' => ['nullable', 'string', 'max:80'],
             'tiers' => ['required', 'array', 'min:1', 'max:'.PhotoPriceTiers::MAX_TIERS],
             'tiers.*.min_qty' => ['required', 'integer', 'min:1', 'max:1000'],
             'tiers.*.price' => ['required', 'numeric', 'min:0.01', 'max:10000'],
         ], [
+            'copyright_holder.max' => 'O nome do titular pode ter no máximo 80 caracteres.',
             'tiers.required' => 'Informe pelo menos uma faixa de preço.',
             'tiers.*.min_qty.required' => 'Informe a quantidade mínima de cada faixa.',
             'tiers.*.min_qty.integer' => 'A quantidade mínima precisa ser um número inteiro.',
@@ -116,15 +122,26 @@ class PhotoGalleryController extends Controller
             throw ValidationException::withMessages(['tiers' => $errors]);
         }
 
-        PhotoGallery::updateOrCreate(
+        $before = $event->photoGallery?->copyrightHolder();
+
+        $gallery = PhotoGallery::updateOrCreate(
             ['event_id' => $event->id],
             [
                 'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
+                'copyright_holder' => filled($data['copyright_holder'] ?? null) ? trim($data['copyright_holder']) : null,
                 'price_tiers' => $tiers,
             ],
         );
 
-        return redirect()->route('admin.photos.edit', $event)->with('status', 'Galeria salva.');
+        // O aviso está desenhado nas imagens: titular novo pede prévias novas.
+        $status = 'Galeria salva.';
+        if ($before !== null && $before !== $gallery->copyrightHolder() && $gallery->photos()->exists()) {
+            RegeneratePhotoGalleryRenditions::dispatch($gallery->id);
+            $status = 'Galeria salva. As prévias estão sendo refeitas com o novo titular; '
+                .'isso roda na fila (ou rode "fotos:regerar '.$event->slug.'").';
+        }
+
+        return redirect()->route('admin.photos.edit', $event)->with('status', $status);
     }
 
     public function publish(Event $event): RedirectResponse

@@ -25,22 +25,46 @@ final class PhotoRenditions
 
     private const WATERMARK = 'KENA  ·  AMOSTRA';
 
-    /** Prévia grande, com marca d'água forte o bastante para não servir de cópia. */
-    public function preview(GdImage $source, string $path): array
+    /** Linha de aviso desenhada na marca d'água, com o titular dos direitos. */
+    public static function notice(string $holder): string
     {
-        $image = $this->fit($source, self::PREVIEW_SIDE);
-        $this->watermark($image, 0.032, 92);
-
-        return $this->store($image, $path, 80);
+        return "© {$holder}  ·  Uso só com compra  ·  Lei 9.610/98";
     }
 
-    /** Miniatura da grade: marca mais discreta, só para não circular solta. */
-    public function thumb(GdImage $source, string $path): array
+    /** Titular padrão (config) para galeria sem nome preenchido. */
+    public static function defaultHolder(): string
     {
-        $image = $this->fit($source, self::THUMB_SIDE);
-        $this->watermark($image, 0.036, 104);
+        return (string) config('kena.photos.copyright_holder', 'Kena');
+    }
 
-        return $this->store($image, $path, 76);
+    /**
+     * Prévia grande, com marca d'água forte o bastante para não servir de cópia.
+     * `$holder` é o titular do direito autoral: vai no aviso e no XMP.
+     */
+    public function preview(GdImage $source, string $path, ?string $holder = null): array
+    {
+        $holder = $this->holder($holder);
+        $image = $this->fit($source, self::PREVIEW_SIDE);
+        $this->watermark($image, 0.032, 92, $holder, 0.0185, 2);
+
+        return $this->store($image, $path, 80, $holder);
+    }
+
+    /** Miniatura da grade: marca mais discreta, aviso só de vez em quando. */
+    public function thumb(GdImage $source, string $path, ?string $holder = null): array
+    {
+        $holder = $this->holder($holder);
+        $image = $this->fit($source, self::THUMB_SIDE);
+        $this->watermark($image, 0.036, 104, $holder, 0.026, 4);
+
+        return $this->store($image, $path, 76, $holder);
+    }
+
+    private function holder(?string $holder): string
+    {
+        $holder = trim((string) $holder);
+
+        return $holder !== '' ? $holder : self::defaultHolder();
     }
 
     /**
@@ -83,9 +107,10 @@ final class PhotoRenditions
 
     /**
      * Texto em diagonal repetido pela foto toda. `alpha` vai de 0 (opaco) a 127
-     * (invisível) no GD.
+     * (invisível) no GD. Entre as linhas de "KENA · AMOSTRA" entra o aviso de
+     * direito autoral (menor), a cada `noticeEvery` linhas.
      */
-    private function watermark(GdImage $image, float $sizeRatio, int $alpha): void
+    private function watermark(GdImage $image, float $sizeRatio, int $alpha, string $holder, float $noticeRatio, int $noticeEvery): void
     {
         $font = resource_path('fonts/DejaVuSans-Bold.ttf');
         $width = imagesx($image);
@@ -105,7 +130,25 @@ final class PhotoRenditions
         $angle = random_int(22, 34);
         $row = 0;
 
+        $notice = self::notice($holder);
+        $noticeSize = max(9, (int) round(max($width, $height) * $noticeRatio));
+        $noticeBox = imagettfbbox($noticeSize, 0, $font, $notice);
+        $noticeStepX = (int) round(($noticeBox[2] - $noticeBox[0]) * 1.3);
+        $noticeLight = imagecolorallocatealpha($image, 255, 255, 255, max(0, $alpha - 6));
+        $noticeShadow = imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha + 8));
+
         for ($y = -$height + $shiftY; $y < $height * 2; $y += $stepY, $row++) {
+            // O aviso fica no meio entre duas linhas de marca, no mesmo ângulo.
+            if ($row % $noticeEvery === $noticeEvery - 1) {
+                $noticeOffset = (int) ($noticeStepX / 2) * ($row % 2) + $shiftX;
+                $noticeY = $y + (int) ($stepY / 2);
+
+                for ($x = -$width; $x < $width * 2; $x += $noticeStepX) {
+                    imagettftext($image, $noticeSize, $angle, $x + $noticeOffset + 1, $noticeY + 1, $noticeShadow, $font, $notice);
+                    imagettftext($image, $noticeSize, $angle, $x + $noticeOffset, $noticeY, $noticeLight, $font, $notice);
+                }
+            }
+
             $offset = ($row % 2) * (int) ($stepX / 2) + $shiftX;
 
             for ($x = -$width; $x < $width * 2; $x += $stepX) {
@@ -120,10 +163,40 @@ final class PhotoRenditions
         $bw = $box[2] - $box[0];
         $center = imagecolorallocatealpha($image, 255, 255, 255, max(0, $alpha - 18));
         imagettftext($image, $big, 0, (int) (($width - $bw) / 2), (int) ($height / 2 + $big / 2), $center, $font, 'KENA');
+
+        $this->noticeBand($image, $font, $notice, $alpha);
+    }
+
+    /**
+     * Faixa no rodapé com o aviso inteiro, na horizontal e legível de relance
+     * (as linhas em diagonal ficam cortadas pelas bordas da foto).
+     */
+    private function noticeBand(GdImage $image, string $font, string $notice, int $alpha): void
+    {
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $ref = imagettfbbox(100, 0, $font, $notice);
+        $size = (int) floor(min($width * 0.94 / (($ref[2] - $ref[0]) / 100), max($width, $height) * 0.026));
+        $size = max(8, $size);
+        $box = imagettfbbox($size, 0, $font, $notice);
+        $bandHeight = (int) round($size * 2);
+
+        imagefilledrectangle($image, 0, $height - $bandHeight, $width, $height, imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha - 30)));
+        imagettftext(
+            $image,
+            $size,
+            0,
+            (int) (($width - ($box[2] - $box[0])) / 2),
+            (int) ($height - ($bandHeight - $size) / 2 - $size * 0.18),
+            imagecolorallocatealpha($image, 255, 255, 255, 12),
+            $font,
+            $notice,
+        );
     }
 
     /** @return array{path: string, width: int, height: int} */
-    private function store(GdImage $image, string $path, int $quality): array
+    private function store(GdImage $image, string $path, int $quality, ?string $holder = null): array
     {
         ob_start();
         imagewebp($image, null, $quality);
@@ -131,6 +204,11 @@ final class PhotoRenditions
 
         if ($bytes === '') {
             throw new RuntimeException("Falha ao gerar {$path}");
+        }
+
+        // Prévias e miniaturas levam o direito autoral também nos metadados.
+        if ($holder !== null) {
+            $bytes = WebpMetadata::embedXmp($bytes, WebpMetadata::copyrightPacket($holder, (int) date('Y')));
         }
 
         Storage::disk(config('kena.photos.disk'))->put($path, $bytes);

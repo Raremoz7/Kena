@@ -22,6 +22,8 @@ interface FormProps {
     shell: GalleryShellData;
     form: {
         description: string;
+        copyright_holder: string;
+        default_holder: string;
         tiers: { min_qty: number; price: number }[];
     };
 }
@@ -29,8 +31,13 @@ interface FormProps {
 const reais = (value: number) => value.toFixed(2).replace('.', ',');
 
 export default function PhotoGalleryForm({ shell, form: initial }: FormProps) {
-    const form = useForm<{ description: string; tiers: TierDraft[] }>({
+    const form = useForm<{
+        description: string;
+        copyright_holder: string;
+        tiers: TierDraft[];
+    }>({
         description: initial.description,
+        copyright_holder: initial.copyright_holder,
         tiers: initial.tiers.map((t) => ({
             min_qty: String(t.min_qty),
             price: reais(t.price),
@@ -133,6 +140,26 @@ export default function PhotoGalleryForm({ shell, form: initial }: FormProps) {
                                     form.setData('description', e.target.value)
                                 }
                                 placeholder="Registros do espetáculo, feitos pelo nosso time."
+                            />
+                        </FormField>
+
+                        <FormField
+                            label="Titular do direito autoral"
+                            htmlFor="copyright_holder"
+                            helper={`Nome do fotógrafo ou da escola. Aparece no aviso "© nome · Uso só com compra" das prévias. Vazio usa "${initial.default_holder}". Ao mudar, as prévias são refeitas.`}
+                            error={form.errors.copyright_holder}
+                        >
+                            <Input
+                                id="copyright_holder"
+                                maxLength={80}
+                                value={form.data.copyright_holder}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'copyright_holder',
+                                        e.target.value,
+                                    )
+                                }
+                                placeholder={initial.default_holder}
                             />
                         </FormField>
                     </section>

@@ -43,6 +43,8 @@ return [
      */
     'photos' => [
         'disk' => env('PHOTOS_DISK', 'photos'),
+        // Titular do direito autoral no aviso das prévias quando a galeria não define um.
+        'copyright_holder' => env('KENA_PHOTOS_COPYRIGHT_HOLDER', 'Kena'),
         // Pasta local dos originais (o `original_ref` da foto é o caminho dentro dela).
         'originals_path' => env('KENA_PHOTOS_ORIGINALS_PATH', storage_path('app/private/fotos-originais')),
     ],
