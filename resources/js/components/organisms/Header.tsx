@@ -37,7 +37,7 @@ function PillLink({
             aria-current={active ? 'page' : undefined}
             className={cn(
                 // min-h-8 garante o alvo mínimo de 24px da WCAG 2.5.8 com folga.
-                'inline-flex min-h-8 items-center rounded-full px-3 py-1.5 font-body text-sm whitespace-nowrap transition-colors sm:px-4',
+                'inline-flex min-h-8 items-center rounded-full px-2.5 py-1.5 font-body text-sm whitespace-nowrap transition-colors sm:px-4',
                 active
                     ? 'bg-accent font-semibold text-accent-fg'
                     : 'text-muted-foreground hover:text-foreground',
@@ -54,7 +54,7 @@ export function Header() {
 
     return (
         <header className="sticky top-0 z-40 border-b border-border bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-            <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
+            <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:px-6">
                 <Link
                     href="/"
                     className="flex shrink-0 items-center"
@@ -75,6 +75,7 @@ export function Header() {
                     <PillLink href="/eventos" matches={['/', '/e/']}>
                         Eventos
                     </PillLink>
+                    <PillLink href="/fotos">Fotos</PillLink>
                     <PillLink href="/meus-ingressos">
                         <span className="sm:hidden">Ingressos</span>
                         <span className="hidden sm:inline">Meus ingressos</span>

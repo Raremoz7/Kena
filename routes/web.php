@@ -22,6 +22,7 @@ use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
+use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
@@ -36,6 +37,10 @@ Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy')
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');
+
+// Fotos do espetáculo à venda
+Route::get('/fotos', [PhotoGalleryController::class, 'index'])->name('photos.index');
+Route::get('/fotos/{slug}', [PhotoGalleryController::class, 'show'])->name('photos.show');
 
 // Disponibilidade (polling do mapa) — público
 Route::get('/api/sessoes/{session}/disponibilidade', [AvailabilityController::class, 'show'])

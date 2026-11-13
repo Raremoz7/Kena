@@ -44,10 +44,19 @@ export type IconName =
     | 'users'
     | 'settings'
     | 'receipt'
-    | 'grid';
+    | 'grid'
+    | 'bag'
+    | 'filter';
 
 const paths: Record<IconName, ReactElement> = {
     check: <path d="M4 12.5l5 5 11-11" />,
+    bag: (
+        <>
+            <path d="M5 8h14l-1.2 11.2a2 2 0 01-2 1.8H8.2a2 2 0 01-2-1.8L5 8z" />
+            <path d="M9 10.5V7a3 3 0 016 0v3.5" />
+        </>
+    ),
+    filter: <path d="M4 6h16M7 12h10M10 18h4" />,
     copy: (
         <>
             <rect x="8.5" y="8.5" width="12" height="12" rx="2.5" />
