@@ -13,8 +13,10 @@ use App\Support\Csv;
 use App\Support\Money;
 use App\Support\Presenters\CatalogPresenter;
 use App\Support\SessionOptionsCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -24,10 +26,12 @@ class OrderController extends Controller
     public function index(Request $request, RefundService $refunds): Response
     {
         $sessionId = $request->integer('session') ?: null;
+        $search = Str::limit(trim((string) $request->query('q', '')), 100, '');
 
         $orders = Order::query()
             ->with(['user', 'session.event', 'items', 'refunds', 'tickets'])
             ->when($sessionId, fn ($q) => $q->where('session_id', $sessionId))
+            ->when($search !== '', fn ($q) => self::search($q, $search))
             ->latest('id')
             ->paginate(25)
             ->withQueryString()
@@ -66,8 +70,36 @@ class OrderController extends Controller
             'orders' => $orders,
             'sessions' => SessionOptionsCache::get(),
             'sessionId' => $sessionId,
+            'search' => $search,
             'exportUrl' => route('admin.orders.export', $sessionId ? ['session' => $sessionId] : []),
         ]);
+    }
+
+    /**
+     * Busca livre: referência do pedido, nome/e-mail do comprador, assento,
+     * titular e código do ingresso. Cada palavra precisa aparecer em algum
+     * desses campos ("maria A12" acha a Maria no assento A12).
+     *
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    private static function search(Builder $query, string $search): Builder
+    {
+        foreach (preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            $like = '%'.$word.'%';
+            $query->where(function (Builder $q) use ($like): void {
+                $q->where('reference', 'like', $like)
+                    ->orWhereHas('user', fn (Builder $u) => $u
+                        ->where('name', 'like', $like)
+                        ->orWhere('email', 'like', $like))
+                    ->orWhereHas('items', fn (Builder $i) => $i->where('seat_code', 'like', $like))
+                    ->orWhereHas('tickets', fn (Builder $t) => $t
+                        ->where('holder_name', 'like', $like)
+                        ->orWhere('code', 'like', $like));
+            });
+        }
+
+        return $query;
     }
 
     /** Cancela a sessão e reembolsa todos os pedidos pagos em massa. */

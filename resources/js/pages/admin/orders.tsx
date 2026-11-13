@@ -1,9 +1,10 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Badge } from '@/components/atoms/Badge';
 import type { BadgeProps } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
+import { Input } from '@/components/atoms/Input';
 import { Price } from '@/components/atoms/Price';
 import { Select } from '@/components/atoms/Select';
 import { ConfirmDialog } from '@/components/molecules/ConfirmDialog';
@@ -47,6 +48,7 @@ interface OrdersPageProps {
     orders: Paginator<OrderRow>;
     sessions: SessionOption[];
     sessionId: number | null;
+    search: string;
     exportUrl: string;
 }
 
@@ -70,13 +72,42 @@ export default function AdminOrders({
     orders,
     sessions,
     sessionId,
+    search,
     exportUrl,
 }: OrdersPageProps) {
+    // Busca no servidor (a lista é paginada): filtro e texto viajam juntos na
+    // URL, e qualquer mudança volta para a página 1.
+    const [query, setQuery] = useState(search);
+    const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+    function applyFilters(next: { session?: number | null; q?: string }) {
+        const session = next.session === undefined ? sessionId : next.session;
+        const q = (next.q ?? query).trim();
+
+        router.get(
+            '/painel/pedidos',
+            {
+                ...(session ? { session } : {}),
+                ...(q ? { q } : {}),
+            },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }
+
     function filterSession(value: string) {
-        router.get('/painel/pedidos', value ? { session: Number(value) } : {}, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        applyFilters({ session: value ? Number(value) : null });
+    }
+
+    function onSearchChange(value: string) {
+        setQuery(value);
+        clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => applyFilters({ q: value }), 350);
+    }
+
+    function clearSearch() {
+        clearTimeout(searchTimer.current);
+        setQuery('');
+        applyFilters({ q: '' });
     }
 
     const [confirm, setConfirm] = useState<{
@@ -146,6 +177,10 @@ export default function AdminOrders({
         );
     }
 
+    const emptyMessage = search
+        ? `Nenhum pedido encontrado para "${search}".`
+        : 'Nenhum pedido ainda.';
+
     const sessionActions = sessionId !== null && (
         <>
             <Button asChild variant="secondary" size="sm">
@@ -169,6 +204,27 @@ export default function AdminOrders({
                 />
 
                 <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <div className="relative w-full sm:w-auto sm:min-w-72">
+                        <Icon
+                            name="search"
+                            size={16}
+                            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-faint"
+                        />
+                        <Input
+                            type="search"
+                            aria-label="Buscar pedidos"
+                            placeholder="Nome, e-mail, pedido ou assento"
+                            value={query}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape' && query) {
+                                    clearSearch();
+                                }
+                            }}
+                            maxLength={100}
+                            className="pl-9"
+                        />
+                    </div>
                     <Select
                         aria-label="Filtrar por sessão"
                         value={sessionId ?? ''}
@@ -243,7 +299,7 @@ export default function AdminOrders({
                         />
                     ))}
                     {orders.data.length === 0 && (
-                        <MobileListEmpty>Nenhum pedido ainda.</MobileListEmpty>
+                        <MobileListEmpty>{emptyMessage}</MobileListEmpty>
                     )}
                 </MobileList>
 
@@ -349,7 +405,7 @@ export default function AdminOrders({
                                         colSpan={8}
                                         className="px-4 py-8 text-center text-muted-foreground"
                                     >
-                                        Nenhum pedido ainda.
+                                        {emptyMessage}
                                     </td>
                                 </tr>
                             )}
