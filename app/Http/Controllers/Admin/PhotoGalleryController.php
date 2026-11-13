@@ -160,7 +160,7 @@ class PhotoGalleryController extends Controller
             ->map(fn (PhotoPerson $p): array => [
                 'id' => $p->id,
                 'name' => $p->name,
-                'face' => $p->face_path ? self::url($p->face_path) : null,
+                'face' => $p->face_path ? route('photos.face', $p, false) : null,
                 'photoCount' => $p->photos_count,
                 'hidden' => (bool) $p->hidden,
             ])->values();
@@ -262,7 +262,7 @@ class PhotoGalleryController extends Controller
             ->through(fn (Photo $p): array => [
                 'id' => $p->id,
                 'filename' => $p->filename,
-                'thumb' => self::url($p->thumb_path),
+                'thumb' => route('photos.image', ['photo' => $p->id, 'variant' => 'thumb'], false),
                 'group' => $p->group?->name,
                 'people' => $p->people->pluck('name')->values(),
             ]);
@@ -307,10 +307,5 @@ class PhotoGalleryController extends Controller
         $tiers = $gallery->sortedTiers();
 
         return $tiers === [] ? null : Money::toReais((int) $tiers[0]['unit_price_cents']);
-    }
-
-    private static function url(string $path): string
-    {
-        return '/storage/'.ltrim($path, '/');
     }
 }

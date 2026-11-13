@@ -118,7 +118,7 @@ class PhotoCheckoutController extends Controller
                 'galleryUrl' => $event !== null ? route('photos.show', $event->slug) : route('photos.index'),
                 'photos' => $order->photoItems->map(fn (OrderPhoto $item): array => [
                     'id' => (int) $item->photo_id,
-                    'thumb' => $item->photo !== null ? '/storage/'.ltrim($item->photo->thumb_path, '/') : null,
+                    'thumb' => $item->photo !== null ? route('photos.image', ['photo' => $item->photo_id, 'variant' => 'thumb'], false) : null,
                     'filename' => $item->filename,
                 ])->values(),
                 'unitPrice' => Money::toReais((int) ($order->photoItems->first()->unit_price_cents ?? 0)),

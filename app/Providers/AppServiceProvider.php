@@ -160,5 +160,20 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(6)->by('email-code:'.$person($request))->response($tooMany),
             Limit::perMinute(300)->by('email-code-ip:'.$request->ip())->response($tooMany),
         ]);
+
+        // Código da galeria de fotos: curto de propósito (fácil de ditar), então o
+        // tiro de adivinhação é barrado por pessoa e por IP+galeria.
+        $photoTooMany = fn (Request $request) => back()->withErrors([
+            'code' => 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
+        ]);
+
+        RateLimiter::for('photo-code', fn (Request $request): array => [
+            Limit::perMinute(5)->by('photo-code:'.$person($request).'|'.$request->route('slug'))->response($photoTooMany),
+            Limit::perMinute(30)->by('photo-code-ip:'.$request->ip().'|'.$request->route('slug'))->response($photoTooMany),
+        ]);
+
+        RateLimiter::for('photo-privacy', fn (Request $request): array => [
+            Limit::perMinute(5)->by('photo-privacy:'.$person($request))->response($tooMany),
+        ]);
     }
 }

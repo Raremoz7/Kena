@@ -17,6 +17,8 @@ export interface GalleryListItem {
     event: PhotoEvent;
     photoCount: number;
     peopleCount: number;
+    /** Visitante ainda sem acesso: a capa é o banner do evento, nunca foto. */
+    locked: boolean;
     covers: string[];
     tiers: PriceTier[];
 }

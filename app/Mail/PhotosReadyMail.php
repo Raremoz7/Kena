@@ -11,6 +11,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 /** Confirmação da compra de fotos, com o link para baixar (enviada no pago). */
 class PhotosReadyMail extends Mailable implements ShouldQueue
@@ -47,10 +48,11 @@ class PhotosReadyMail extends Mailable implements ShouldQueue
                 'countLabel' => $count.' '.($count === 1 ? 'foto' : 'fotos'),
                 'amount' => Money::toReais($this->order->total_cents),
                 'thumbs' => $this->order->photoItems
-                    ->map(fn ($item): ?string => $item->photo?->thumb_path)
+                    ->map(fn ($item): ?int => $item->photo?->id)
                     ->filter()
                     ->take(6)
-                    ->map(fn (string $path): string => url('/storage/'.ltrim($path, '/')))
+                    // O e-mail não tem a sessão do navegador: link assinado que vale 30 dias.
+                    ->map(fn (int $id): string => URL::temporarySignedRoute('photos.image', now()->addDays(30), ['photo' => $id, 'variant' => 'thumb']))
                     ->values()
                     ->all(),
                 'photosUrl' => $photosUrl,

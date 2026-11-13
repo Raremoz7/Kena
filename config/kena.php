@@ -37,10 +37,12 @@ return [
     ],
 
     /**
-     * Fotos do espetáculo. Os originais em alta ficam fora da pasta pública:
-     * o download passa pelo servidor, que confere a compra antes de entregar.
+     * Fotos do espetáculo. Prévias, miniaturas e rostos ficam em disco privado
+     * (só saem para quem tem acesso à galeria). Os originais em alta ficam fora
+     * da pasta pública: o download passa pelo servidor, que confere a compra.
      */
     'photos' => [
+        'disk' => env('PHOTOS_DISK', 'photos'),
         // Pasta local dos originais (o `original_ref` da foto é o caminho dentro dela).
         'originals_path' => env('KENA_PHOTOS_ORIGINALS_PATH', storage_path('app/private/fotos-originais')),
     ],

@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Fotos com rosto de criança: nunca expostas por link direto, só pela
+        // rota que confere o acesso à galeria (PhotoImageController).
+        'photos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/photos'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

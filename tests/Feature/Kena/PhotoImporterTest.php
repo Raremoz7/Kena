@@ -28,7 +28,7 @@ class PhotoImporterTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('public');
+        Storage::fake(config('kena.photos.disk'));
         $this->dir = sys_get_temp_dir().'/kena-import-'.bin2hex(random_bytes(4));
         mkdir($this->dir);
 
@@ -82,7 +82,7 @@ class PhotoImporterTest extends TestCase
         $this->assertSame(2, $julia->photos()->count());
         $this->assertEquals($region, json_decode($julia->photos()->first()->pivot->region, true));
         $this->assertNotNull($julia->face_path);
-        Storage::disk('public')->assertExists($julia->face_path);
+        Storage::disk(config('kena.photos.disk'))->assertExists($julia->face_path);
 
         // Cecília só existe como palavra-chave: sem região, sem recorte.
         $cecilia = PhotoPerson::where('name', 'Cecília Ramos')->firstOrFail();
@@ -97,8 +97,8 @@ class PhotoImporterTest extends TestCase
         $this->import();
 
         $photo = Photo::firstOrFail();
-        Storage::disk('public')->assertExists($photo->preview_path);
-        Storage::disk('public')->assertExists($photo->thumb_path);
+        Storage::disk(config('kena.photos.disk'))->assertExists($photo->preview_path);
+        Storage::disk(config('kena.photos.disk'))->assertExists($photo->thumb_path);
         $this->assertSame(300, $photo->width);
         $this->assertSame(200, $photo->height);
     }
@@ -240,7 +240,7 @@ class PhotoImporterTest extends TestCase
     private function faceColor(string $name): string
     {
         $person = PhotoPerson::where('name', $name)->firstOrFail();
-        $image = imagecreatefromstring(Storage::disk('public')->get($person->face_path));
+        $image = imagecreatefromstring(Storage::disk(config('kena.photos.disk'))->get($person->face_path));
         $this->assertInstanceOf(GdImage::class, $image);
 
         $rgb = imagecolorat($image, 96, 96);

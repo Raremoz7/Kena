@@ -26,6 +26,7 @@ use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
+use App\Http\Controllers\PhotoImageController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
@@ -48,6 +49,15 @@ Route::get('/fotos/{slug}', [PhotoGalleryController::class, 'show'])->name('phot
 Route::post('/fotos/{slug}/comprar', [PhotoCheckoutController::class, 'start'])
     ->middleware('throttle:reserve')
     ->name('photos.checkout.start');
+Route::post('/fotos/{slug}/acesso', [PhotoGalleryController::class, 'unlock'])
+    ->middleware('throttle:photo-code')->name('photos.unlock');
+Route::post('/fotos/{slug}/privacidade', [PhotoGalleryController::class, 'privacyRequest'])
+    ->middleware('throttle:photo-privacy')->name('photos.privacy');
+// Imagens vêm de disco privado e só saem para quem tem acesso à galeria.
+Route::get('/fotos/midia/rosto/{person}', [PhotoImageController::class, 'face'])
+    ->whereNumber('person')->name('photos.face');
+Route::get('/fotos/midia/{photo}/{variant}', [PhotoImageController::class, 'photo'])
+    ->whereNumber('photo')->whereIn('variant', ['thumb', 'preview'])->name('photos.image');
 
 // Disponibilidade (polling do mapa) — público
 Route::get('/api/sessoes/{session}/disponibilidade', [AvailabilityController::class, 'show'])

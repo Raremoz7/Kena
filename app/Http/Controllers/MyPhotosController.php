@@ -65,7 +65,7 @@ class MyPhotosController extends Controller
                     'zipUrl' => route('photos.mine.zip', $galleryId),
                     'photos' => $photos->map(fn (OrderPhoto $item): array => [
                         'id' => $item->photo->id,
-                        'thumb' => '/storage/'.ltrim($item->photo->thumb_path, '/'),
+                        'thumb' => route('photos.image', ['photo' => $item->photo->id, 'variant' => 'thumb'], false),
                         'filename' => $item->filename,
                         'width' => $item->photo->width,
                         'height' => $item->photo->height,
