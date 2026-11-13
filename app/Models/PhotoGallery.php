@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Photos\PhotoRenditions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $event_id
  * @property string $status
  * @property string|null $description
+ * @property string|null $copyright_holder
  * @property string $access_code
  * @property array<int, array{min_qty: int, unit_price_cents: int}> $price_tiers
  * @property-read Event $event
@@ -96,6 +98,14 @@ class PhotoGallery extends Model
     public function people(): HasMany
     {
         return $this->hasMany(PhotoPerson::class)->orderBy('name');
+    }
+
+    /** Titular do direito autoral das prévias: o nome da galeria ou o padrão do config. */
+    public function copyrightHolder(): string
+    {
+        $holder = trim((string) $this->copyright_holder);
+
+        return $holder !== '' ? $holder : PhotoRenditions::defaultHolder();
     }
 
     /** Faixas em ordem crescente de quantidade. */

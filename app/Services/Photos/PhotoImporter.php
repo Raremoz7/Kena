@@ -83,8 +83,9 @@ final class PhotoImporter
 
         try {
             $base = sprintf('fotos/%d/%s', $gallery->id, substr(sha1($item->ref), 0, 16));
-            $preview = $this->renditions->preview($image, "{$base}-preview.webp");
-            $thumb = $this->renditions->thumb($image, "{$base}-thumb.webp");
+            $holder = $gallery->copyrightHolder();
+            $preview = $this->renditions->preview($image, "{$base}-preview.webp", $holder);
+            $thumb = $this->renditions->thumb($image, "{$base}-thumb.webp", $holder);
 
             // Turma e pessoas ficam fora da transação: se a foto falhar, sobram
             // registros inofensivos e os caches continuam válidos.
