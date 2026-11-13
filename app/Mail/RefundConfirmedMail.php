@@ -12,14 +12,24 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-/** Confirmação de reembolso ao comprador. */
+/**
+ * Confirmação de reembolso ao comprador — do pedido inteiro ou só de alguns
+ * ingressos ($partial), caso em que o e-mail nomeia os assentos devolvidos e
+ * deixa claro que os demais continuam valendo.
+ */
 class RefundConfirmedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    /**
+     * @param  list<string>  $seatCodes  assentos reembolsados (vazio = todos do pedido)
+     */
     public function __construct(
         public Order $order,
         public ?string $reason = null,
+        public ?int $amountCents = null,
+        public array $seatCodes = [],
+        public bool $partial = false,
     ) {}
 
     public function envelope(): Envelope
@@ -40,8 +50,10 @@ class RefundConfirmedMail extends Mailable implements ShouldQueue
                 'order' => $this->order,
                 'event' => $session->event,
                 'sessionLabel' => CatalogPresenter::sessionLabel($session),
-                'amount' => Money::toReais($this->order->total_cents),
+                'amount' => Money::toReais($this->amountCents ?? $this->order->total_cents),
                 'reason' => $this->reason,
+                'seatCodes' => $this->seatCodes,
+                'partial' => $this->partial,
             ],
         );
     }

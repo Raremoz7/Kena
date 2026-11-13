@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Order;
+use App\Models\Refund;
 use App\Models\SessionSeat;
 use App\Services\OverviewInsightsService;
 use Illuminate\Http\RedirectResponse;
@@ -32,8 +33,12 @@ class AdminController extends Controller
         $available = SessionSeat::where('status', SessionSeat::STATUS_AVAILABLE)->count();
         // Receita = o que foi pago de fato (total dos pedidos pagos, já com cupons
         // e cortesias descontados). Somar o preço dos assentos vendidos contava
-        // cortesia como se tivesse sido paga.
-        $revenueCents = (int) Order::where('status', Order::STATUS_PAID)->sum('total_cents');
+        // cortesia como se tivesse sido paga. Ingresso devolvido avulso deixa o
+        // pedido pago, então o que já voltou pro comprador sai da conta.
+        $revenueCents = (int) Order::where('status', Order::STATUS_PAID)->sum('total_cents')
+            - (int) Refund::where('status', Refund::STATUS_DONE)
+                ->whereHas('order', fn ($q) => $q->where('status', Order::STATUS_PAID))
+                ->sum('amount_cents');
 
         return Inertia::render('admin/overview', [
             'kpis' => [

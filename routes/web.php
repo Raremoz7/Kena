@@ -131,6 +131,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::get('/painel/pedidos', [OrderController::class, 'index'])->name('admin.orders');
         Route::get('/painel/pedidos/export', [OrderController::class, 'exportAttendees'])->name('admin.orders.export');
         Route::post('/painel/pedidos/{order}/reembolso', [OrderController::class, 'refund'])->name('admin.orders.refund');
+        Route::post('/painel/pedidos/{order}/reembolso-ingressos', [OrderController::class, 'refundTickets'])->name('admin.orders.refund-tickets');
         Route::post('/painel/sessoes/{session}/cancelar', [OrderController::class, 'cancelSession'])->name('admin.sessions.cancel');
 
         // Cupons de desconto
