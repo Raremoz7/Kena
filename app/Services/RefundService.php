@@ -42,13 +42,16 @@ class RefundService
 
         $payment = $order->payment;
         $gatewayOk = true;
+        $gatewayRefundId = null;
         if ($payment !== null && $payment->gateway_payment_id !== null && $remaining > 0) {
             $full = $remaining === $order->total_cents;
-            $gatewayOk = $this->gateway->refund(
+            $result = $this->gateway->refund(
                 $payment->gateway_payment_id,
                 $full ? null : $remaining,
                 $full ? null : 'refund-'.$payment->gateway_payment_id.'-order-'.$remaining,
             );
+            $gatewayOk = $result->ok;
+            $gatewayRefundId = $result->gatewayRefundId;
         }
 
         if (! $gatewayOk) {
@@ -65,7 +68,7 @@ class RefundService
             ]);
         }
 
-        return $this->settle($order, $reason, $remaining);
+        return $this->settle($order, $reason, $remaining, $gatewayRefundId);
     }
 
     /**
@@ -131,14 +134,17 @@ class RefundService
 
         $payment = $order->payment;
         $gatewayOk = true;
+        $gatewayRefundId = null;
         if ($payment !== null && $payment->gateway_payment_id !== null && $amount > 0) {
             sort($ticketIds);
-            $gatewayOk = $this->gateway->refund(
+            $result = $this->gateway->refund(
                 $payment->gateway_payment_id,
                 // Devolvendo tudo o que entrou, pede estorno total — sem valor.
                 $amount === $order->total_cents ? null : $amount,
                 'refund-'.$payment->gateway_payment_id.'-tickets-'.implode('.', $ticketIds),
             );
+            $gatewayOk = $result->ok;
+            $gatewayRefundId = $result->gatewayRefundId;
         }
 
         if (! $gatewayOk) {
@@ -156,7 +162,7 @@ class RefundService
             ]));
         }
 
-        $refunds = DB::transaction(function () use ($order, $tickets, $shares, $reason, $completesOrder, $payment): Collection {
+        $refunds = DB::transaction(function () use ($order, $tickets, $shares, $reason, $completesOrder, $payment, $gatewayRefundId): Collection {
             $refunds = new Collection;
             $sessionUpcoming = $order->session->starts_at->isFuture();
 
@@ -167,7 +173,7 @@ class RefundService
                     'amount_cents' => $shares[$ticket->id],
                     'reason' => $reason,
                     'status' => Refund::STATUS_DONE,
-                    'gateway_refund_id' => null,
+                    'gateway_refund_id' => $gatewayRefundId,
                 ]));
 
                 if ($sessionUpcoming) {
@@ -295,17 +301,17 @@ class RefundService
     }
 
     /** Registra o reembolso do pedido inteiro, cancela ingressos, libera assentos e avisa o comprador. */
-    private function settle(Order $order, ?string $reason, int $amountCents): Refund
+    private function settle(Order $order, ?string $reason, int $amountCents, ?string $gatewayRefundId = null): Refund
     {
         $payment = $order->payment;
 
-        $refund = DB::transaction(function () use ($order, $payment, $reason, $amountCents): Refund {
+        $refund = DB::transaction(function () use ($order, $payment, $reason, $amountCents, $gatewayRefundId): Refund {
             $refund = Refund::create([
                 'order_id' => $order->id,
                 'amount_cents' => $amountCents,
                 'reason' => $reason,
                 'status' => Refund::STATUS_DONE,
-                'gateway_refund_id' => null,
+                'gateway_refund_id' => $gatewayRefundId,
             ]);
 
             // Assento só volta pra venda se a sessão ainda não começou —

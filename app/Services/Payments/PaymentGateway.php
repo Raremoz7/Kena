@@ -27,8 +27,9 @@ interface PaymentGateway
      * Estorna (total se $amountCents for null). $idempotencyKey distingue
      * estornos parciais de mesmo valor no mesmo pagamento (dois ingressos de
      * preço igual); sem ela, o gateway derivaria a chave de pagamento + valor.
+     * Devolve se o estorno foi aceito e o id dele no gateway.
      */
-    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): bool;
+    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): RefundResult;
 
     /** Cancela um pagamento ainda pendente no gateway (ex.: Pix não pago). */
     public function cancelPayment(string $gatewayPaymentId): bool;

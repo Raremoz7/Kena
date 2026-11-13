@@ -99,6 +99,7 @@ class PartialRefundTest extends TestCase
         $this->assertSame($first->id, $refund->ticket_id);
         $this->assertSame($expected, $refund->amount_cents);
         $this->assertSame(Refund::STATUS_DONE, $refund->status);
+        $this->assertSame('FAKE-REFUND-1', $refund->gateway_refund_id, 'guarda o id do estorno devolvido pelo gateway');
         $this->assertSame([$expected], $this->gateway->refundAmounts, 'gateway recebe estorno parcial do valor do assento');
         $this->assertStringContainsString('-tickets-'.$first->id, (string) $this->gateway->refundKeys[0]);
 
