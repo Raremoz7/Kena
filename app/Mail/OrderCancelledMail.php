@@ -23,7 +23,7 @@ class OrderCancelledMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Pedido cancelado — '.$this->order->event()?->title);
+        return new Envelope(subject: 'Pedido cancelado: '.$this->order->event()?->title);
     }
 
     public function content(): Content

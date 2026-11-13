@@ -74,7 +74,7 @@ class PaymentService
             return $order->fresh() ?? $order;
         }
 
-        // Um comprador não pode acumular dois meios de pagamento vivos —
+        // Um comprador não pode acumular dois meios de pagamento vivos:
         // inclui pagamentos de pedidos substituídos (ex.: cupom mudou).
         $pendingPayments = Payment::query()
             ->whereIn('order_id', Order::where('reservation_id', $reservation->id)->select('id'))

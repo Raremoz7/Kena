@@ -24,7 +24,7 @@ class RefundConfirmedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Reembolso confirmado — '.$this->order->event()?->title);
+        return new Envelope(subject: 'Reembolso confirmado: '.$this->order->event()?->title);
     }
 
     public function content(): Content
