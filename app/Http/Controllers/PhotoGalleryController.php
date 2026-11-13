@@ -13,6 +13,8 @@ use App\Support\Money;
 use App\Support\Presenters\CatalogPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,6 +26,9 @@ use Inertia\Response;
  */
 class PhotoGalleryController extends Controller
 {
+    /** Códigos errados aceitos por galeria em uma hora, somando todos os IPs. */
+    private const MAX_CODE_FAILURES_PER_HOUR = 50;
+
     public function __construct(private readonly PhotoGalleryAccess $access) {}
 
     public function index(Request $request): Response
@@ -121,7 +126,21 @@ class PhotoGalleryController extends Controller
             'code.required' => 'Digite o código que a escola enviou.',
         ]);
 
+        // Trava por galeria, independente de IP: o limite da rota é por pessoa e
+        // por IP, e quem troca de IP poderia continuar chutando.
+        $failures = 'photo-code-failures:'.$gallery->id;
+
+        if (RateLimiter::tooManyAttempts($failures, self::MAX_CODE_FAILURES_PER_HOUR)) {
+            return back()->withErrors(['code' => 'Muitas tentativas nesta galeria. Tente de novo daqui a pouco ou peça ajuda à escola.']);
+        }
+
         if (! $gallery->acceptsCode($data['code'])) {
+            RateLimiter::hit($failures, 3600);
+
+            if (RateLimiter::attempts($failures) === self::MAX_CODE_FAILURES_PER_HOUR) {
+                Log::warning('Galeria de fotos travada por excesso de códigos errados', ['gallery_id' => $gallery->id]);
+            }
+
             return back()->withErrors(['code' => 'Esse código não confere. Confira com a escola e tente de novo.']);
         }
 

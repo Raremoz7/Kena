@@ -77,7 +77,24 @@ class PhotoGalleryAccessTest extends TestCase
 
     public function test_code_is_generated_and_short(): void
     {
-        $this->assertMatchesRegularExpression('/^[A-Z]+-\d{4}$/', $this->gallery->access_code);
+        $this->assertMatchesRegularExpression('/^[A-Z]+-\d{6}$/', $this->gallery->access_code);
+    }
+
+    public function test_gallery_locks_after_too_many_wrong_codes_from_any_ip(): void
+    {
+        // Cada tentativa vem de um IP diferente: o limite da rota por IP não pega,
+        // a trava por galeria pega.
+        for ($i = 0; $i < 50; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => "10.0.{$i}.1"])
+                ->post("/fotos/{$this->slug}/acesso", ['code' => 'ERRADO-'.str_pad((string) $i, 6, '0', STR_PAD_LEFT)]);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.9.9.9'])
+            ->post("/fotos/{$this->slug}/acesso", ['code' => $this->gallery->access_code])
+            ->assertSessionHasErrors('code');
+
+        $this->get("/fotos/{$this->slug}")
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('buyer/photo-gallery-locked'));
     }
 
     public function test_visitor_gets_the_entry_screen_without_photos_or_faces(): void

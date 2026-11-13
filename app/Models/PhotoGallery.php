@@ -33,11 +33,15 @@ class PhotoGallery extends Model
         });
     }
 
-    /** Código curto e único, no formato PALAVRA-1234. */
+    /**
+     * Código único no formato PALAVRA-123456. Seis dígitos, sorteados com
+     * random_int (gerador seguro): junto com a trava por galeria no
+     * controller, chutar o código deixa de ser viável.
+     */
     public static function newAccessCode(): string
     {
         do {
-            $code = self::CODE_WORDS[array_rand(self::CODE_WORDS)].'-'.random_int(1000, 9999);
+            $code = self::CODE_WORDS[random_int(0, count(self::CODE_WORDS) - 1)].'-'.random_int(100000, 999999);
         } while (self::where('access_code', $code)->exists());
 
         return $code;
