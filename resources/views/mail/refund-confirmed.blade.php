@@ -13,5 +13,9 @@
 @if (filled($reason ?? null))
 <p style="color:#6B5F57;font-size:13px;margin:0 0 8px;">Motivo: {{ $reason }}</p>
 @endif
+@if ($isPhotos ?? false)
+<p style="color:#6B5F57;font-size:13px;margin:0;">O download das fotos desse pedido foi encerrado.</p>
+@else
 <p style="color:#6B5F57;font-size:13px;margin:0;">Seus ingressos desse pedido foram cancelados.</p>
+@endif
 </x-mail.layout>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dev;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EventReminderMail;
+use App\Mail\PhotosReadyMail;
 use App\Mail\RefundConfirmedMail;
 use App\Mail\TicketsIssuedMail;
 use App\Mail\TicketTransferredMail;
@@ -26,13 +27,18 @@ class MailPreviewController extends Controller
             'ticket-transferred' => new TicketTransferredMail($this->anyTicket(), 'Ana Souza'),
             'event-reminder' => new EventReminderMail($this->anyTicket()->session, $this->anyTicket()->user),
             'refund-confirmed' => new RefundConfirmedMail($this->paidOrder()),
+            'photos-ready' => new PhotosReadyMail(
+                Order::photoOrders()->where('status', Order::STATUS_PAID)->latest()->first()
+                    ?? abort(404, 'Nenhum pedido de fotos pago no banco. Faça uma compra de teste na galeria.'),
+                preview: true,
+            ),
             default => abort(404),
         };
     }
 
     private function paidOrder(): Order
     {
-        return Order::query()->where('status', Order::STATUS_PAID)->latest()->first()
+        return Order::ticketOrders()->where('status', Order::STATUS_PAID)->latest()->first()
             ?? abort(404, 'Nenhum pedido pago no banco — rode "php artisan migrate:fresh --seed" ou faça uma compra de teste.');
     }
 

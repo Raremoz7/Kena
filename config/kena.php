@@ -36,6 +36,15 @@ return [
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
     ],
 
+    /**
+     * Fotos do espetáculo. Os originais em alta ficam fora da pasta pública:
+     * o download passa pelo servidor, que confere a compra antes de entregar.
+     */
+    'photos' => [
+        // Pasta local dos originais (o `original_ref` da foto é o caminho dentro dela).
+        'originals_path' => env('KENA_PHOTOS_ORIGINALS_PATH', storage_path('app/private/fotos-originais')),
+    ],
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),

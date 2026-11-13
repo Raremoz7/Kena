@@ -1,5 +1,6 @@
 import { Icon } from '@/components/atoms/Icon';
 import { Price } from '@/components/atoms/Price';
+import { Spinner } from '@/components/atoms/Spinner';
 import { photoCount } from '@/lib/photos/pricing';
 import type { PhotoQuote, PriceTier } from '@/lib/photos/pricing';
 import type { GalleryPhoto } from '@/lib/photos/types';
@@ -145,6 +146,8 @@ interface CartPanelProps {
     onRemove: (id: number) => void;
     onClear: () => void;
     onCheckout: () => void;
+    /** Pedido sendo criado: trava o botão para não abrir dois pedidos. */
+    submitting?: boolean;
 }
 
 export function PhotoCartPanel({
@@ -156,6 +159,7 @@ export function PhotoCartPanel({
     onRemove,
     onClear,
     onCheckout,
+    submitting = false,
 }: CartPanelProps) {
     return (
         <PhotoSheet
@@ -204,10 +208,18 @@ export function PhotoCartPanel({
                         <button
                             type="button"
                             onClick={onCheckout}
-                            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-btn bg-accent px-5 py-4 font-body text-base font-semibold text-accent-fg transition-colors hover:bg-accent-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none"
+                            disabled={submitting}
+                            aria-busy={submitting}
+                            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-btn bg-accent px-5 py-4 font-body text-base font-semibold text-accent-fg transition-colors hover:bg-accent-hover focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:outline-none disabled:opacity-60"
                         >
-                            Finalizar compra
-                            <Icon name="arrow-right" size={18} />
+                            {submitting ? (
+                                <Spinner />
+                            ) : (
+                                <>
+                                    Finalizar compra
+                                    <Icon name="arrow-right" size={18} />
+                                </>
+                            )}
                         </button>
                         <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center font-body text-xs text-faint">
                             <Icon name="lock" size={13} />

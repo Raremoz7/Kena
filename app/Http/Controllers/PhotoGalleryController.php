@@ -6,8 +6,10 @@ use App\Models\Photo;
 use App\Models\PhotoGallery;
 use App\Models\PhotoGroup;
 use App\Models\PhotoPerson;
+use App\Services\Photos\PhotoOrderService;
 use App\Support\Money;
 use App\Support\Presenters\CatalogPresenter;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,8 +36,10 @@ class PhotoGalleryController extends Controller
         return Inertia::render('buyer/photos', ['galleries' => $galleries]);
     }
 
-    public function show(string $slug): Response
+    public function show(Request $request, string $slug, PhotoOrderService $photoOrders): Response
     {
+        $user = $request->user('web');
+
         $gallery = PhotoGallery::with(['event.venue', 'event.sessions', 'event.sectors', 'groups', 'people'])
             ->whereHas('event', fn ($q) => $q->where('slug', $slug))
             ->where('status', 'published')
@@ -84,6 +88,11 @@ class PhotoGalleryController extends Controller
                 'group' => $p->photo_group_id,
                 'people' => $p->people->pluck('id'),
             ]),
+            'purchaseUrl' => route('photos.checkout.start', $slug),
+            'emailCodeUrl' => route('email-code.send'),
+            'ownedIds' => $user !== null
+                ? $photoOrders->ownedPhotoIds($user, $photos->pluck('id')->all())
+                : [],
         ]);
     }
 

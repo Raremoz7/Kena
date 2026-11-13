@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Icon } from '@/components/atoms/Icon';
+import { BuyerAreaTabs } from '@/components/molecules/BuyerAreaTabs';
 import { BuyerTicketList } from '@/components/organisms/BuyerTicketList';
 import type { TicketInfo } from '@/lib/veludo/types';
 
@@ -22,6 +23,8 @@ export default function TicketsPage({
                 <p className="mt-1 font-body text-sm text-muted-foreground">
                     Seus lugares, o QR de entrada e as transferências de titularidade.
                 </p>
+
+                <BuyerAreaTabs current="tickets" />
 
                 {needsPassword && (
                     <Link
