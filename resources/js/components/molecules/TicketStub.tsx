@@ -59,16 +59,22 @@ export function TicketStub({ ticket, actions, showQr = true, className }: Ticket
                     <p className="font-body text-xs text-muted-foreground">
                         {ticket.dateLabel} · {ticket.venueName}
                     </p>
-                    <p className="mt-auto pt-3 font-mono text-[11px] text-faint">{ticket.code}</p>
-                    {actions && <div className="mt-3 flex gap-2">{actions}</div>}
+                    <p className="mt-auto truncate pt-3 font-mono text-[11px] text-faint">{ticket.code}</p>
                 </div>
 
                 {showQr && (
-                    <div className="flex items-center border-l border-dashed border-border pl-5">
+                    <div className="flex shrink-0 items-center border-l border-dashed border-border pl-5">
                         <QrCode value={ticket.code} size={72} />
                     </div>
                 )}
             </div>
+
+            {/* Ações numa faixa própria, na largura toda: ao lado do QR não cabem em card estreito. */}
+            {actions && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-border px-5 py-3">
+                    {actions}
+                </div>
+            )}
         </article>
     );
 }

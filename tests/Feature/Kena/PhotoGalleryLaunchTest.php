@@ -81,14 +81,15 @@ class PhotoGalleryLaunchTest extends TestCase
         $this->get('/fotos')->assertOk();
     }
 
-    public function test_panel_sees_photos_before_publishing(): void
+    public function test_menu_hides_photos_even_for_panel_until_published(): void
     {
         $this->gallery('draft');
         $panel = PanelUser::factory()->create();
 
-        $this->actingAs($panel, 'painel')->get('/fotos')->assertOk();
         $this->actingAs($panel, 'painel')->get('/eventos')
-            ->assertInertia(fn (AssertableInertia $p) => $p->where('photosAvailable', true));
+            ->assertInertia(fn (AssertableInertia $p) => $p->where('photosAvailable', false));
+        // A equipe ainda abre a lista pelo endereço, para conferir.
+        $this->actingAs($panel, 'painel')->get('/fotos')->assertOk();
     }
 
     // --- Aviso para quem comprou ingresso -------------------------------------

@@ -54,9 +54,9 @@ class HandleInertiaRequests extends Middleware
             // "retomar ou cancelar" em todas as telas do comprador.
             'activeReservation' => fn (): ?array => self::activeReservation($request->user('web')),
             // As fotos só entram no menu depois do espetáculo, quando existe
-            // galeria publicada. O painel vê sempre, para conferir antes.
-            'photosAvailable' => fn (): bool => $request->user('painel') !== null
-                || PhotoGallery::where('status', 'published')->exists(),
+            // galeria publicada. Vale para todos, inclusive quem está logado no
+            // painel: a equipe confere as fotos pelo próprio painel.
+            'photosAvailable' => fn (): bool => PhotoGallery::where('status', 'published')->exists(),
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
                 'success' => $request->session()->get('status'),
