@@ -1,8 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { Pagination } from '@/components/molecules/Pagination';
 import type { Paginator } from '@/components/molecules/Pagination';
+import type { DriveState } from '@/components/organisms/photos/DriveImportSection';
 import { PhotoGalleryShell } from '@/components/organisms/photos/PhotoGalleryShell';
 import type { GalleryShellData } from '@/components/organisms/photos/PhotoGalleryShell';
 import { cn } from '@/lib/utils';
@@ -47,8 +50,69 @@ function Chip({
     );
 }
 
+const isRunning = (drive: DriveState) =>
+    drive.status === 'queued' || drive.status === 'running';
+
+/**
+ * Galeria vazia: importa do Drive ali mesmo. Sem pasta salva (ou sem Drive
+ * configurado), leva aos ajustes, onde se cola o link da pasta.
+ */
+function EmptyImport({ eventId, drive }: { eventId: number; drive: DriveState }) {
+    const [starting, setStarting] = useState(false);
+    const error = usePage().props.errors?.drive_folder as string | undefined;
+    const ready = drive.configured && drive.hasFolder;
+
+    if (isRunning(drive)) {
+        return (
+            <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                <Icon name="clock" size={16} />
+                Importando do Drive. As fotos aparecem aqui quando terminar.
+            </p>
+        );
+    }
+
+    if (!ready) {
+        return (
+            <Button asChild>
+                <Link href={`/painel/fotos/${eventId}`}>
+                    <Icon name="settings" size={16} /> Configurar a pasta do Drive
+                </Link>
+            </Button>
+        );
+    }
+
+    return (
+        <div className="flex flex-col items-center gap-3">
+            <Button
+                type="button"
+                disabled={starting}
+                onClick={() =>
+                    router.post(
+                        `/painel/fotos/${eventId}/importar-drive`,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onStart: () => setStarting(true),
+                            onFinish: () => setStarting(false),
+                        },
+                    )
+                }
+            >
+                <Icon name="download" size={16} />
+                {starting ? 'Iniciando…' : 'Importar fotos do Drive'}
+            </Button>
+            {(error ?? drive.error) && (
+                <p role="alert" className="max-w-80 font-body text-sm text-danger-text">
+                    {error ?? drive.error}
+                </p>
+            )}
+        </div>
+    );
+}
+
 export default function PhotoPhotos({
     shell,
+    drive,
     photos,
     filter,
     groups,
@@ -56,6 +120,7 @@ export default function PhotoPhotos({
     totalCount,
 }: {
     shell: GalleryShellData;
+    drive: DriveState;
     photos: Paginator<PhotoRow>;
     filter: string;
     groups: Group[];
@@ -63,17 +128,47 @@ export default function PhotoPhotos({
     totalCount: number;
 }) {
     const base = `/painel/fotos/${shell.event.id}/galeria`;
+    const running = isRunning(drive);
+
+    // Enquanto a fila importa, recarrega a página (mesmo depois que as
+    // primeiras fotos chegam): a lista cresce até a importação terminar.
+    useEffect(() => {
+        if (!running) {
+            return;
+        }
+
+        const timer = setInterval(() => router.reload(), 3000);
+
+        return () => clearInterval(timer);
+    }, [running]);
 
     return (
         <>
             <Head title={`Painel — Fotos importadas de ${shell.event.title}`} />
             <PhotoGalleryShell shell={shell} tab="fotos">
+                {running && totalCount > 0 && (
+                    <p className="mb-5 flex items-center gap-2 rounded-card border border-border bg-surface px-4 py-3 font-body text-sm text-muted-foreground">
+                        <Icon name="clock" size={16} className="shrink-0" />
+                        Importando do Drive: {totalCount}{' '}
+                        {totalCount === 1 ? 'foto até agora' : 'fotos até agora'}.
+                    </p>
+                )}
                 {totalCount === 0 ? (
                     <div className="rounded-card border border-border py-14">
                         <EmptyState
                             icon="image"
                             title="Nenhuma foto importada"
-                            description="Rode o importador (fotos:importar) para trazer as fotos deste evento."
+                            description={
+                                drive.configured && drive.hasFolder
+                                    ? 'Traga as fotos da pasta do Drive deste evento, com turmas e rostos.'
+                                    : 'Cole o link da pasta do Drive nos ajustes para importar as fotos deste evento.'
+                            }
+                            action={
+                                <EmptyImport
+                                    eventId={shell.event.id}
+                                    drive={drive}
+                                />
+                            }
                         />
                     </div>
                 ) : (
