@@ -34,6 +34,9 @@ class PhotoGalleryController extends Controller
 {
     private const PHOTOS_PER_PAGE = 48;
 
+    /** Código escolhido à mão: curto demais vira chute fácil, mesmo com a trava. */
+    private const MIN_CODE_LENGTH = 8;
+
     /** Faixas sugeridas ao criar uma galeria nova. */
     private const DEFAULT_TIERS = [
         ['min_qty' => 1, 'unit_price_cents' => 3500],
@@ -89,6 +92,7 @@ class PhotoGalleryController extends Controller
                 'driveFolder' => $gallery?->drive_folder ? self::driveUrl($gallery->drive_folder) : '',
                 'description' => $gallery->description ?? '',
                 'copyright_holder' => $gallery->copyright_holder ?? '',
+                'access_code' => $gallery->access_code ?? '',
                 'default_holder' => PhotoRenditions::defaultHolder(),
                 'tiers' => array_map(fn (array $t): array => [
                     'min_qty' => (int) $t['min_qty'],
@@ -118,11 +122,30 @@ class PhotoGalleryController extends Controller
             }],
             'description' => ['nullable', 'string', 'max:1000'],
             'copyright_holder' => ['nullable', 'string', 'max:80'],
+            // Código que a escola passa às famílias. Vazio mantém o atual (ou sorteia na criação).
+            'access_code' => ['nullable', 'string', 'max:40', 'regex:/^[A-Za-z0-9 -]+$/', function (string $attribute, mixed $value, Closure $fail) use ($event): void {
+                if (! filled($value)) {
+                    return;
+                }
+                $code = PhotoGallery::normalizeCode((string) $value);
+                if (strlen($code) < self::MIN_CODE_LENGTH || preg_match('/\d/', $code) !== 1) {
+                    $fail('Use pelo menos '.self::MIN_CODE_LENGTH.' letras e números, com algum número. Ex.: NOZES-482193.');
+
+                    return;
+                }
+                $taken = PhotoGallery::where('event_id', '!=', $event->id)->pluck('access_code')
+                    ->contains(fn (string $other): bool => PhotoGallery::normalizeCode($other) === $code);
+                if ($taken) {
+                    $fail('Esse código já é de outra galeria. Escolha outro.');
+                }
+            }],
             'tiers' => ['required', 'array', 'min:1', 'max:'.PhotoPriceTiers::MAX_TIERS],
             'tiers.*.min_qty' => ['required', 'integer', 'min:1', 'max:1000'],
             'tiers.*.price' => ['required', 'numeric', 'min:0.01', 'max:10000'],
         ], [
             'copyright_holder.max' => 'O nome do titular pode ter no máximo 80 caracteres.',
+            'access_code.regex' => 'O código aceita só letras, números, espaço e hífen.',
+            'access_code.max' => 'O código pode ter no máximo 40 caracteres.',
             'tiers.required' => 'Informe pelo menos uma faixa de preço.',
             'tiers.*.min_qty.required' => 'Informe a quantidade mínima de cada faixa.',
             'tiers.*.min_qty.integer' => 'A quantidade mínima precisa ser um número inteiro.',
@@ -151,6 +174,9 @@ class PhotoGalleryController extends Controller
                 'copyright_holder' => filled($data['copyright_holder'] ?? null) ? trim($data['copyright_holder']) : null,
                 'price_tiers' => $tiers,
                 'drive_folder' => filled($data['drive_folder'] ?? null) ? DriveFolderSource::extractId($data['drive_folder']) : null,
+                ...(filled($data['access_code'] ?? null)
+                    ? ['access_code' => strtoupper(trim((string) preg_replace('/\s+/', '-', trim($data['access_code']))))]
+                    : []),
             ],
         );
 
@@ -334,7 +360,7 @@ class PhotoGalleryController extends Controller
         return back()->with('status', $data['hidden'] ? 'Pessoa escondida do filtro por rosto.' : 'Pessoa de volta ao filtro por rosto.');
     }
 
-    public function photos(Request $request, Event $event): Response
+    public function photos(Request $request, Event $event, DriveClient $drive): Response
     {
         $gallery = $this->galleryOf($event);
 
@@ -364,6 +390,8 @@ class PhotoGalleryController extends Controller
 
         return Inertia::render('admin/photo-photos', [
             'shell' => $this->shell($event, $gallery),
+            // Galeria vazia: o estado vazio importa direto do Drive, sem passar pelos ajustes.
+            'drive' => $this->driveState($gallery, $drive),
             'photos' => $photos,
             'filter' => $filter,
             'groups' => $groups->map(fn ($g): array => [

@@ -30,6 +30,7 @@ interface FormProps {
         driveFolder: string;
         description: string;
         copyright_holder: string;
+        access_code: string;
         default_holder: string;
         tiers: { min_qty: number; price: number }[];
     };
@@ -47,11 +48,13 @@ export default function PhotoGalleryForm({
         drive_folder: string;
         description: string;
         copyright_holder: string;
+        access_code: string;
         tiers: TierDraft[];
     }>({
         drive_folder: initial.driveFolder,
         description: initial.description,
         copyright_holder: initial.copyright_holder,
+        access_code: initial.access_code,
         tiers: initial.tiers.map((t) => ({
             min_qty: String(t.min_qty),
             price: reais(t.price),
@@ -184,6 +187,33 @@ export default function PhotoGalleryForm({
                                     )
                                 }
                                 placeholder={initial.default_holder}
+                            />
+                        </FormField>
+
+                        <FormField
+                            label="Código de acesso"
+                            htmlFor="access_code"
+                            helper={
+                                shell.exists
+                                    ? 'A escola passa este código às famílias para abrir a galeria. Quem tem ingresso do evento entra sem ele. Ao trocar, o código antigo para de funcionar.'
+                                    : 'Deixe vazio para o Kena sortear um, no formato PALAVRA-123456. A escola passa o código às famílias.'
+                            }
+                            error={form.errors.access_code}
+                        >
+                            <Input
+                                id="access_code"
+                                maxLength={40}
+                                autoComplete="off"
+                                spellCheck={false}
+                                className="font-mono uppercase"
+                                value={form.data.access_code}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'access_code',
+                                        e.target.value.toUpperCase(),
+                                    )
+                                }
+                                placeholder="NOZES-482193"
                             />
                         </FormField>
                     </section>
