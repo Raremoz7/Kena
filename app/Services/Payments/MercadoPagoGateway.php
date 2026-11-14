@@ -91,15 +91,17 @@ class MercadoPagoGateway implements PaymentGateway
         return $this->toResult($data, $method);
     }
 
-    public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool
+    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): RefundResult
     {
         $body = $amountCents !== null ? ['amount' => round($amountCents / 100, 2)] : [];
 
         $response = $this->client()
-            ->withHeaders(['X-Idempotency-Key' => 'refund-'.$gatewayPaymentId.'-'.($amountCents ?? 'full')])
+            ->withHeaders(['X-Idempotency-Key' => $idempotencyKey ?? 'refund-'.$gatewayPaymentId.'-'.($amountCents ?? 'full')])
             ->post('/v1/payments/'.$gatewayPaymentId.'/refunds', $body);
 
-        return $response->successful();
+        $id = $response->json('id');
+
+        return new RefundResult($response->successful(), $response->successful() && $id !== null ? (string) $id : null);
     }
 
     public function cancelPayment(string $gatewayPaymentId): bool

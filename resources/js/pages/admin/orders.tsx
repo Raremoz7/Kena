@@ -15,6 +15,8 @@ import {
 import { AdminPage, PageHeader } from '@/components/molecules/PageHeader';
 import { Pagination } from '@/components/molecules/Pagination';
 import type { Paginator } from '@/components/molecules/Pagination';
+import { RefundTicketsDialog } from '@/components/organisms/RefundTicketsDialog';
+import type { RefundableTicket } from '@/components/organisms/RefundTicketsDialog';
 import { veludoToast } from '@/lib/veludo/toast';
 
 interface OrderRow {
@@ -28,6 +30,11 @@ interface OrderRow {
     total: number;
     status: string;
     refundFailed: boolean;
+    /** Pedido pago com algum ingresso já devolvido avulso. */
+    partiallyRefunded: boolean;
+    /** Quanto ainda cabe devolver no pedido (reais). */
+    remaining: number;
+    tickets: RefundableTicket[];
     date: string | null;
 }
 
@@ -108,29 +115,35 @@ export default function AdminOrders({
         });
     }
 
-    function refundOrder(o: OrderRow) {
-        setConfirm({
-            title: 'Reembolsar pedido',
-            description: `O pedido ${o.reference} será reembolsado, os ingressos cancelados e os assentos liberados.`,
-            action: () =>
-                router.post(
-                    `/painel/pedidos/${o.id}/reembolso`,
-                    {},
-                    {
-                        preserveScroll: true,
-                        onError: (e) =>
-                            veludoToast.error(
-                                'Reembolso não concluído',
-                                e.order ?? 'Tente novamente.',
-                            ),
-                        onSuccess: () =>
-                            veludoToast.success(
-                                'Reembolso processado',
-                                `Pedido ${o.reference} reembolsado.`,
-                            ),
-                    },
-                ),
-        });
+    // Reembolso por assento: o organizador escolhe quais ingressos devolver;
+    // marcar todos equivale a reembolsar o pedido inteiro.
+    const [refundTarget, setRefundTarget] = useState<OrderRow | null>(null);
+
+    function refundTickets(
+        o: OrderRow,
+        ticketIds: number[],
+        completesOrder: boolean,
+    ) {
+        setRefundTarget(null);
+        router.post(
+            `/painel/pedidos/${o.id}/reembolso-ingressos`,
+            { ticket_ids: ticketIds },
+            {
+                preserveScroll: true,
+                onError: (e) =>
+                    veludoToast.error(
+                        'Reembolso não concluído',
+                        e.order ?? e.ticket_ids ?? 'Tente novamente.',
+                    ),
+                onSuccess: () =>
+                    veludoToast.success(
+                        'Reembolso processado',
+                        completesOrder
+                            ? `Pedido ${o.reference} reembolsado.`
+                            : `${ticketIds.length} ${ticketIds.length === 1 ? 'ingresso' : 'ingressos'} do pedido ${o.reference} ${ticketIds.length === 1 ? 'reembolsado' : 'reembolsados'}.`,
+                    ),
+            },
+        );
     }
 
     const sessionActions = sessionId !== null && (
@@ -203,6 +216,11 @@ export default function AdminOrders({
                                     >
                                         {statusLabel[o.status] ?? o.status}
                                     </Badge>
+                                    {o.partiallyRefunded && (
+                                        <Badge tone="info">
+                                            Reembolso parcial
+                                        </Badge>
+                                    )}
                                     {o.refundFailed && (
                                         <Badge tone="danger">
                                             Estorno falhou
@@ -215,7 +233,7 @@ export default function AdminOrders({
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => refundOrder(o)}
+                                        onClick={() => setRefundTarget(o)}
                                     >
                                         <Icon name="refund" size={14} />{' '}
                                         Reembolsar
@@ -295,6 +313,11 @@ export default function AdminOrders({
                                         >
                                             {statusLabel[o.status] ?? o.status}
                                         </Badge>
+                                        {o.partiallyRefunded && (
+                                            <Badge tone="info">
+                                                Reembolso parcial
+                                            </Badge>
+                                        )}
                                         {o.refundFailed && (
                                             <Badge tone="danger">
                                                 Estorno falhou
@@ -309,7 +332,9 @@ export default function AdminOrders({
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                onClick={() => refundOrder(o)}
+                                                onClick={() =>
+                                                    setRefundTarget(o)
+                                                }
                                             >
                                                 <Icon name="refund" size={14} />{' '}
                                                 Reembolsar
@@ -334,6 +359,16 @@ export default function AdminOrders({
 
                 <Pagination links={orders.links} />
             </AdminPage>
+            <RefundTicketsDialog
+                key={refundTarget?.id ?? 'none'}
+                order={refundTarget}
+                open={refundTarget !== null}
+                onOpenChange={(open) => !open && setRefundTarget(null)}
+                onConfirm={(ticketIds, completesOrder) =>
+                    refundTarget &&
+                    refundTickets(refundTarget, ticketIds, completesOrder)
+                }
+            />
             <ConfirmDialog
                 open={confirm !== null}
                 onOpenChange={(open) => !open && setConfirm(null)}

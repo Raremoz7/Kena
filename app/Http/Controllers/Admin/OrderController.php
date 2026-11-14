@@ -21,12 +21,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, RefundService $refunds): Response
     {
         $sessionId = $request->integer('session') ?: null;
 
         $orders = Order::query()
-            ->with(['user', 'session.event', 'photoGallery.event', 'items', 'refunds'])
+            ->with(['user', 'session.event', 'photoGallery.event', 'items', 'refunds', 'tickets'])
             ->withCount('photoItems')
             ->when($sessionId, fn ($q) => $q->where('session_id', $sessionId))
             ->latest('id')
@@ -47,9 +47,24 @@ class OrderController extends Controller
                     : $o->items->pluck('seat_code')->implode(', '),
                 'total' => Money::toReais($o->total_cents),
                 'status' => $o->status,
-                // Estorno recusado pelo gateway precisa de ação manual do organizador.
-                'refundFailed' => $o->refunds->contains('status', Refund::STATUS_FAILED)
-                    && ! $o->refunds->contains('status', Refund::STATUS_DONE),
+                // Estorno recusado pelo gateway precisa de ação manual do organizador:
+                // a última tentativa registrada falhou e ninguém refez depois.
+                'refundFailed' => $o->refunds->sortByDesc('id')->first()?->status === Refund::STATUS_FAILED,
+                // Pedido pago com algum ingresso já devolvido avulso.
+                'partiallyRefunded' => $o->status === Order::STATUS_PAID
+                    && $o->tickets->contains('status', Ticket::STATUS_REFUNDED),
+                // Quanto ainda cabe devolver (total menos estornos avulsos concluídos).
+                'remaining' => Money::toReais(max(0, $o->total_cents
+                    - (int) $o->refunds->where('status', Refund::STATUS_DONE)->sum('amount_cents'))),
+                // Ingressos do pedido para o reembolso por assento no painel.
+                'tickets' => $o->tickets->map(fn (Ticket $t): array => [
+                    'id' => $t->id,
+                    'seat' => $t->seat_code,
+                    'sector' => $t->sector_name,
+                    'holder' => $t->holder_name,
+                    'status' => $t->status,
+                    'amount' => Money::toReais($refunds->shareCents($o, $t)),
+                ])->values()->all(),
                 'date' => $o->created_at?->format('d/m/Y H:i'),
             ]);
 
@@ -76,13 +91,44 @@ class OrderController extends Controller
         return back()->with('status', $summary);
     }
 
-    /** Reembolso pelo organizador — sem prazo (a qualquer momento, pedido pago). */
+    private const GATEWAY_REFUSED = 'O Mercado Pago recusou o estorno. Nada foi alterado — tente de novo em instantes.';
+
+    /** Reembolso do pedido inteiro pelo organizador — sem prazo (a qualquer momento, pedido pago). */
     public function refund(Order $order, RefundService $refunds): RedirectResponse
     {
         try {
-            $refunds->refundOrder($order, 'Reembolsado pelo organizador');
+            $refund = $refunds->refundOrder($order, 'Reembolsado pelo organizador');
         } catch (\RuntimeException $e) {
             return back()->withErrors(['order' => $e->getMessage()]);
+        }
+
+        if ($refund->status === Refund::STATUS_FAILED) {
+            return back()->withErrors(['order' => self::GATEWAY_REFUSED]);
+        }
+
+        return back();
+    }
+
+    /**
+     * Reembolso de ingressos avulsos (um ou mais assentos) pelo organizador.
+     * Cada ingresso devolve sua fatia proporcional do que foi pago; se não
+     * sobrar ingresso válido, o pedido fecha como reembolsado.
+     */
+    public function refundTickets(Request $request, Order $order, RefundService $refunds): RedirectResponse
+    {
+        $data = $request->validate([
+            'ticket_ids' => ['required', 'array', 'min:1'],
+            'ticket_ids.*' => ['required', 'integer', 'distinct'],
+        ]);
+
+        try {
+            $result = $refunds->refundTickets($order, $data['ticket_ids'], 'Reembolsado pelo organizador');
+        } catch (\RuntimeException $e) {
+            return back()->withErrors(['order' => $e->getMessage()]);
+        }
+
+        if ($result->contains('status', Refund::STATUS_FAILED)) {
+            return back()->withErrors(['order' => self::GATEWAY_REFUSED]);
         }
 
         return back();

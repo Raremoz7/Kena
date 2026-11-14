@@ -376,15 +376,17 @@ class PaymentService
     /** Estorna um pagamento aprovado que não pode mais ser entregue. */
     private function refundLateApproval(Payment $payment, Order $order): void
     {
-        $gatewayOk = $payment->gateway_payment_id !== null
-            && $this->gateway->refund($payment->gateway_payment_id);
+        $result = $payment->gateway_payment_id !== null
+            ? $this->gateway->refund($payment->gateway_payment_id)
+            : null;
+        $gatewayOk = $result?->ok ?? false;
 
         Refund::create([
             'order_id' => $order->id,
             'amount_cents' => $payment->amount_cents,
             'reason' => 'Pagamento aprovado após a expiração da reserva — estorno automático.',
             'status' => $gatewayOk ? Refund::STATUS_DONE : Refund::STATUS_FAILED,
-            'gateway_refund_id' => null,
+            'gateway_refund_id' => $result?->gatewayRefundId,
         ]);
 
         if (! $gatewayOk) {

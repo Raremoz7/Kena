@@ -5,6 +5,7 @@ namespace Tests\Feature\Kena\Support;
 use App\Models\Order;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
+use App\Services\Payments\RefundResult;
 
 /** Gateway de pagamento fake para testes — sem rede. */
 class FakeGateway implements PaymentGateway
@@ -77,13 +78,21 @@ class FakeGateway implements PaymentGateway
     /** @var list<string> IDs estornados (espião para asserções). */
     public array $refunds = [];
 
+    /** @var list<int|null> Valores estornados, na ordem (null = total). */
+    public array $refundAmounts = [];
+
+    /** @var list<string|null> Chaves de idempotência recebidas, na ordem. */
+    public array $refundKeys = [];
+
     /** Simula recusa de estorno pelo gateway quando false. */
     public bool $refundOk = true;
 
-    public function refund(string $gatewayPaymentId, ?int $amountCents = null): bool
+    public function refund(string $gatewayPaymentId, ?int $amountCents = null, ?string $idempotencyKey = null): RefundResult
     {
         $this->refunds[] = $gatewayPaymentId;
+        $this->refundAmounts[] = $amountCents;
+        $this->refundKeys[] = $idempotencyKey;
 
-        return $this->refundOk;
+        return new RefundResult($this->refundOk, $this->refundOk ? 'FAKE-REFUND-'.count($this->refunds) : null);
     }
 }
