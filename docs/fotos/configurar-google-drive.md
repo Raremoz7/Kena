@@ -27,7 +27,8 @@ Para o Kena entrar no Drive sem login de pessoa, usamos uma **conta de serviço*
 
 1. Clique na conta de serviço, aba **Chaves**.
 2. **Adicionar chave > Criar nova chave > JSON > Criar**.
-3. O navegador baixa um arquivo `.json`. Guarde com cuidado: quem tem esse arquivo lê tudo o que foi compartilhado com a conta de serviço. Nunca coloque no git, em e-mail ou em chat.
+3. Se aparecer "A criação da chave da conta de serviço está desativada", é a política `iam.disableServiceAccountKeyCreation`, que o Google liga por padrão em organizações novas. Abra **IAM e admin > Políticas da organização**, busque essa política, clique em **Gerenciar política**, escolha **Substituir a política do recurso pai**, adicione uma regra com **Aplicação: Desativado** e salve. Vale só para o projeto. A mudança leva cerca de um minuto para valer.
+4. O navegador baixa um arquivo `.json`. Guarde com cuidado: quem tem esse arquivo lê tudo o que foi compartilhado com a conta de serviço. Nunca coloque no git, em e-mail ou em chat.
 
 ## 5. Colocar o arquivo no servidor
 
