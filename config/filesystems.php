@@ -53,6 +53,12 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/photos'),
             'visibility' => 'private',
+            // Quem grava é o worker da fila (dono) e quem lê é o PHP do site
+            // (grupo www-data): "privado" precisa liberar leitura ao grupo.
+            'permissions' => [
+                'file' => ['public' => 0644, 'private' => 0640],
+                'dir' => ['public' => 0755, 'private' => 0750],
+            ],
             'throw' => false,
             'report' => false,
         ],
