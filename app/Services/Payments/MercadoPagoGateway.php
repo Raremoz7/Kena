@@ -5,6 +5,7 @@ namespace App\Services\Payments;
 use App\Exceptions\PaymentException;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPhoto;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Carbon;
@@ -164,6 +165,26 @@ class MercadoPagoGateway implements PaymentGateway
      */
     private function additionalInfo(Order $order): array
     {
+        if ($order->isPhotos()) {
+            $order->loadMissing('photoItems');
+            $title = 'Fotos · '.($order->event()->title ?? 'Espetáculo');
+            $items = $order->photoItems
+                ->map(fn (OrderPhoto $item): array => [
+                    'id' => 'foto-'.$item->photo_id,
+                    'title' => $title,
+                    'description' => $item->filename,
+                    'category_id' => 'art',
+                    'quantity' => 1,
+                    'unit_price' => round($item->unit_price_cents / 100, 2),
+                ])
+                ->all();
+
+            return array_filter([
+                'items' => $items !== [] ? $items : null,
+                'payer' => $this->splitName($order->user->name ?? null) ?: null,
+            ]);
+        }
+
         $order->loadMissing('items', 'session.event');
         $eventTitle = $order->session->event->title ?? 'Ingresso';
 

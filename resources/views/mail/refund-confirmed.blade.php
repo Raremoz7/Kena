@@ -20,7 +20,9 @@
 @if (filled($reason ?? null))
 <p style="color:#6B5F57;font-size:13px;margin:0 0 8px;">Motivo: {{ $reason }}</p>
 @endif
-@if ($partial)
+@if ($isPhotos ?? false)
+<p style="color:#6B5F57;font-size:13px;margin:0;">O download das fotos desse pedido foi encerrado.</p>
+@elseif ($partial)
 <p style="color:#6B5F57;font-size:13px;margin:0;">Os demais ingressos desse pedido continuam válidos.</p>
 @else
 <p style="color:#6B5F57;font-size:13px;margin:0;">Seus ingressos desse pedido foram cancelados.</p>

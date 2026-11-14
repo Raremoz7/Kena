@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,8 +12,10 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property string $kind
  * @property int $user_id
- * @property int $session_id
+ * @property int|null $session_id
+ * @property int|null $photo_gallery_id
  * @property int|null $reservation_id
  * @property int|null $coupon_id
  * @property string $reference
@@ -22,14 +25,25 @@ use Illuminate\Support\Carbon;
  * @property int $total_cents
  * @property string $status
  * @property Carbon|null $paid_at
- * @property-read EventSession $session
+ * @property-read EventSession|null $session
+ * @property-read PhotoGallery|null $photoGallery
  * @property-read User $user
  * @property-read Collection<int, OrderItem> $items
+ * @property-read Collection<int, OrderPhoto> $photoItems
  * @property-read Collection<int, Ticket> $tickets
  * @property-read Payment|null $payment
+ *
+ * @method static Builder<Order> photoOrders()
+ * @method static Builder<Order> ticketOrders()
  */
 class Order extends Model
 {
+    /** Pedido de ingressos (assentos de uma sessão). */
+    public const KIND_TICKETS = 'tickets';
+
+    /** Pedido de fotos do espetáculo (de uma galeria, sem sessão). */
+    public const KIND_PHOTOS = 'photos';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_PAID = 'paid';
@@ -41,6 +55,11 @@ class Order extends Model
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $guarded = [];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'kind' => self::KIND_TICKETS,
+    ];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -96,5 +115,48 @@ class Order extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
+    }
+
+    /** @return BelongsTo<PhotoGallery, $this> */
+    public function photoGallery(): BelongsTo
+    {
+        return $this->belongsTo(PhotoGallery::class);
+    }
+
+    /** @return HasMany<OrderPhoto, $this> */
+    public function photoItems(): HasMany
+    {
+        return $this->hasMany(OrderPhoto::class);
+    }
+
+    public function isPhotos(): bool
+    {
+        return $this->kind === self::KIND_PHOTOS;
+    }
+
+    /** Evento do pedido: o da sessão (ingressos) ou o da galeria (fotos). */
+    public function event(): ?Event
+    {
+        if ($this->isPhotos()) {
+            $this->loadMissing('photoGallery.event');
+
+            return $this->photoGallery?->event;
+        }
+
+        $this->loadMissing('session.event');
+
+        return $this->session?->event;
+    }
+
+    /** @param  Builder<Order>  $query */
+    public function scopeTicketOrders(Builder $query): void
+    {
+        $query->where('kind', self::KIND_TICKETS);
+    }
+
+    /** @param  Builder<Order>  $query */
+    public function scopePhotoOrders(Builder $query): void
+    {
+        $query->where('kind', self::KIND_PHOTOS);
     }
 }

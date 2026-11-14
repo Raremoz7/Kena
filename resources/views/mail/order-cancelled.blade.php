@@ -10,5 +10,5 @@
 <div style="color:#6B5F57;font-size:13px;margin-top:6px;">{{ $reason }}</div>
 </x-mail.info-panel>
 
-<x-mail.button :url="$eventsUrl">Ver eventos em cartaz</x-mail.button>
+<x-mail.button :url="$eventsUrl">{{ $ctaLabel ?? 'Ver eventos em cartaz' }}</x-mail.button>
 </x-mail.layout>

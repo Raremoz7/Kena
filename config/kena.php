@@ -36,6 +36,23 @@ return [
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
     ],
 
+    /**
+     * Fotos do espetáculo. Prévias, miniaturas e rostos ficam em disco privado
+     * (só saem para quem tem acesso à galeria). Os originais em alta ficam fora
+     * da pasta pública: o download passa pelo servidor, que confere a compra.
+     */
+    'photos' => [
+        'disk' => env('PHOTOS_DISK', 'photos'),
+        // Titular do direito autoral no aviso das prévias quando a galeria não define um.
+        'copyright_holder' => env('KENA_PHOTOS_COPYRIGHT_HOLDER', 'Kena'),
+        // Pasta local dos originais (o `original_ref` da foto é o caminho dentro dela).
+        'originals_path' => env('KENA_PHOTOS_ORIGINALS_PATH', storage_path('app/private/fotos-originais')),
+        // Google Drive: JSON da conta de serviço (caminho absoluto ou relativo à raiz do projeto), fora do git.
+        'drive' => [
+            'credentials' => env('GOOGLE_DRIVE_CREDENTIALS'),
+        ],
+    ],
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),

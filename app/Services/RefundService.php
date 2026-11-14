@@ -316,7 +316,9 @@ class RefundService
 
             // Assento só volta pra venda se a sessão ainda não começou —
             // reembolso tardio não pode recolocar lugar de show em andamento.
-            $sessionUpcoming = $order->session->starts_at->isFuture();
+            // Pedido de fotos não tem sessão nem assento: sair de "pago" já
+            // encerra o download.
+            $sessionUpcoming = $order->session?->starts_at->isFuture() ?? false;
 
             foreach ($order->tickets as $ticket) {
                 $ticket->update(['status' => Ticket::STATUS_REFUNDED]);

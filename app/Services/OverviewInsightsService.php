@@ -125,7 +125,8 @@ class OverviewInsightsService
      */
     private function averages(): array
     {
-        $paid = Order::where('status', Order::STATUS_PAID);
+        // Só ingressos: pedido de fotos não tem ingresso e puxaria a média para baixo.
+        $paid = Order::ticketOrders()->where('status', Order::STATUS_PAID);
         $paidCount = (clone $paid)->count();
         $withValue = (clone $paid)->where('total_cents', '>', 0);
         $valueCount = (clone $withValue)->count();

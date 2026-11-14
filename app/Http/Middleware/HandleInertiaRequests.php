@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\PanelUser;
+use App\Models\PhotoGallery;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Support\Presenters\CatalogPresenter;
@@ -52,6 +53,10 @@ class HandleInertiaRequests extends Middleware
             // Reserva em andamento do comprador: alimenta o aviso flutuante
             // "retomar ou cancelar" em todas as telas do comprador.
             'activeReservation' => fn (): ?array => self::activeReservation($request->user('web')),
+            // As fotos só entram no menu depois do espetáculo, quando existe
+            // galeria publicada. O painel vê sempre, para conferir antes.
+            'photosAvailable' => fn (): bool => $request->user('painel') !== null
+                || PhotoGallery::where('status', 'published')->exists(),
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
                 'success' => $request->session()->get('status'),

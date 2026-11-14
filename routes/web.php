@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\LotController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\PhotoGalleryController as AdminPhotoGalleryController;
 use App\Http\Controllers\Admin\SeatController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TeamController;
@@ -20,8 +21,12 @@ use App\Http\Controllers\Dev\MailPreviewController;
 use App\Http\Controllers\EmailCodeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\MyPhotosController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
+use App\Http\Controllers\PhotoCheckoutController;
+use App\Http\Controllers\PhotoGalleryController;
+use App\Http\Controllers\PhotoImageController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
@@ -36,6 +41,23 @@ Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy')
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');
+
+// Fotos do espetáculo à venda
+Route::get('/fotos', [PhotoGalleryController::class, 'index'])->name('photos.index');
+Route::get('/fotos/{slug}', [PhotoGalleryController::class, 'show'])->name('photos.show');
+// Carrinho de fotos vira pedido. Público: aceita convidado (código por e-mail), como a reserva.
+Route::post('/fotos/{slug}/comprar', [PhotoCheckoutController::class, 'start'])
+    ->middleware('throttle:reserve')
+    ->name('photos.checkout.start');
+Route::post('/fotos/{slug}/acesso', [PhotoGalleryController::class, 'unlock'])
+    ->middleware('throttle:photo-code')->name('photos.unlock');
+Route::post('/fotos/{slug}/privacidade', [PhotoGalleryController::class, 'privacyRequest'])
+    ->middleware('throttle:photo-privacy')->name('photos.privacy');
+// Imagens vêm de disco privado e só saem para quem tem acesso à galeria.
+Route::get('/fotos/midia/rosto/{person}', [PhotoImageController::class, 'face'])
+    ->whereNumber('person')->name('photos.face');
+Route::get('/fotos/midia/{photo}/{variant}', [PhotoImageController::class, 'photo'])
+    ->whereNumber('photo')->whereIn('variant', ['thumb', 'preview'])->name('photos.image');
 
 // Disponibilidade (polling do mapa) — público
 Route::get('/api/sessoes/{session}/disponibilidade', [AvailabilityController::class, 'show'])
@@ -92,6 +114,20 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/ingressos/{ticket}/agenda.ics', [TicketController::class, 'calendar'])->name('tickets.calendar');
     Route::get('/ingressos/{ticket}/google-wallet', [TicketController::class, 'googleWallet'])->name('tickets.google-wallet');
     Route::post('/api/pedidos/{order}/reembolso', [TicketController::class, 'refund'])->name('orders.refund');
+
+    // Fotos: pagamento do pedido e "Minhas fotos" (download sempre pelo servidor).
+    Route::get('/fotos/pedido/{reference}', [PhotoCheckoutController::class, 'show'])->name('photos.checkout');
+    Route::post('/fotos/pedido/{reference}/pagar', [PhotoCheckoutController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('photos.checkout.pay');
+    Route::get('/fotos/pedido/{reference}/status', [PhotoCheckoutController::class, 'status'])->name('photos.checkout.status');
+    Route::get('/minhas-fotos', [MyPhotosController::class, 'index'])->name('photos.mine');
+    Route::get('/minhas-fotos/{photo}/baixar', [MyPhotosController::class, 'download'])
+        ->middleware('throttle:120,1')
+        ->name('photos.mine.download');
+    Route::get('/minhas-fotos/galeria/{gallery}/zip', [MyPhotosController::class, 'zip'])
+        ->middleware('throttle:10,1')
+        ->name('photos.mine.zip');
 });
 
 // Preview local dos e-mails transacionais (bloqueado fora de local/testing)
@@ -126,6 +162,20 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::get('/painel/eventos/{event}/editar', [EventController::class, 'edit'])->name('admin.events.edit');
         Route::put('/painel/eventos/{event}', [EventController::class, 'update'])->name('admin.events.update');
         Route::delete('/painel/eventos/{event}', [EventController::class, 'destroy'])->name('admin.events.destroy');
+
+        // Fotos do espetáculo: galeria por evento, pessoas e conferência da importação
+        Route::get('/painel/fotos', [AdminPhotoGalleryController::class, 'index'])->name('admin.photos');
+        Route::get('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'edit'])->name('admin.photos.edit');
+        Route::put('/painel/fotos/{event}', [AdminPhotoGalleryController::class, 'save'])->name('admin.photos.save');
+        Route::post('/painel/fotos/{event}/importar-drive', [AdminPhotoGalleryController::class, 'importDrive'])->name('admin.photos.import-drive');
+        Route::post('/painel/fotos/{event}/publicar', [AdminPhotoGalleryController::class, 'publish'])->name('admin.photos.publish');
+        Route::post('/painel/fotos/{event}/avisar-compradores', [AdminPhotoGalleryController::class, 'notifyBuyers'])->name('admin.photos.notify-buyers');
+        Route::post('/painel/fotos/{event}/despublicar', [AdminPhotoGalleryController::class, 'unpublish'])->name('admin.photos.unpublish');
+        Route::get('/painel/fotos/{event}/pessoas', [AdminPhotoGalleryController::class, 'people'])->name('admin.photos.people');
+        Route::get('/painel/fotos/{event}/galeria', [AdminPhotoGalleryController::class, 'photos'])->name('admin.photos.photos');
+        Route::put('/painel/fotos/pessoas/{person}', [AdminPhotoGalleryController::class, 'renamePerson'])->name('admin.photos.people.rename');
+        Route::post('/painel/fotos/pessoas/{person}/unir', [AdminPhotoGalleryController::class, 'mergePerson'])->name('admin.photos.people.merge');
+        Route::put('/painel/fotos/pessoas/{person}/filtro', [AdminPhotoGalleryController::class, 'togglePerson'])->name('admin.photos.people.toggle');
 
         // Pedidos + export de participantes + reembolso pelo organizador
         Route::get('/painel/pedidos', [OrderController::class, 'index'])->name('admin.orders');

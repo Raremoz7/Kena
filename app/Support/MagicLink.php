@@ -48,6 +48,43 @@ final class MagicLink
         );
     }
 
+    /** Validade do link das fotos compradas: o e-mail é guardado e aberto depois. */
+    public const PHOTOS_TTL_DAYS = 30;
+
+    /** Link do e-mail das fotos: loga e abre "Minhas fotos" (uso único, como os demais). */
+    public static function forPhotos(User $user): string
+    {
+        $token = Str::random(48);
+        $user->forceFill(['magic_login_token' => hash('sha256', $token)])->save();
+
+        return URL::temporarySignedRoute(
+            'magic-login',
+            now()->addDays(self::PHOTOS_TTL_DAYS),
+            ['user' => $user->id, 'token' => $token, 'redirect' => '/minhas-fotos'],
+        );
+    }
+
+    /**
+     * Link do aviso de fotos publicadas: loga e abre a galeria do evento.
+     * Só para conta leve (sem senha nem Google); quem tem senha recebe o
+     * link direto e entra pelo login de sempre.
+     */
+    public static function forGallery(User $user, string $path): string
+    {
+        if ($user->password !== null || $user->google_id !== null) {
+            return url($path);
+        }
+
+        $token = Str::random(48);
+        $user->forceFill(['magic_login_token' => hash('sha256', $token)])->save();
+
+        return URL::temporarySignedRoute(
+            'magic-login',
+            now()->addDays(self::PHOTOS_TTL_DAYS),
+            ['user' => $user->id, 'token' => $token, 'redirect' => $path],
+        );
+    }
+
     /** Só caminhos locais ("/x"), nunca "//host" ou URL absoluta. */
     public static function safeRedirect(?string $path): ?string
     {

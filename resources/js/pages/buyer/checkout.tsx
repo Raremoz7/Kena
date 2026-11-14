@@ -17,6 +17,7 @@ import type {
 } from '@/components/organisms/PaymentBrick';
 import { cn } from '@/lib/utils';
 import { api, ApiError } from '@/lib/veludo/api';
+import { isValidCpf, validateCard } from '@/lib/veludo/payment-validation';
 import { veludoToast } from '@/lib/veludo/toast';
 import type { PriceLine, ReservationInfo } from '@/lib/veludo/types';
 import { useCountdown } from '@/lib/veludo/useCountdown';
@@ -62,53 +63,6 @@ const brl = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
 });
-
-/** Valida o CPF (dígitos verificadores) no cliente. */
-function isValidCpf(raw: string): boolean {
-    const cpf = raw.replace(/\D/g, '');
-
-    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
-        return false;
-    }
-
-    for (let t = 9; t < 11; t++) {
-        let sum = 0;
-
-        for (let i = 0; i < t; i++) {
-            sum += Number(cpf[i]) * (t + 1 - i);
-        }
-
-        const digit = ((10 * sum) % 11) % 10;
-
-        if (Number(cpf[t]) !== digit) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
- * Validação dos campos NÃO sensíveis (nome/CPF). Número, validade e CVV são
- * validados pelo próprio Mercado Pago dentro dos Secure Fields.
- */
-function validateCard(card: CardFields, needsDocument: boolean): CardErrors {
-    const errors: CardErrors = {};
-
-    if (!card.name.trim()) {
-        errors.name = 'Informe o nome impresso no cartão.';
-    }
-
-    if (needsDocument) {
-        if (!card.document.trim()) {
-            errors.document = 'Informe o CPF do titular.';
-        } else if (!isValidCpf(card.document)) {
-            errors.document = 'CPF inválido.';
-        }
-    }
-
-    return errors;
-}
 
 /** Volta uma etapa (some com pagamento em andamento). */
 function BackLink({
