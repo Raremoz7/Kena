@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Dev;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EventReminderMail;
+use App\Mail\PhotoGalleryPublishedMail;
 use App\Mail\PhotosReadyMail;
 use App\Mail\RefundConfirmedMail;
 use App\Mail\TicketsIssuedMail;
 use App\Mail\TicketTransferredMail;
 use App\Models\Order;
+use App\Models\PhotoGallery;
 use App\Models\Ticket;
 use Illuminate\Mail\Mailable;
 
@@ -30,6 +32,12 @@ class MailPreviewController extends Controller
             'photos-ready' => new PhotosReadyMail(
                 Order::photoOrders()->where('status', Order::STATUS_PAID)->latest()->first()
                     ?? abort(404, 'Nenhum pedido de fotos pago no banco. Faça uma compra de teste na galeria.'),
+                preview: true,
+            ),
+            'photo-gallery-published' => new PhotoGalleryPublishedMail(
+                PhotoGallery::where('status', 'published')->latest('published_at')->first()
+                    ?? abort(404, 'Nenhuma galeria publicada. Publique uma no painel.'),
+                $this->anyTicket()->user,
                 preview: true,
             ),
             default => abort(404),

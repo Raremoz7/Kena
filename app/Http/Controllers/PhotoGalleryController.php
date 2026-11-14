@@ -54,6 +54,10 @@ class PhotoGalleryController extends Controller
                 ];
             });
 
+        // Antes do espetáculo não existe "Fotos" no site: sem galeria publicada,
+        // a página some para o público (o painel continua vendo, para conferir).
+        abort_if($galleries->isEmpty() && $request->user('painel') === null, 404);
+
         return Inertia::render('buyer/photos', ['galleries' => $galleries]);
     }
 

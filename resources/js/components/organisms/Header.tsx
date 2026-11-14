@@ -49,7 +49,7 @@ function PillLink({
 }
 
 export function Header() {
-    const { auth } = usePage().props;
+    const { auth, photosAvailable } = usePage().props;
     const user = auth?.user;
 
     return (
@@ -75,7 +75,9 @@ export function Header() {
                     <PillLink href="/eventos" matches={['/', '/e/']}>
                         Eventos
                     </PillLink>
-                    <PillLink href="/fotos">Fotos</PillLink>
+                    {photosAvailable && (
+                        <PillLink href="/fotos">Fotos</PillLink>
+                    )}
                     <PillLink href="/meus-ingressos">
                         <span className="sm:hidden">Ingressos</span>
                         <span className="hidden sm:inline">Meus ingressos</span>

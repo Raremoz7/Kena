@@ -75,6 +75,7 @@ class PhotoGallery extends Model
             'published_at' => 'datetime',
             'import_report' => 'array',
             'import_finished_at' => 'datetime',
+            'buyers_notified_at' => 'datetime',
         ];
     }
 

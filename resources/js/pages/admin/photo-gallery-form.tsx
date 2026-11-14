@@ -9,6 +9,8 @@ import { FormActions } from '@/components/molecules/FormActions';
 import { FormField } from '@/components/molecules/FormField';
 import { DriveImportSection } from '@/components/organisms/photos/DriveImportSection';
 import type { DriveState } from '@/components/organisms/photos/DriveImportSection';
+import { NotifyBuyersSection } from '@/components/organisms/photos/NotifyBuyersSection';
+import type { NotifyState } from '@/components/organisms/photos/NotifyBuyersSection';
 import { PhotoGalleryShell } from '@/components/organisms/photos/PhotoGalleryShell';
 import type { GalleryShellData } from '@/components/organisms/photos/PhotoGalleryShell';
 import {
@@ -23,6 +25,7 @@ import type { TierDraft } from '@/lib/photo-tiers';
 interface FormProps {
     shell: GalleryShellData;
     drive: DriveState;
+    notify: NotifyState | null;
     form: {
         driveFolder: string;
         description: string;
@@ -37,6 +40,7 @@ const reais = (value: number) => value.toFixed(2).replace('.', ',');
 export default function PhotoGalleryForm({
     shell,
     drive,
+    notify,
     form: initial,
 }: FormProps) {
     const form = useForm<{
@@ -132,6 +136,15 @@ export default function PhotoGalleryForm({
                         </code>
                         ).
                     </p>
+                )}
+
+                {notify && (
+                    <div className="mb-5">
+                        <NotifyBuyersSection
+                            notify={notify}
+                            eventId={shell.event.id}
+                        />
+                    </div>
                 )}
 
                 <form onSubmit={submit} className="flex flex-col gap-5">

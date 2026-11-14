@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\ImportPhotosFromDrive;
 use App\Jobs\RegeneratePhotoGalleryRenditions;
+use App\Mail\PhotoGalleryPublishedMail;
 use App\Models\Event;
 use App\Models\Photo;
 use App\Models\PhotoGallery;
 use App\Models\PhotoPerson;
 use App\Services\Photos\Drive\DriveClient;
 use App\Services\Photos\Drive\DriveFolderSource;
+use App\Services\Photos\PhotoGalleryAudience;
 use App\Services\Photos\PhotoRenditions;
 use App\Support\Money;
 use App\Support\PhotoPriceTiers;
@@ -18,6 +20,7 @@ use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -69,13 +72,19 @@ class PhotoGalleryController extends Controller
         return Inertia::render('admin/photos', ['events' => $rows]);
     }
 
-    public function edit(Event $event, DriveClient $drive): Response
+    public function edit(Event $event, DriveClient $drive, PhotoGalleryAudience $audience): Response
     {
         $gallery = $event->photoGallery;
 
         return Inertia::render('admin/photo-gallery-form', [
             'shell' => $this->shell($event, $gallery),
             'drive' => $this->driveState($gallery, $drive),
+            'notify' => $gallery === null ? null : [
+                'published' => $gallery->status === 'published',
+                'audience' => $audience->count($gallery),
+                'sentAt' => $gallery->buyers_notified_at?->toIso8601String(),
+                'sentCount' => $gallery->buyers_notified_count,
+            ],
             'form' => [
                 'driveFolder' => $gallery?->drive_folder ? self::driveUrl($gallery->drive_folder) : '',
                 'description' => $gallery?->description ?? '',
@@ -194,6 +203,41 @@ class PhotoGalleryController extends Controller
         ]);
 
         return back()->with('status', 'Galeria publicada em /fotos.');
+    }
+
+    /**
+     * Avisa por e-mail quem comprou ingresso do evento que as fotos estão no ar.
+     * Uma vez por galeria: o registro impede o segundo disparo (e o clique duplo).
+     */
+    public function notifyBuyers(Event $event, PhotoGalleryAudience $audience): RedirectResponse
+    {
+        $gallery = $this->galleryOf($event);
+
+        if ($gallery->status !== 'published') {
+            throw ValidationException::withMessages(['notify' => 'Publique a galeria antes de avisar: o e-mail leva direto para ela.']);
+        }
+
+        $claimed = PhotoGallery::whereKey($gallery->id)
+            ->whereNull('buyers_notified_at')
+            ->update(['buyers_notified_at' => now()]);
+
+        if ($claimed === 0) {
+            throw ValidationException::withMessages(['notify' => 'O aviso desta galeria já foi enviado.']);
+        }
+
+        $sent = 0;
+        $audience->query($gallery)->chunkById(200, function ($users) use ($gallery, &$sent): void {
+            foreach ($users as $user) {
+                Mail::to($user->email)->queue(new PhotoGalleryPublishedMail($gallery, $user));
+                $sent++;
+            }
+        });
+
+        $gallery->update(['buyers_notified_count' => $sent]);
+
+        return back()->with('status', $sent === 1
+            ? 'Aviso enviado para 1 pessoa.'
+            : "Aviso enviado para {$sent} pessoas.");
     }
 
     public function unpublish(Event $event): RedirectResponse

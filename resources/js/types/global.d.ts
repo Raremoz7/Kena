@@ -14,6 +14,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             activeReservation?: ActiveReservation | null;
+            /** Existe galeria de fotos publicada (ou é alguém do painel). */
+            photosAvailable?: boolean;
             [key: string]: unknown;
         };
     }
