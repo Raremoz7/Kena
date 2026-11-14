@@ -30,6 +30,20 @@ interface Props {
     error?: string;
 }
 
+/**
+ * Id da pasta dentro do link, como no DriveFolderSource::extractId do servidor.
+ * O servidor guarda só o id: comparar o texto cru deixaria "?usp=sharing"
+ * como alteração pendente mesmo depois de salvar.
+ */
+function folderId(input: string): string {
+    const text = input.trim();
+    const match =
+        text.match(/\/folders\/([A-Za-z0-9_-]{10,})/) ??
+        text.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+
+    return match ? match[1] : text;
+}
+
 /** Link da pasta do Drive, e-mail da conta de serviço e importação em fila. */
 export function DriveImportSection({
     drive,
@@ -42,7 +56,7 @@ export function DriveImportSection({
     const [copied, setCopied] = useState(false);
     const [starting, setStarting] = useState(false);
     const running = drive.status === 'queued' || drive.status === 'running';
-    const unsaved = value.trim() !== savedValue.trim();
+    const unsaved = folderId(value) !== folderId(savedValue);
 
     // Enquanto a fila trabalha, pergunta o andamento a cada poucos segundos.
     useEffect(() => {
