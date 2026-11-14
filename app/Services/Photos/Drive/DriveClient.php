@@ -27,7 +27,7 @@ class DriveClient
 
     private const SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
 
-    /** @var array<string, mixed>|null */
+    /** @var array{client_email: string, private_key: string}|null */
     private ?array $credentials = null;
 
     public function __construct(private readonly ?string $credentialsPath) {}

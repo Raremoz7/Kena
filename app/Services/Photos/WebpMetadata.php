@@ -50,7 +50,7 @@ final class WebpMetadata
         }
 
         // Liga a flag de XMP sem mexer nas outras (alfa, ICC...).
-        $flags = unpack('V', substr($chunks[0][1], 0, 4))[1] | self::FLAG_XMP;
+        $flags = self::int('V', substr($chunks[0][1], 0, 4)) | self::FLAG_XMP;
         $chunks[0][1] = pack('V', $flags).substr($chunks[0][1], 4);
         $chunks[] = ['XMP ', $xmp];
 
@@ -85,11 +85,11 @@ final class WebpMetadata
 
         $chunks = [];
         $pos = 12;
-        $end = min(strlen($webp), 8 + unpack('V', substr($webp, 4, 4))[1]);
+        $end = min(strlen($webp), 8 + self::int('V', substr($webp, 4, 4)));
 
         while ($pos + 8 <= $end) {
             $id = substr($webp, $pos, 4);
-            $size = unpack('V', substr($webp, $pos + 4, 4))[1];
+            $size = self::int('V', substr($webp, $pos + 4, 4));
             $chunks[] = [$id, substr($webp, $pos + 8, $size)];
             $pos += 8 + $size + ($size % 2);
         }
@@ -112,15 +112,26 @@ final class WebpMetadata
         [$id, $data] = $chunk;
 
         if ($id === 'VP8 ' && strlen($data) >= 10) {
-            return [unpack('v', substr($data, 6, 2))[1] & 0x3FFF, unpack('v', substr($data, 8, 2))[1] & 0x3FFF];
+            return [self::int('v', substr($data, 6, 2)) & 0x3FFF, self::int('v', substr($data, 8, 2)) & 0x3FFF];
         }
 
         if ($id === 'VP8L' && strlen($data) >= 5) {
-            $bits = unpack('V', substr($data, 1, 4))[1];
+            $bits = self::int('V', substr($data, 1, 4));
 
             return [($bits & 0x3FFF) + 1, (($bits >> 14) & 0x3FFF) + 1];
         }
 
         throw new RuntimeException('Formato de WebP não suportado.');
+    }
+
+    /** Lê um inteiro little-endian ('V' 32 bits, 'v' 16 bits) do começo de `$data`. */
+    private static function int(string $format, string $data): int
+    {
+        $value = unpack($format, $data);
+        if ($value === false || ! isset($value[1])) {
+            throw new RuntimeException('Formato de WebP inválido.');
+        }
+
+        return (int) $value[1];
     }
 }

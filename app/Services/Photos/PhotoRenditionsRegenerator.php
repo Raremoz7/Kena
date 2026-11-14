@@ -36,7 +36,9 @@ final class PhotoRenditionsRegenerator
             $original = $this->originals->open($photo);
             if ($original === null) {
                 $result['missing']++;
-                $progress?->__invoke($photo, 'sem original');
+                if ($progress !== null) {
+                    $progress($photo, 'sem original');
+                }
 
                 continue;
             }
@@ -44,10 +46,14 @@ final class PhotoRenditionsRegenerator
             try {
                 $this->one($photo, $original, $holder);
                 $result['done']++;
-                $progress?->__invoke($photo, 'regerada');
+                if ($progress !== null) {
+                    $progress($photo, 'regerada');
+                }
             } catch (Throwable $e) {
                 $result['failed'][$photo->id] = $e->getMessage();
-                $progress?->__invoke($photo, 'falhou');
+                if ($progress !== null) {
+                    $progress($photo, 'falhou');
+                }
             } finally {
                 $original->release();
             }

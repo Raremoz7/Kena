@@ -11,6 +11,7 @@ use App\Services\Photos\PhotoOrderService;
 use App\Services\Photos\PhotoOriginal;
 use App\Services\Photos\PhotoOriginalStore;
 use App\Support\Presenters\CatalogPresenter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -38,9 +39,12 @@ class MyPhotosController extends Controller
 
         $items = OrderPhoto::query()
             ->whereNotNull('photo_id')
-            ->whereHas('order', fn ($q) => $q->photoOrders()
-                ->where('user_id', $user->id)
-                ->where('status', Order::STATUS_PAID))
+            ->whereHas('order', function (Builder $q) use ($user): void {
+                /** @var Builder<Order> $q */
+                $q->photoOrders()
+                    ->where('user_id', $user->id)
+                    ->where('status', Order::STATUS_PAID);
+            })
             ->with(['photo', 'order:id,photo_gallery_id,paid_at'])
             ->get()
             ->filter(fn (OrderPhoto $item): bool => $item->photo !== null)
@@ -131,9 +135,10 @@ class MyPhotosController extends Controller
                 continue;
             }
             $opened[] = $original;
-            $zip->addFile($original->path, self::uniqueName($original, $usedNames));
+            $entryName = self::uniqueName($original, $usedNames);
+            $zip->addFile($original->path, $entryName);
             // Foto já é comprimida: guardar sem recomprimir economiza CPU.
-            $zip->setCompressionName(end($usedNames), \ZipArchive::CM_STORE);
+            $zip->setCompressionName($entryName, \ZipArchive::CM_STORE);
         }
 
         if ($opened === []) {

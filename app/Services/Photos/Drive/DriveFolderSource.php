@@ -60,6 +60,7 @@ final class DriveFolderSource implements PhotoSource
         usort($found, fn (array $a, array $b): int => strnatcasecmp($a['sort'], $b['sort']) ?: strcmp($a['id'], $b['id']));
 
         foreach ($found as $file) {
+            /** @var string|null $path */
             $path = null;
 
             yield new SourcePhoto(

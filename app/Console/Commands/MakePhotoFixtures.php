@@ -34,6 +34,7 @@ class MakePhotoFixtures extends Command
         $seed = 5000;
         $index = 0;
         $total = 0;
+        /** @var array<string, array{key: string, traits: array{skin: int, hair: int, style: int}, costume: array{0: int, 1: int, 2: int}}> $kids */
         $kids = [];
 
         foreach (self::GROUPS as $group => [$costume, $stage, $names]) {

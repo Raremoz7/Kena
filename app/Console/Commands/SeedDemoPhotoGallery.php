@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Event;
 use App\Models\Photo;
 use App\Models\PhotoGallery;
+use App\Models\PhotoGroup;
 use App\Models\PhotoPerson;
 use App\Services\Photos\DemoStageArtist;
 use App\Services\Photos\PhotoRenditions;
@@ -65,10 +66,13 @@ class SeedDemoPhotoGallery extends Command
         $dir = "fotos/{$gallery->id}";
         $position = 0;
         $kidIndex = 0;
+        /** @var array<string, array{key: string, traits: array{skin: int, hair: int, style: int}, costume: array{0: int, 1: int, 2: int}, group: string}> $kids */
         $kids = [];          // key => [traits, costume, group]
+        /** @var array<string, PhotoPerson> $people */
         $people = [];        // key => PhotoPerson
         $bestFace = [];      // key => área do maior rosto já recortado
 
+        /** @var array<string, PhotoGroup> $groups */
         $groups = [];
         foreach (self::GROUPS as $name => [$costume, $stage, $names]) {
             $groups[$name] = $gallery->groups()->create(['name' => $name, 'position' => count($groups)]);

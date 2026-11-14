@@ -379,7 +379,7 @@ class PaymentService
         $result = $payment->gateway_payment_id !== null
             ? $this->gateway->refund($payment->gateway_payment_id)
             : null;
-        $gatewayOk = $result?->ok ?? false;
+        $gatewayOk = $result->ok ?? false;
 
         Refund::create([
             'order_id' => $order->id,

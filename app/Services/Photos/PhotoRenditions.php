@@ -40,6 +40,8 @@ final class PhotoRenditions
     /**
      * Prévia grande, com marca d'água forte o bastante para não servir de cópia.
      * `$holder` é o titular do direito autoral: vai no aviso e no XMP.
+     *
+     * @return array{path: string, width: int, height: int}
      */
     public function preview(GdImage $source, string $path, ?string $holder = null): array
     {
@@ -50,7 +52,11 @@ final class PhotoRenditions
         return $this->store($image, $path, 80, $holder);
     }
 
-    /** Miniatura da grade: marca mais discreta, aviso só de vez em quando. */
+    /**
+     * Miniatura da grade: marca mais discreta, aviso só de vez em quando.
+     *
+     * @return array{path: string, width: int, height: int}
+     */
     public function thumb(GdImage $source, string $path, ?string $holder = null): array
     {
         $holder = $this->holder($holder);
@@ -72,6 +78,7 @@ final class PhotoRenditions
      * altura normalizados), em quadrado e com folga em volta para enquadrar.
      *
      * @param  array{x: float, y: float, w: float, h: float}  $region
+     * @return array{path: string, width: int, height: int}
      */
     public function face(GdImage $source, array $region, string $path): array
     {
@@ -85,7 +92,7 @@ final class PhotoRenditions
         $x = max(0, min($x, $width - $side));
         $y = max(0, min($y, $height - $side));
 
-        $face = imagecreatetruecolor(self::FACE_SIDE, self::FACE_SIDE);
+        $face = Gd::canvas(self::FACE_SIDE, self::FACE_SIDE);
         imagecopyresampled($face, $source, 0, 0, $x, $y, self::FACE_SIDE, self::FACE_SIDE, $side, $side);
 
         return $this->store($face, $path, 82);
@@ -99,7 +106,7 @@ final class PhotoRenditions
         $w = (int) round($width * $scale);
         $h = (int) round($height * $scale);
 
-        $image = imagecreatetruecolor($w, $h);
+        $image = Gd::canvas($w, $h);
         imagecopyresampled($image, $source, 0, 0, 0, 0, $w, $h, $width, $height);
 
         return $image;
@@ -118,8 +125,8 @@ final class PhotoRenditions
         $size = max(10, (int) round(max($width, $height) * $sizeRatio));
 
         imagealphablending($image, true);
-        $light = imagecolorallocatealpha($image, 255, 255, 255, $alpha);
-        $shadow = imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha + 14));
+        $light = Gd::colorAlpha($image, 255, 255, 255, $alpha);
+        $shadow = Gd::colorAlpha($image, 0, 0, 0, min(127, $alpha + 14));
 
         $stepX = (int) round($size * 11);
         $stepY = (int) round($size * 5.2);
@@ -132,10 +139,10 @@ final class PhotoRenditions
 
         $notice = self::notice($holder);
         $noticeSize = max(9, (int) round(max($width, $height) * $noticeRatio));
-        $noticeBox = imagettfbbox($noticeSize, 0, $font, $notice);
+        $noticeBox = Gd::textBox($noticeSize, $font, $notice);
         $noticeStepX = (int) round(($noticeBox[2] - $noticeBox[0]) * 1.3);
-        $noticeLight = imagecolorallocatealpha($image, 255, 255, 255, max(0, $alpha - 6));
-        $noticeShadow = imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha + 8));
+        $noticeLight = Gd::colorAlpha($image, 255, 255, 255, max(0, $alpha - 6));
+        $noticeShadow = Gd::colorAlpha($image, 0, 0, 0, min(127, $alpha + 8));
 
         for ($y = -$height + $shiftY; $y < $height * 2; $y += $stepY, $row++) {
             // O aviso fica no meio entre duas linhas de marca, no mesmo ângulo.
@@ -159,9 +166,9 @@ final class PhotoRenditions
 
         // Selo central maior, atravessando o assunto da foto.
         $big = (int) round($size * 2.4);
-        $box = imagettfbbox($big, 0, $font, 'KENA');
+        $box = Gd::textBox($big, $font, 'KENA');
         $bw = $box[2] - $box[0];
-        $center = imagecolorallocatealpha($image, 255, 255, 255, max(0, $alpha - 18));
+        $center = Gd::colorAlpha($image, 255, 255, 255, max(0, $alpha - 18));
         imagettftext($image, $big, 0, (int) (($width - $bw) / 2), (int) ($height / 2 + $big / 2), $center, $font, 'KENA');
 
         $this->noticeBand($image, $font, $notice, $alpha);
@@ -176,20 +183,20 @@ final class PhotoRenditions
         $width = imagesx($image);
         $height = imagesy($image);
 
-        $ref = imagettfbbox(100, 0, $font, $notice);
+        $ref = Gd::textBox(100, $font, $notice);
         $size = (int) floor(min($width * 0.94 / (($ref[2] - $ref[0]) / 100), max($width, $height) * 0.026));
         $size = max(8, $size);
-        $box = imagettfbbox($size, 0, $font, $notice);
+        $box = Gd::textBox($size, $font, $notice);
         $bandHeight = (int) round($size * 2);
 
-        imagefilledrectangle($image, 0, $height - $bandHeight, $width, $height, imagecolorallocatealpha($image, 0, 0, 0, min(127, $alpha - 30)));
+        imagefilledrectangle($image, 0, $height - $bandHeight, $width, $height, Gd::colorAlpha($image, 0, 0, 0, min(127, $alpha - 30)));
         imagettftext(
             $image,
             $size,
             0,
             (int) (($width - ($box[2] - $box[0])) / 2),
             (int) ($height - ($bandHeight - $size) / 2 - $size * 0.18),
-            imagecolorallocatealpha($image, 255, 255, 255, 12),
+            Gd::colorAlpha($image, 255, 255, 255, 12),
             $font,
             $notice,
         );

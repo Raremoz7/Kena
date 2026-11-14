@@ -75,9 +75,9 @@ final class XmpReader
         $people = $this->unique([...$this->regions($xpath), ...$this->keywordPeople($xpath)]);
 
         $orientation = null;
-        $node = $xpath->query('//@tiff:Orientation | //tiff:Orientation')->item(0);
-        if ($node !== null && ctype_digit(trim($node->nodeValue))) {
-            $orientation = (int) trim($node->nodeValue);
+        $node = $this->nodes($xpath, '//@tiff:Orientation | //tiff:Orientation')[0] ?? null;
+        if ($node !== null && ctype_digit(trim((string) $node->nodeValue))) {
+            $orientation = (int) trim((string) $node->nodeValue);
         }
 
         return [$people, $orientation];
@@ -88,7 +88,7 @@ final class XmpReader
     {
         $people = [];
 
-        foreach ($xpath->query('//mwg-rs:RegionList/rdf:Bag/rdf:li | //mwg-rs:RegionList/rdf:Seq/rdf:li') as $item) {
+        foreach ($this->nodes($xpath, '//mwg-rs:RegionList/rdf:Bag/rdf:li | //mwg-rs:RegionList/rdf:Seq/rdf:li') as $item) {
             $type = $this->value($xpath, $item, 'mwg-rs:Type');
             if ($type !== null && strcasecmp($type, 'Face') !== 0) {
                 continue;
@@ -131,12 +131,33 @@ final class XmpReader
     }
 
     /**
+     * Nós que casam com a expressão XPath (lista vazia se a expressão for inválida).
+     *
+     * @return list<DOMNode>
+     */
+    private function nodes(DOMXPath $xpath, string $expression, ?DOMNode $context = null): array
+    {
+        $found = $xpath->query($expression, $context);
+        $nodes = [];
+
+        if ($found !== false) {
+            foreach ($found as $node) {
+                if ($node instanceof DOMNode) {
+                    $nodes[] = $node;
+                }
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
      * Valor de uma propriedade XMP dentro do item, seja ela atributo
      * (`mwg-rs:Name="..."`) ou elemento filho (`<mwg-rs:Name>...</mwg-rs:Name>`).
      */
     private function value(DOMXPath $xpath, DOMNode $item, string $property): ?string
     {
-        $node = $xpath->query(".//@{$property} | .//{$property}", $item)->item(0);
+        $node = $this->nodes($xpath, ".//@{$property} | .//{$property}", $item)[0] ?? null;
 
         if ($node === null) {
             return null;
@@ -155,7 +176,7 @@ final class XmpReader
     {
         $people = [];
 
-        foreach ($xpath->query('//lr:hierarchicalSubject//rdf:li') as $item) {
+        foreach ($this->nodes($xpath, '//lr:hierarchicalSubject//rdf:li') as $item) {
             $parts = array_map('trim', explode('|', $item->textContent));
             if (count($parts) < 2 || ! in_array(mb_strtolower($parts[0]), self::PERSON_PARENTS, true)) {
                 continue;
@@ -240,7 +261,7 @@ final class XmpReader
                     continue;
                 }
 
-                $length = unpack('n', (string) fread($handle, 2))[1] ?? 0;
+                $length = (int) (unpack('n', (string) fread($handle, 2))[1] ?? 0);
                 if ($length < 2) {
                     break;
                 }
@@ -251,7 +272,7 @@ final class XmpReader
                     continue;
                 }
 
-                $payload = (string) fread($handle, $length - 2);
+                $payload = $length > 2 ? (string) fread($handle, $length - 2) : '';
                 if ($xmp === null && str_starts_with($payload, self::XMP_HEADER)) {
                     $xmp = substr($payload, strlen(self::XMP_HEADER));
                 } elseif ($exif === null && str_starts_with($payload, "Exif\0\0")) {
@@ -288,8 +309,8 @@ final class XmpReader
             return null;
         }
 
-        $short = fn (int $at): int => strlen($tiff) >= $at + 2 ? unpack($little ? 'v' : 'n', $tiff, $at)[1] : 0;
-        $long = fn (int $at): int => strlen($tiff) >= $at + 4 ? unpack($little ? 'V' : 'N', $tiff, $at)[1] : 0;
+        $short = fn (int $at): int => strlen($tiff) >= $at + 2 ? (int) (unpack($little ? 'v' : 'n', $tiff, $at)[1] ?? 0) : 0;
+        $long = fn (int $at): int => strlen($tiff) >= $at + 4 ? (int) (unpack($little ? 'V' : 'N', $tiff, $at)[1] ?? 0) : 0;
 
         $ifd = $long(4);
         $count = $short($ifd);

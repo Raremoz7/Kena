@@ -32,6 +32,9 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, OrderPhoto> $photoItems
  * @property-read Collection<int, Ticket> $tickets
  * @property-read Payment|null $payment
+ *
+ * @method static Builder<Order> photoOrders()
+ * @method static Builder<Order> ticketOrders()
  */
 class Order extends Model
 {

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -16,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $copyright_holder
  * @property string $access_code
  * @property array<int, array{min_qty: int, unit_price_cents: int}> $price_tiers
+ * @property Carbon|null $published_at
+ * @property array<string, mixed>|null $import_report
+ * @property Carbon|null $import_finished_at
+ * @property Carbon|null $buyers_notified_at
  * @property-read Event $event
  */
 class PhotoGallery extends Model
@@ -111,7 +116,11 @@ class PhotoGallery extends Model
         return $holder !== '' ? $holder : PhotoRenditions::defaultHolder();
     }
 
-    /** Faixas em ordem crescente de quantidade. */
+    /**
+     * Faixas em ordem crescente de quantidade.
+     *
+     * @return array<int, array{min_qty: int, unit_price_cents: int}>
+     */
     public function sortedTiers(): array
     {
         $tiers = $this->price_tiers;

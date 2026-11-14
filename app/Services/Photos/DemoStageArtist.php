@@ -20,7 +20,7 @@ final class DemoStageArtist
     /**
      * Foto de palco com várias crianças.
      *
-     * @param  array<int, array{key: string, traits: array<string, int>}>  $kids
+     * @param  array<array-key, array{key: string, traits: array{skin: int, hair: int, style: int}}>  $kids
      * @param  array{0: int, 1: int, 2: int}  $costume
      * @param  array{0: int, 1: int, 2: int}  $stage
      * @return array{image: GdImage, faces: array<string, array{x: float, y: float, w: float, h: float}>}
@@ -30,7 +30,7 @@ final class DemoStageArtist
         mt_srand($seed);
         $w = 2000;
         $h = 1333;
-        $img = imagecreatetruecolor($w, $h);
+        $img = Gd::canvas($w, $h);
 
         $this->verticalGradient($img, [(int) ($stage[0] * 0.55), (int) ($stage[1] * 0.55), (int) ($stage[2] * 0.55)], [8, 6, 10]);
         $floorY = (int) ($h * 0.8);
@@ -38,18 +38,18 @@ final class DemoStageArtist
         // Spot de luz quente, em camadas para dar o degradê.
         $spotX = mt_rand((int) ($w * 0.35), (int) ($w * 0.65));
         for ($i = 26; $i >= 1; $i--) {
-            $c = imagecolorallocatealpha($img, 255, 236, 200, 118);
+            $c = Gd::colorAlpha($img, 255, 236, 200, 118);
             imagefilledellipse($img, $spotX, (int) ($h * 0.55), $i * 62, $i * 40, $c);
         }
 
         // Piso de madeira escura com reflexo do spot.
         $this->rectGradient($img, 0, $floorY, $w, $h, [58, 38, 30], [20, 14, 12]);
-        $glow = imagecolorallocatealpha($img, 255, 230, 190, 100);
+        $glow = Gd::colorAlpha($img, 255, 230, 190, 100);
         imagefilledellipse($img, $spotX, $floorY + 40, 1100, 120, $glow);
 
         // Cortinas laterais.
-        $curtain = imagecolorallocate($img, (int) ($stage[0] * 0.8), (int) ($stage[1] * 0.25), (int) ($stage[2] * 0.3));
-        $fold = imagecolorallocatealpha($img, 0, 0, 0, 80);
+        $curtain = Gd::color($img, (int) ($stage[0] * 0.8), (int) ($stage[1] * 0.25), (int) ($stage[2] * 0.3));
+        $fold = Gd::colorAlpha($img, 0, 0, 0, 80);
         foreach ([[0, 150], [$w - 150, $w]] as [$x1, $x2]) {
             imagefilledrectangle($img, $x1, 0, $x2, $h, $curtain);
             for ($x = $x1 + 18; $x < $x2; $x += 36) {
@@ -83,7 +83,7 @@ final class DemoStageArtist
     /**
      * Retrato de estúdio: uma criança, fundo infinito claro.
      *
-     * @param  array{key: string, traits: array<string, int>}  $kid
+     * @param  array{key: string, traits: array{skin: int, hair: int, style: int}}  $kid
      * @param  array{0: int, 1: int, 2: int}  $costume
      * @return array{image: GdImage, faces: array<string, array{x: float, y: float, w: float, h: float}>}
      */
@@ -92,18 +92,18 @@ final class DemoStageArtist
         mt_srand($seed);
         $w = 1400;
         $h = 1750;
-        $img = imagecreatetruecolor($w, $h);
+        $img = Gd::canvas($w, $h);
 
         $tone = mt_rand(0, 1) ? [[236, 230, 224], [196, 186, 178]] : [[214, 222, 230], [160, 172, 186]];
         $this->verticalGradient($img, $tone[0], $tone[1]);
 
         // Vinheta suave nas bordas.
         for ($i = 0; $i < 14; $i++) {
-            $c = imagecolorallocatealpha($img, 0, 0, 0, 124);
+            $c = Gd::colorAlpha($img, 0, 0, 0, 124);
             imagerectangle($img, $i * 4, $i * 4, $w - 1 - $i * 4, $h - 1 - $i * 4, $c);
         }
 
-        $shadow = imagecolorallocatealpha($img, 0, 0, 0, 105);
+        $shadow = Gd::colorAlpha($img, 0, 0, 0, 105);
         imagefilledellipse($img, (int) ($w / 2), $h - 150, 760, 90, $shadow);
 
         $head = $this->dancer($img, (int) ($w / 2) + mt_rand(-60, 60), $h - 150, 3.6, $kid['traits'], $costume, mt_rand(0, 2));
@@ -111,7 +111,11 @@ final class DemoStageArtist
         return ['image' => $img, 'faces' => [$kid['key'] => $this->region($head, $w, $h)]];
     }
 
-    /** Traços fixos de uma criança, para o rosto ser o mesmo em todas as fotos. */
+    /**
+     * Traços fixos de uma criança, para o rosto ser o mesmo em todas as fotos.
+     *
+     * @return array{skin: int, hair: int, style: int}
+     */
     public static function traitsFor(int $index): array
     {
         // A cada volta pelos tons de pele muda cabelo e penteado: nenhuma combinação se repete.
@@ -128,6 +132,8 @@ final class DemoStageArtist
      * Desenha uma bailarina com os pés em ($x, $floor) e devolve o centro e o
      * raio da cabeça.
      *
+     * @param  array{skin: int, hair: int, style: int}  $traits
+     * @param  array{0: int, 1: int, 2: int}  $costume
      * @return array{x: int, y: int, r: int}
      */
     private function dancer(GdImage $img, int $x, int $floor, float $s, array $traits, array $costume, int $pose): array
@@ -136,14 +142,14 @@ final class DemoStageArtist
         $skin = self::SKIN[$traits['skin']];
         $hair = self::HAIR[$traits['hair']];
 
-        $skinC = imagecolorallocate($img, ...$skin);
-        $skinDark = imagecolorallocate($img, (int) ($skin[0] * 0.86), (int) ($skin[1] * 0.84), (int) ($skin[2] * 0.84));
-        $hairC = imagecolorallocate($img, ...$hair);
-        $costumeC = imagecolorallocate($img, ...$costume);
-        $costumeLight = imagecolorallocate($img, min(255, $costume[0] + 40), min(255, $costume[1] + 40), min(255, $costume[2] + 40));
-        $tights = imagecolorallocate($img, 240, 214, 214);
-        $ink = imagecolorallocate($img, 44, 30, 30);
-        $cheek = imagecolorallocatealpha($img, 236, 120, 120, 92);
+        $skinC = Gd::color($img, ...$skin);
+        $skinDark = Gd::color($img, (int) ($skin[0] * 0.86), (int) ($skin[1] * 0.84), (int) ($skin[2] * 0.84));
+        $hairC = Gd::color($img, ...$hair);
+        $costumeC = Gd::color($img, ...$costume);
+        $costumeLight = Gd::color($img, min(255, $costume[0] + 40), min(255, $costume[1] + 40), min(255, $costume[2] + 40));
+        $tights = Gd::color($img, 240, 214, 214);
+        $ink = Gd::color($img, 44, 30, 30);
+        $cheek = Gd::colorAlpha($img, 236, 120, 120, 92);
 
         // Pernas e sapatilhas.
         imagefilledrectangle($img, $x - $px(16), $floor - $px(112), $x - $px(5), $floor - $px(6), $tights);
@@ -206,7 +212,10 @@ final class DemoStageArtist
         return ['x' => $x, 'y' => $hy, 'r' => $r];
     }
 
-    /** @return array{x: float, y: float, w: float, h: float} */
+    /**
+     * @param  array{x: int, y: int, r: int}  $head
+     * @return array{x: float, y: float, w: float, h: float}
+     */
     private function region(array $head, int $w, int $h): array
     {
         return [
@@ -217,17 +226,25 @@ final class DemoStageArtist
         ];
     }
 
+    /**
+     * @param  array<int, int>  $from
+     * @param  array<int, int>  $to
+     */
     private function verticalGradient(GdImage $img, array $from, array $to): void
     {
         $this->rectGradient($img, 0, 0, imagesx($img), imagesy($img), $from, $to);
     }
 
+    /**
+     * @param  array<int, int>  $from
+     * @param  array<int, int>  $to
+     */
     private function rectGradient(GdImage $img, int $x1, int $y1, int $x2, int $y2, array $from, array $to): void
     {
         $span = max(1, $y2 - $y1);
         for ($y = $y1; $y < $y2; $y++) {
             $t = ($y - $y1) / $span;
-            $c = imagecolorallocate(
+            $c = Gd::color(
                 $img,
                 (int) ($from[0] + ($to[0] - $from[0]) * $t),
                 (int) ($from[1] + ($to[1] - $from[1]) * $t),

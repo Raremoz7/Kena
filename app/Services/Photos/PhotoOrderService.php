@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\IssueOutcome;
 use App\Services\Payments\PaymentGateway;
 use App\Support\Codes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -154,9 +155,12 @@ class PhotoOrderService
         return OrderPhoto::query()
             ->whereNotNull('photo_id')
             ->when($among !== null, fn ($q) => $q->whereIn('photo_id', $among))
-            ->whereHas('order', fn ($q) => $q->photoOrders()
-                ->where('user_id', $user->id)
-                ->where('status', Order::STATUS_PAID))
+            ->whereHas('order', function (Builder $q) use ($user): void {
+                /** @var Builder<Order> $q */
+                $q->photoOrders()
+                    ->where('user_id', $user->id)
+                    ->where('status', Order::STATUS_PAID);
+            })
             ->distinct()
             ->pluck('photo_id')
             ->map(fn ($id): int => (int) $id)

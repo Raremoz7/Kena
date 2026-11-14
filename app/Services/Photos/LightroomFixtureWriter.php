@@ -95,7 +95,11 @@ XML;
         // Depois do APP0 (JFIF), se houver.
         $at = 2;
         if (substr($jpeg, 2, 2) === "\xFF\xE0") {
-            $at = 4 + unpack('n', $jpeg, 4)[1];
+            $length = unpack('n', $jpeg, 4);
+            if ($length === false) {
+                throw new RuntimeException('JPEG inválido.');
+            }
+            $at = 4 + $length[1];
         }
 
         return substr($jpeg, 0, $at).$segments.substr($jpeg, $at);
@@ -117,6 +121,10 @@ XML;
             3 => imagerotate($upright, 180, 0),
             default => $upright,
         };
+
+        if ($stored === false) {
+            throw new RuntimeException('Falha ao girar a imagem.');
+        }
 
         ob_start();
         imagejpeg($stored, null, 90);

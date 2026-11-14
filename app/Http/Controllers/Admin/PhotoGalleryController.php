@@ -56,9 +56,9 @@ class PhotoGalleryController extends Controller
                     'title' => $event->title,
                     'hasGallery' => $gallery !== null,
                     'status' => $gallery?->status,
-                    'photoCount' => $gallery?->photos_count ?? 0,
-                    'peopleCount' => $gallery?->people_count ?? 0,
-                    'groupCount' => $gallery?->groups_count ?? 0,
+                    'photoCount' => $gallery->photos_count ?? 0,
+                    'peopleCount' => $gallery->people_count ?? 0,
+                    'groupCount' => $gallery->groups_count ?? 0,
                     'fromPrice' => $gallery ? $this->fromPrice($gallery) : null,
                     // Pagamento ainda não existe nesta branch: vendas entram quando ele chegar.
                     'sales' => null,
@@ -87,8 +87,8 @@ class PhotoGalleryController extends Controller
             ],
             'form' => [
                 'driveFolder' => $gallery?->drive_folder ? self::driveUrl($gallery->drive_folder) : '',
-                'description' => $gallery?->description ?? '',
-                'copyright_holder' => $gallery?->copyright_holder ?? '',
+                'description' => $gallery->description ?? '',
+                'copyright_holder' => $gallery->copyright_holder ?? '',
                 'default_holder' => PhotoRenditions::defaultHolder(),
                 'tiers' => array_map(fn (array $t): array => [
                     'min_qty' => (int) $t['min_qty'],
@@ -296,7 +296,7 @@ class PhotoGalleryController extends Controller
 
         abort_if((int) $data['into'] === $person->id, 422);
 
-        $target = PhotoPerson::findOrFail($data['into']);
+        $target = PhotoPerson::findOrFail((int) $data['into']);
 
         DB::transaction(function () use ($person, $target): void {
             $already = DB::table('photo_person')->where('photo_person_id', $target->id)->pluck('photo_id');
@@ -390,6 +390,8 @@ class PhotoGalleryController extends Controller
     private function driveState(?PhotoGallery $gallery, DriveClient $drive): array
     {
         $report = $gallery?->import_report;
+        /** @var array<string, string> $failed */
+        $failed = is_array($report) && is_array($report['failed'] ?? null) ? $report['failed'] : [];
 
         return [
             'configured' => $drive->isConfigured(),
@@ -402,10 +404,10 @@ class PhotoGalleryController extends Controller
                 'imported' => (int) $report['imported'],
                 'skipped' => (int) $report['skipped'],
                 'people' => (int) $report['people'],
-                'failed' => collect($report['failed'] ?? [])
+                'failed' => collect($failed)
                     ->map(fn (string $reason, string $ref): array => ['ref' => $ref, 'reason' => $reason])
                     ->values()->take(20)->all(),
-                'failedCount' => count($report['failed'] ?? []),
+                'failedCount' => count($failed),
             ] : null,
         ];
     }
