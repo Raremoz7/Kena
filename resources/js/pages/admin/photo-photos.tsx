@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/molecules/EmptyState';
 import { Pagination } from '@/components/molecules/Pagination';
 import type { Paginator } from '@/components/molecules/Pagination';
 import type { DriveState } from '@/components/organisms/photos/DriveImportSection';
+import { ImportProgress } from '@/components/organisms/photos/ImportProgress';
 import { PhotoGalleryShell } from '@/components/organisms/photos/PhotoGalleryShell';
 import type { GalleryShellData } from '@/components/organisms/photos/PhotoGalleryShell';
 import { cn } from '@/lib/utils';
@@ -57,17 +58,23 @@ const isRunning = (drive: DriveState) =>
  * Galeria vazia: importa do Drive ali mesmo. Sem pasta salva (ou sem Drive
  * configurado), leva aos ajustes, onde se cola o link da pasta.
  */
-function EmptyImport({ eventId, drive }: { eventId: number; drive: DriveState }) {
+function EmptyImport({
+    eventId,
+    drive,
+}: {
+    eventId: number;
+    drive: DriveState;
+}) {
     const [starting, setStarting] = useState(false);
     const error = usePage().props.errors?.drive_folder as string | undefined;
     const ready = drive.configured && drive.hasFolder;
 
     if (isRunning(drive)) {
         return (
-            <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
-                <Icon name="clock" size={16} />
-                Importando do Drive. As fotos aparecem aqui quando terminar.
-            </p>
+            <ImportProgress
+                drive={drive}
+                className="w-full max-w-md text-left"
+            />
         );
     }
 
@@ -75,7 +82,8 @@ function EmptyImport({ eventId, drive }: { eventId: number; drive: DriveState })
         return (
             <Button asChild>
                 <Link href={`/painel/fotos/${eventId}`}>
-                    <Icon name="settings" size={16} /> Configurar a pasta do Drive
+                    <Icon name="settings" size={16} /> Configurar a pasta do
+                    Drive
                 </Link>
             </Button>
         );
@@ -102,7 +110,10 @@ function EmptyImport({ eventId, drive }: { eventId: number; drive: DriveState })
                 {starting ? 'Iniciando…' : 'Importar fotos do Drive'}
             </Button>
             {(error ?? drive.error) && (
-                <p role="alert" className="max-w-80 font-body text-sm text-danger-text">
+                <p
+                    role="alert"
+                    className="max-w-80 font-body text-sm text-danger-text"
+                >
                     {error ?? drive.error}
                 </p>
             )}
@@ -137,7 +148,7 @@ export default function PhotoPhotos({
             return;
         }
 
-        const timer = setInterval(() => router.reload(), 3000);
+        const timer = setInterval(() => router.reload(), 1500);
 
         return () => clearInterval(timer);
     }, [running]);
@@ -147,11 +158,7 @@ export default function PhotoPhotos({
             <Head title={`Painel — Fotos importadas de ${shell.event.title}`} />
             <PhotoGalleryShell shell={shell} tab="fotos">
                 {running && totalCount > 0 && (
-                    <p className="mb-5 flex items-center gap-2 rounded-card border border-border bg-surface px-4 py-3 font-body text-sm text-muted-foreground">
-                        <Icon name="clock" size={16} className="shrink-0" />
-                        Importando do Drive: {totalCount}{' '}
-                        {totalCount === 1 ? 'foto até agora' : 'fotos até agora'}.
-                    </p>
+                    <ImportProgress drive={drive} className="mb-5" />
                 )}
                 {totalCount === 0 ? (
                     <div className="rounded-card border border-border py-14">

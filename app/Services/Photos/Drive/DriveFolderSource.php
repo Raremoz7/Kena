@@ -4,6 +4,7 @@ namespace App\Services\Photos\Drive;
 
 use App\Services\Photos\PhotoSource;
 use App\Services\Photos\SourcePhoto;
+use Closure;
 use InvalidArgumentException;
 
 /**
@@ -20,6 +21,17 @@ final class DriveFolderSource implements PhotoSource
     public const REF_PREFIX = 'drive:';
 
     private readonly string $folderId;
+
+    /** @var (Closure(int): void)|null */
+    private ?Closure $onListed = null;
+
+    /** Avisa quantas fotos a pasta tem, logo depois de listar. */
+    public function onListed(Closure $callback): static
+    {
+        $this->onListed = $callback;
+
+        return $this;
+    }
 
     public function __construct(private readonly DriveClient $drive, string $folder)
     {
@@ -58,6 +70,11 @@ final class DriveFolderSource implements PhotoSource
         $this->collect($this->folderId, null, $found);
 
         usort($found, fn (array $a, array $b): int => strnatcasecmp($a['sort'], $b['sort']) ?: strcmp($a['id'], $b['id']));
+
+        // Antes do primeiro download o painel já sabe quantas fotos vêm.
+        if ($this->onListed !== null) {
+            ($this->onListed)(count($found));
+        }
 
         foreach ($found as $file) {
             /** @var string|null $path */

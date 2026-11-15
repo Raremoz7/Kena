@@ -4,6 +4,7 @@ import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { FormField } from '@/components/molecules/FormField';
+import { ImportProgress } from '@/components/organisms/photos/ImportProgress';
 
 export interface DriveState {
     configured: boolean;
@@ -12,6 +13,15 @@ export interface DriveState {
     status: 'queued' | 'running' | 'done' | 'failed' | null;
     finishedAt: string | null;
     error: string | null;
+    progress: {
+        total: number | null;
+        done: number;
+        imported: number;
+        skipped: number;
+        failed: number;
+        current: string | null;
+        elapsed: number;
+    } | null;
     result: {
         imported: number;
         skipped: number;
@@ -61,12 +71,12 @@ export function DriveImportSection({
     // Enquanto a fila trabalha, pergunta o andamento a cada poucos segundos.
     useEffect(() => {
         if (!running) {
-return;
-}
+            return;
+        }
 
         const timer = setInterval(
             () => router.reload({ only: ['drive'] }),
-            3000,
+            1500,
         );
 
         return () => clearInterval(timer);
@@ -74,8 +84,8 @@ return;
 
     function copyEmail() {
         if (!drive.email) {
-return;
-}
+            return;
+        }
 
         navigator.clipboard
             ?.writeText(drive.email)
@@ -180,16 +190,7 @@ return;
                 )}
             </div>
 
-            {running && (
-                <p
-                    role="status"
-                    className="font-body text-sm text-muted-foreground"
-                >
-                    {drive.status === 'queued'
-                        ? 'Na fila, começa em instantes…'
-                        : 'Importando as fotos. Pode levar alguns minutos, e a página se atualiza sozinha.'}
-                </p>
-            )}
+            {running && <ImportProgress drive={drive} />}
 
             {drive.status === 'failed' && drive.error && (
                 <p
