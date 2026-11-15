@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Models\EventSession;
 use App\Models\Order;
+use App\Models\PanelUser;
 use App\Models\Photo;
 use App\Models\PhotoGallery;
 use App\Models\PhotoPerson;
@@ -214,6 +215,15 @@ class PhotoGalleryAccessTest extends TestCase
         $this->gallery->update(['status' => 'draft']);
 
         $this->actingAs($user)->get("/fotos/midia/{$this->photo->id}/thumb")->assertNotFound();
+    }
+
+    public function test_panel_staff_sees_draft_gallery_images(): void
+    {
+        $this->gallery->update(['status' => 'draft']);
+        $panel = PanelUser::factory()->create();
+
+        $this->actingAs($panel, 'painel')->get("/fotos/midia/{$this->photo->id}/thumb")->assertOk();
+        $this->actingAs($panel, 'painel')->get("/fotos/midia/rosto/{$this->person->id}")->assertOk();
     }
 
     public function test_code_attempts_are_throttled(): void

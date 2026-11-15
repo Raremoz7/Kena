@@ -39,9 +39,15 @@ class PhotoImageController extends Controller
 
     private function serve(Request $request, PhotoGalleryAccess $access, int $galleryId, string $path): Response
     {
-        $gallery = PhotoGallery::where('status', 'published')->find($galleryId);
-        // Link assinado (e-mail de confirmação) vale por si; o resto confere o acesso à galeria.
-        $allowed = $gallery !== null && ($request->hasValidSignature() || $access->allows($gallery, $request));
+        $gallery = PhotoGallery::find($galleryId);
+        // Equipe do painel vê tudo, inclusive rascunho (a galeria é montada antes
+        // de publicar). Para o público: só galeria publicada, com link assinado
+        // (e-mail de confirmação) ou acesso liberado à galeria.
+        $allowed = $gallery !== null && (
+            $request->user('painel') !== null
+            || ($gallery->status === 'published'
+                && ($request->hasValidSignature() || $access->allows($gallery, $request)))
+        );
         abort_unless($allowed, 404);
 
         $disk = Storage::disk(config('kena.photos.disk'));
