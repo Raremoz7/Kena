@@ -428,6 +428,16 @@ class PhotoGalleryController extends Controller
             'status' => $gallery?->import_status,
             'finishedAt' => $gallery?->import_finished_at?->format('d/m/Y H:i'),
             'error' => is_array($report) ? ($report['error'] ?? null) : null,
+            'progress' => in_array($gallery?->import_status, ['queued', 'running'], true)
+                && is_array($report) && is_array($report['progress'] ?? null) ? [
+                    'total' => isset($report['progress']['total']) ? (int) $report['progress']['total'] : null,
+                    'done' => (int) ($report['progress']['done'] ?? 0),
+                    'imported' => (int) ($report['progress']['imported'] ?? 0),
+                    'skipped' => (int) ($report['progress']['skipped'] ?? 0),
+                    'failed' => (int) ($report['progress']['failed'] ?? 0),
+                    'current' => $report['progress']['current'] ?? null,
+                    'elapsed' => (int) ($report['progress']['elapsed'] ?? 0),
+                ] : null,
             'result' => is_array($report) && isset($report['imported']) ? [
                 'imported' => (int) $report['imported'],
                 'skipped' => (int) $report['skipped'],

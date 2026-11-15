@@ -227,6 +227,44 @@ class PhotoDriveTest extends TestCase
         $this->assertStringContainsString(self::EMAIL, $gallery->import_report['error']);
     }
 
+    public function test_job_records_progress_photo_by_photo(): void
+    {
+        $this->addJpeg('f1', 'a.jpg', parent: self::ROOT);
+        $this->addJpeg('f2', 'b.jpg', parent: self::ROOT);
+
+        $snapshots = [];
+        PhotoGallery::updated(function ($g) use (&$snapshots): void {
+            if (is_array($g->import_report['progress'] ?? null)) {
+                $snapshots[] = $g->import_report['progress'];
+            }
+        });
+
+        (new ImportPhotosFromDrive($this->gallery->id))->handle(app(PhotoImporter::class), app(DriveClient::class));
+
+        // Total conhecido antes do primeiro download, depois uma gravação por foto.
+        $this->assertSame([2, 0], [$snapshots[0]['total'], $snapshots[0]['done']]);
+        $last = end($snapshots);
+        $this->assertSame([2, 2, 2], [$last['total'], $last['done'], $last['imported']]);
+        $this->assertSame('b.jpg', $last['current']);
+        $this->assertSame('done', $this->gallery->fresh()->import_status);
+    }
+
+    public function test_panel_shows_progress_only_while_importing(): void
+    {
+        $panel = PanelUser::factory()->create();
+        $progress = ['total' => 10, 'done' => 4, 'imported' => 3, 'skipped' => 1, 'failed' => 0, 'current' => 'x.jpg', 'elapsed' => 8];
+        $this->gallery->update(['import_status' => 'running', 'import_report' => ['progress' => $progress]]);
+        $url = "/painel/fotos/{$this->gallery->event_id}";
+
+        $this->actingAs($panel, 'painel')->get($url)
+            ->assertInertia(fn ($p) => $p->where('drive.progress.done', 4)->where('drive.progress.total', 10));
+
+        $this->gallery->update(['import_status' => 'done', 'import_report' => ['imported' => 3, 'skipped' => 1, 'people' => 0, 'failed' => []]]);
+
+        $this->actingAs($panel, 'painel')->get($url)
+            ->assertInertia(fn ($p) => $p->where('drive.progress', null));
+    }
+
     public function test_panel_saves_the_link_shows_the_service_email_and_queues_the_import(): void
     {
         Queue::fake();

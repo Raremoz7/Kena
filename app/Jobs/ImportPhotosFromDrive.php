@@ -7,6 +7,7 @@ use App\Services\Photos\Drive\DriveClient;
 use App\Services\Photos\Drive\DriveException;
 use App\Services\Photos\Drive\DriveFolderSource;
 use App\Services\Photos\PhotoImporter;
+use App\Services\Photos\SourcePhoto;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use InvalidArgumentException;
@@ -42,9 +43,33 @@ class ImportPhotosFromDrive implements ShouldQueue
             ini_set('memory_limit', '1G');
         }
 
+        // Andamento para a barra do painel, gravado a cada foto.
+        $started = now();
+        $progress = ['total' => null, 'done' => 0, 'imported' => 0, 'skipped' => 0, 'failed' => 0, 'current' => null];
+        $save = function () use ($gallery, &$progress, $started): void {
+            $gallery->update(['import_report' => ['progress' => [
+                ...$progress,
+                'elapsed' => (int) $started->diffInSeconds(now(), true),
+            ]]]);
+        };
+
         try {
-            $source = new DriveFolderSource($drive, (string) $gallery->drive_folder);
-            $result = $importer->import($gallery, $source);
+            $source = (new DriveFolderSource($drive, (string) $gallery->drive_folder))
+                ->onListed(function (int $total) use (&$progress, $save): void {
+                    $progress['total'] = $total;
+                    $save();
+                });
+
+            $result = $importer->import($gallery, $source, function (SourcePhoto $item, string $outcome) use (&$progress, $save): void {
+                $progress['done']++;
+                $progress[match ($outcome) {
+                    'importada' => 'imported',
+                    'existente' => 'skipped',
+                    default => 'failed',
+                }]++;
+                $progress['current'] = $item->filename;
+                $save();
+            });
 
             $gallery->update([
                 'import_status' => 'done',
