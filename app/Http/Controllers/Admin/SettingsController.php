@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TicketsIssuedMail;
+use App\Models\MercadoPagoAccount;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoDiagnostic;
+use App\Services\Payments\MercadoPagoOAuth;
 use App\Support\GoogleWalletSettings;
 use App\Support\MailSettings;
 use App\Support\MailUsage;
@@ -43,6 +45,7 @@ class SettingsController extends Controller
                 'privateKeyConfigured' => filled(GoogleWalletSettings::privateKey()),
                 'configured' => GoogleWalletSettings::isConfigured(),
             ],
+            'mpOauth' => $this->oauthDisplay(),
             'webhookUrl' => route('webhooks.mercadopago'),
             'testMailUrl' => route('admin.settings.test-mail'),
             'testMpUrl' => route('admin.settings.test-mp'),
@@ -87,15 +90,24 @@ class SettingsController extends Controller
             'gw_private_key' => ['nullable', 'string', 'max:8000'],
         ]);
 
+        // Com OAuth ligado, token e Public Key vêm só da conta conectada: o painel não grava.
+        $oauth = MercadoPagoOAuth::enabled();
+
         // Segredos: só sobrescreve quando um novo valor é enviado (em branco = manter).
-        foreach (['mp_access_token', 'mp_webhook_secret', 'mail_password', 'mail_backup_password', 'gw_private_key'] as $secret) {
+        $secrets = ['mp_webhook_secret', 'mail_password', 'mail_backup_password', 'gw_private_key'];
+        if (! $oauth) {
+            $secrets[] = 'mp_access_token';
+        }
+        foreach ($secrets as $secret) {
             if (filled($data[$secret] ?? null)) {
                 Setting::put($secret, $data[$secret]);
             }
         }
 
         // MP — demais campos (permitem editar/limpar).
-        Setting::put('mp_public_key', $data['mp_public_key'] ?? null);
+        if (! $oauth) {
+            Setting::put('mp_public_key', $data['mp_public_key'] ?? null);
+        }
         Setting::put('mp_statement_descriptor', $data['mp_statement_descriptor'] ?? null);
         if (filled($data['mp_pix_expiration'] ?? null)) {
             Setting::put('mp_pix_expiration', (string) $data['mp_pix_expiration']);
@@ -129,13 +141,42 @@ class SettingsController extends Controller
         return back();
     }
 
-    /** Envia um e-mail de teste (síncrono) para o próprio organizador, com a config salva. */
+    /**
+     * Estado do "Conectar com Mercado Pago" para a tela. Nunca inclui tokens.
+     *
+     * @return array<string, mixed>
+     */
+    private function oauthDisplay(): array
+    {
+        if (! MercadoPagoOAuth::enabled()) {
+            return ['enabled' => false];
+        }
+
+        $account = MercadoPagoAccount::current();
+
+        return [
+            'enabled' => true,
+            'configured' => MercadoPagoOAuth::configured(),
+            'connectUrl' => route('admin.settings.mp.connect'),
+            'disconnectUrl' => route('admin.settings.mp.disconnect'),
+            'flash' => session('mp_oauth'),
+            'account' => $account === null ? null : [
+                'nickname' => $account->nickname,
+                'mpUserId' => $account->mp_user_id,
+                'liveMode' => $account->live_mode,
+                'connectedAt' => $account->connected_at->toIso8601String(),
+                'expiresAt' => $account->expires_at?->toIso8601String(),
+            ],
+        ];
+    }
+
     /** Diagnostico da integracao com o Mercado Pago — so leitura, sem cobranca. */
     public function testMercadoPago(MercadoPagoDiagnostic $diagnostic): JsonResponse
     {
         return response()->json($diagnostic->run());
     }
 
+    /** Envia um e-mail de teste (síncrono) para o próprio organizador, com a config salva. */
     public function testMail(): JsonResponse
     {
         MailSettings::apply();

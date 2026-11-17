@@ -19,3 +19,6 @@ Schedule::command('kena:send-reminders')->dailyAt('09:00')->withoutOverlapping()
 
 // Lembrete no dia do evento ("É hoje"), de manhã, horário de Brasília.
 Schedule::command('kena:send-day-of-reminders')->dailyAt('08:00')->withoutOverlapping();
+
+// OAuth do Mercado Pago: renova tokens perto do vencimento (no-op com o OAuth desligado).
+Schedule::command('kena:refresh-mp-tokens')->dailyAt('04:00')->withoutOverlapping();

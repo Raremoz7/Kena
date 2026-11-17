@@ -15,6 +15,7 @@ use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
 use App\Services\Photos\PhotoOrderService;
 use App\Services\Photos\PhotoPricing;
+use App\Support\MercadoPagoSettings;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -204,6 +205,8 @@ class PaymentService
         $payment = Payment::create([
             'order_id' => $order->id,
             'gateway' => 'mercadopago',
+            // Conta conectada por OAuth que recebeu a venda (null com OAuth desligado).
+            'mercadopago_account_id' => MercadoPagoSettings::currentAccountId(),
             'method' => $method,
             'status' => $result->status,
             'amount_cents' => $order->total_cents,

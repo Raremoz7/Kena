@@ -12,7 +12,7 @@ return [
     'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 8),
 
     /** Taxa de serviço (% sobre subtotal já com desconto). */
-    'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 10),
+    'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 6),
 
     /** Prazo (horas antes da sessão) até quando o comprador pode pedir reembolso sozinho. */
     'refund_deadline_hours' => (int) env('KENA_REFUND_DEADLINE_HOURS', 48),
@@ -34,6 +34,27 @@ return [
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
         'pix_expiration_minutes' => (int) env('MP_PIX_EXPIRATION_MINUTES', 30),
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
+
+        /**
+         * "Conectar com Mercado Pago" (OAuth): a venda cai na conta do
+         * organizador e a taxa de serviço vai para a plataforma como
+         * application_fee. DESLIGADO por padrão: ligar só com aprovação formal.
+         * Ligado, o token e a Public Key digitados no painel/.env deixam de valer.
+         */
+        'oauth' => [
+            'enabled' => (bool) env('KENA_MP_OAUTH_ENABLED', false),
+            'client_id' => env('MP_OAUTH_CLIENT_ID'),
+            'client_secret' => env('MP_OAUTH_CLIENT_SECRET'),
+            // Vazio = rota do callback do painel (precisa estar cadastrada igual na aplicação do MP).
+            'redirect_uri' => env('MP_OAUTH_REDIRECT_URI'),
+            'auth_url' => env('MP_OAUTH_AUTH_URL', 'https://auth.mercadopago.com/authorization'),
+            // Exige "PKCE" habilitado nos detalhes da aplicação do MP.
+            'pkce' => (bool) env('MP_OAUTH_PKCE', true),
+            // true = credenciais de teste (sandbox) na troca do code.
+            'test_token' => (bool) env('MP_OAUTH_TEST_TOKEN', false),
+            // Renova o token quando faltar menos que isso para vencer (validade: 180 dias).
+            'refresh_before_days' => (int) env('MP_OAUTH_REFRESH_BEFORE_DAYS', 30),
+        ],
     ],
 
     /**

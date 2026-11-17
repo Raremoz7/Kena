@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/atoms/Badge';
@@ -61,8 +61,29 @@ interface Gw {
     configured: boolean;
 }
 
+interface MpOauthAccount {
+    nickname: string | null;
+    mpUserId: string;
+    liveMode: boolean | null;
+    connectedAt: string;
+    expiresAt: string | null;
+}
+
+/** "Conectar com Mercado Pago" (OAuth). Desligado, só vem `enabled: false`. */
+type MpOauth =
+    | { enabled: false }
+    | {
+          enabled: true;
+          configured: boolean;
+          connectUrl: string;
+          disconnectUrl: string;
+          flash: { type: 'success' | 'error'; message: string } | null;
+          account: MpOauthAccount | null;
+      };
+
 interface SettingsProps {
     mp: Mp;
+    mpOauth: MpOauth;
     mail: Mail;
     mailBackup: MailBackup;
     mailUsage: MailUsage;
@@ -152,8 +173,101 @@ function ChecklistItem({ done, label }: { done: boolean; label: string }) {
     );
 }
 
+function formatDate(iso: string | null): string {
+    return iso
+        ? new Date(iso).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+          })
+        : '—';
+}
+
+/** Conta do Mercado Pago que recebe as vendas, conectada por OAuth. */
+function MercadoPagoConnection({
+    oauth,
+}: {
+    oauth: Extract<MpOauth, { enabled: true }>;
+}) {
+    const { account } = oauth;
+
+    function disconnect() {
+        if (
+            !window.confirm(
+                'Desconectar a conta? Novas vendas ficam bloqueadas até conectar outra.',
+            )
+        ) {
+            return;
+        }
+
+        router.post(oauth.disconnectUrl, {}, { preserveScroll: true });
+    }
+
+    return (
+        <div className="rounded-card border border-border bg-surface-2 p-4">
+            {oauth.flash && (
+                <p
+                    role="status"
+                    className={`mb-3 font-body text-sm ${
+                        oauth.flash.type === 'error'
+                            ? 'text-danger-text'
+                            : 'text-success'
+                    }`}
+                >
+                    {oauth.flash.message}
+                </p>
+            )}
+
+            {account ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="font-body text-sm font-medium text-foreground">
+                            {account.nickname ?? `Conta ${account.mpUserId}`}
+                            {account.liveMode === false && ' (teste)'}
+                        </p>
+                        <p className="font-body text-xs text-muted-foreground">
+                            Conectada em {formatDate(account.connectedAt)} ·
+                            renovação automática antes de{' '}
+                            {formatDate(account.expiresAt)}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button asChild variant="secondary" size="sm">
+                            <a href={oauth.connectUrl}>Trocar conta</a>
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={disconnect}
+                        >
+                            Desconectar
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="min-w-0 font-body text-sm text-muted-foreground">
+                        {oauth.configured
+                            ? 'Conecte a conta do Mercado Pago que vai receber as vendas.'
+                            : 'Faltam o Client ID e o Client Secret da aplicação no servidor (.env).'}
+                    </p>
+                    {oauth.configured && (
+                        <Button asChild size="sm">
+                            <a href={oauth.connectUrl}>
+                                Conectar com Mercado Pago
+                            </a>
+                        </Button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function Settings({
     mp,
+    mpOauth,
     mail,
     mailBackup,
     mailUsage,
@@ -294,14 +408,23 @@ export default function Settings({
                         </Badge>
                     </div>
                     <ul className="mt-4 flex flex-col gap-2.5">
-                        <ChecklistItem
-                            done={setup.mpAccessToken}
-                            label="Mercado Pago — Access Token"
-                        />
-                        <ChecklistItem
-                            done={setup.mpPublicKey}
-                            label="Mercado Pago — Public Key"
-                        />
+                        {mpOauth.enabled ? (
+                            <ChecklistItem
+                                done={setup.mpAccessToken && setup.mpPublicKey}
+                                label="Mercado Pago — conta conectada"
+                            />
+                        ) : (
+                            <>
+                                <ChecklistItem
+                                    done={setup.mpAccessToken}
+                                    label="Mercado Pago — Access Token"
+                                />
+                                <ChecklistItem
+                                    done={setup.mpPublicKey}
+                                    label="Mercado Pago — Public Key"
+                                />
+                            </>
+                        )}
                         <ChecklistItem
                             done={setup.mpWebhookSecret}
                             label="Mercado Pago — Webhook Secret"
@@ -425,52 +548,58 @@ export default function Settings({
                         </div>
 
                         <div className="mt-5 flex flex-col gap-4">
-                            <FormField
-                                label="Public Key"
-                                htmlFor="mp_public_key"
-                                helper="Chave pública usada no checkout (Bricks)."
-                            >
-                                <Input
-                                    id="mp_public_key"
-                                    value={form.data.mp_public_key}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'mp_public_key',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="APP_USR-..."
-                                />
-                            </FormField>
+                            {mpOauth.enabled ? (
+                                <MercadoPagoConnection oauth={mpOauth} />
+                            ) : (
+                                <>
+                                    <FormField
+                                        label="Public Key"
+                                        htmlFor="mp_public_key"
+                                        helper="Chave pública usada no checkout (Bricks)."
+                                    >
+                                        <Input
+                                            id="mp_public_key"
+                                            value={form.data.mp_public_key}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mp_public_key',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="APP_USR-..."
+                                        />
+                                    </FormField>
 
-                            <FormField
-                                label="Access Token"
-                                htmlFor="mp_access_token"
-                                helper={
-                                    mp.accessTokenConfigured
-                                        ? 'Já configurado — deixe em branco para manter.'
-                                        : 'Token secreto do servidor.'
-                                }
-                                error={form.errors.mp_access_token}
-                            >
-                                <Input
-                                    id="mp_access_token"
-                                    type="password"
-                                    autoComplete="off"
-                                    value={form.data.mp_access_token}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'mp_access_token',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder={
-                                        mp.accessTokenConfigured
-                                            ? '•••••••• (configurado)'
-                                            : 'APP_USR-...'
-                                    }
-                                />
-                            </FormField>
+                                    <FormField
+                                        label="Access Token"
+                                        htmlFor="mp_access_token"
+                                        helper={
+                                            mp.accessTokenConfigured
+                                                ? 'Já configurado — deixe em branco para manter.'
+                                                : 'Token secreto do servidor.'
+                                        }
+                                        error={form.errors.mp_access_token}
+                                    >
+                                        <Input
+                                            id="mp_access_token"
+                                            type="password"
+                                            autoComplete="off"
+                                            value={form.data.mp_access_token}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'mp_access_token',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder={
+                                                mp.accessTokenConfigured
+                                                    ? '•••••••• (configurado)'
+                                                    : 'APP_USR-...'
+                                            }
+                                        />
+                                    </FormField>
+                                </>
+                            )}
 
                             <FormField
                                 label="Webhook Secret"
