@@ -27,6 +27,8 @@ return new class extends Migration
             $table->foreignId('connected_by')->nullable()->constrained('panel_users')->nullOnDelete();
             $table->dateTime('connected_at');
             $table->dateTime('disconnected_at')->nullable();
+            // Renovação do token falhou: o organizador precisa reconectar.
+            $table->dateTime('refresh_failed_at')->nullable();
             $table->timestamps();
         });
 

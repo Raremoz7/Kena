@@ -29,6 +29,14 @@ export type Auth = {
     superAdmin: SuperAdmin | null;
 };
 
+/** Algo impede a organização de vender (aviso fixo no painel). */
+export type OrganizationAlert = {
+    kind: 'warning' | 'danger';
+    message: string;
+    actionUrl: string | null;
+    actionLabel: string | null;
+};
+
 /** Super admin "dentro" do painel de um organizador. */
 export type Impersonation = {
     adminName: string;

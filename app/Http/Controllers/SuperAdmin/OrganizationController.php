@@ -42,7 +42,9 @@ class OrganizationController extends Controller
             ->get()
             ->keyBy('organization_id');
         $events = Event::query()->selectRaw('organization_id, count(*) as total')->groupBy('organization_id')->pluck('total', 'organization_id');
-        $connected = MercadoPagoAccount::query()->whereNull('disconnected_at')->pluck('organization_id')->flip();
+        $connected = MercadoPagoAccount::query()->whereNull('disconnected_at')->get()
+            ->keyBy('organization_id')
+            ->map(fn (MercadoPagoAccount $a): string => $a->isUsable() ? ($a->needsReconnect() ? 'expiring' : 'ok') : 'reconnect');
 
         $organizations = Organization::query()->orderBy('name')->get()->map(function (Organization $org) use ($paid, $events, $connected): array {
             $stats = $paid->get($org->id);
@@ -63,6 +65,8 @@ class OrganizationController extends Controller
                 'gross' => Money::toReais((int) ($stats->gross ?? 0)),
                 'fees' => Money::toReais((int) ($stats->fees ?? 0)),
                 'mpConnected' => $connected->has($org->id),
+                // ok | expiring (renovação falhou, ainda vale) | reconnect (parou) | none
+                'mpStatus' => $connected->get($org->id, 'none'),
             ];
         });
 

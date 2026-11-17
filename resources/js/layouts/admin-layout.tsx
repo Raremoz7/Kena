@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { SkipLink } from '@/components/atoms/SkipLink';
 import { AdminBottomNav } from '@/components/organisms/AdminBottomNav';
@@ -38,6 +38,36 @@ function ImpersonationBanner() {
     );
 }
 
+/** Aviso fixo quando algo impede a organização de vender. */
+function OrganizationAlertBanner() {
+    const alert = usePage().props.organizationAlert;
+
+    if (!alert) {
+        return null;
+    }
+
+    return (
+        <div
+            role="alert"
+            className={`flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 font-body text-sm ${
+                alert.kind === 'danger'
+                    ? 'border-danger bg-danger/10 text-foreground'
+                    : 'border-warning bg-warning/15 text-foreground'
+            }`}
+        >
+            <span className="min-w-0">{alert.message}</span>
+            {alert.actionUrl && (
+                <Link
+                    href={alert.actionUrl}
+                    className="shrink-0 rounded-btn border border-current px-3 py-1 text-xs font-medium"
+                >
+                    {alert.actionLabel}
+                </Link>
+            )}
+        </div>
+    );
+}
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
     useFlashToasts();
 
@@ -53,6 +83,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <AdminSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
                 <ImpersonationBanner />
+                <OrganizationAlertBanner />
                 <header className="sticky top-0 z-30 flex h-14 items-center gap-2.5 border-b border-border bg-bg/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden">
                     <AdminBrand />
                 </header>

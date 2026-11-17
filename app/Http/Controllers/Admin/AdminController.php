@@ -7,11 +7,13 @@ use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\MercadoPagoAccount;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\Refund;
 use App\Models\SessionSeat;
 use App\Models\Venue;
 use App\Services\OverviewInsightsService;
 use App\Services\Payments\MercadoPagoOAuth;
+use App\Support\CurrentOrganization;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -72,9 +74,17 @@ class AdminController extends Controller
      */
     private function onboarding(): ?array
     {
-        $steps = [];
+        $organization = Organization::find(CurrentOrganization::id() ?? Organization::DEFAULT_ID);
+        $steps = [[
+            'key' => 'profile',
+            'label' => 'Completar o perfil (nome público e e-mail de contato)',
+            // O nome que a migração dá à organização de antes não serve ao público.
+            'done' => $organization !== null && filled($organization->contact_email) && $organization->name !== Organization::DEFAULT_NAME,
+            'href' => '/painel/config',
+        ]];
         if (MercadoPagoOAuth::enabled()) {
-            $steps[] = ['key' => 'mp', 'label' => 'Conectar sua conta do Mercado Pago', 'done' => MercadoPagoAccount::current() !== null, 'href' => '/painel/config'];
+            $account = MercadoPagoAccount::current();
+            $steps[] = ['key' => 'mp', 'label' => 'Conectar sua conta do Mercado Pago', 'done' => $account !== null && $account->isUsable(), 'href' => '/painel/config'];
         }
         $steps[] = ['key' => 'venue', 'label' => 'Cadastrar o local e o mapa de assentos', 'done' => Venue::query()->exists(), 'href' => '/painel/locais/novo'];
         $steps[] = ['key' => 'event', 'label' => 'Criar o evento e as sessões', 'done' => Event::query()->exists(), 'href' => '/painel/eventos/novo'];

@@ -3,10 +3,13 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
+use App\Models\MercadoPagoAccount;
+use App\Models\Organization;
 use App\Models\PanelUser;
 use App\Models\PhotoGallery;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Payments\MercadoPagoOAuth;
 use App\Support\Presenters\CatalogPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -62,6 +65,8 @@ class HandleInertiaRequests extends Middleware
             'photosAvailable' => fn (): bool => PhotoGallery::where('status', 'published')->exists(),
             // Super admin "dentro" de um organizador: aviso fixo no painel.
             'impersonation' => self::impersonation($request),
+            // Por que a organização não está vendendo (aviso fixo no painel).
+            'organizationAlert' => fn (): ?array => self::organizationAlert($request->user('painel')),
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
                 'success' => $request->session()->get('status'),
@@ -85,6 +90,49 @@ class HandleInertiaRequests extends Middleware
         return $user->only(['id', 'name', 'email', 'role']) + [
             'organizationName' => $user->organization?->name,
         ];
+    }
+
+    /**
+     * Aviso para o organizador quando algo impede as vendas. Staff não vê
+     * (não pode resolver). Um aviso por vez, do mais grave ao mais leve.
+     *
+     * @return array{kind: string, message: string, actionUrl: string|null, actionLabel: string|null}|null
+     */
+    private static function organizationAlert(mixed $user): ?array
+    {
+        if (! $user instanceof PanelUser || ! $user->canManageOrganization()) {
+            return null;
+        }
+        $organization = Organization::find($user->organization_id);
+        if ($organization === null) {
+            return null;
+        }
+
+        if ($organization->isSuspended()) {
+            return [
+                'kind' => 'danger',
+                'message' => 'As vendas estão suspensas pela plataforma'.($organization->suspended_reason ? " (motivo: {$organization->suspended_reason})" : '').'. Seus eventos saíram da vitrine; pedidos e reembolsos continuam aqui.',
+                'actionUrl' => null,
+                'actionLabel' => null,
+            ];
+        }
+        if (! MercadoPagoOAuth::enabled()) {
+            return null;
+        }
+
+        $account = MercadoPagoAccount::forOrganization($organization->id);
+        $settings = route('admin.settings');
+        if ($account === null) {
+            return ['kind' => 'warning', 'message' => 'Seus eventos ainda não aparecem no site: conecte a conta do Mercado Pago que vai receber as vendas.', 'actionUrl' => $settings, 'actionLabel' => 'Conectar'];
+        }
+        if (! $account->isUsable()) {
+            return ['kind' => 'danger', 'message' => 'A conexão com o Mercado Pago venceu e as vendas pararam. Reconecte a conta para voltar a vender.', 'actionUrl' => $settings, 'actionLabel' => 'Reconectar'];
+        }
+        if ($account->needsReconnect()) {
+            return ['kind' => 'warning', 'message' => 'Não conseguimos renovar a conexão com o Mercado Pago. Reconecte antes de '.$account->expires_at?->format('d/m/Y').' para não parar as vendas.', 'actionUrl' => $settings, 'actionLabel' => 'Reconectar'];
+        }
+
+        return null;
     }
 
     /** @return array<string, string>|null */

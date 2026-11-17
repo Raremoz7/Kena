@@ -123,7 +123,7 @@ class BuyerController extends Controller
             ->all();
 
         return Inertia::render('buyer/organizer', [
-            'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
+            'organization' => ['name' => $organization->name, 'slug' => $organization->slug, 'email' => $organization->contact_email],
             'events' => $events,
         ]);
     }

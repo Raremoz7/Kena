@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Mail\TicketsIssuedMail;
 use App\Models\MercadoPagoAccount;
 use App\Models\Organization;
@@ -53,7 +54,7 @@ class SettingsController extends Controller
             'mp' => [
                 // Valores efetivos. Segredos nunca saem do servidor.
                 'publicKey' => $platform ? (string) MercadoPagoSettings::publicKey() : '',
-                'accessTokenConfigured' => filled(MercadoPagoSettings::accessToken()),
+                'accessTokenConfigured' => MercadoPagoSettings::hasAccessToken(),
                 'webhookSecretConfigured' => filled(MercadoPagoSettings::webhookSecret()),
                 'statementDescriptor' => MercadoPagoSettings::statementDescriptor(),
                 'pixExpiration' => MercadoPagoSettings::pixExpirationMinutes(),
@@ -75,7 +76,7 @@ class SettingsController extends Controller
             'testMailUrl' => $platform ? route('super.settings.test-mail') : '',
             'testMpUrl' => $platform ? route('super.settings.test-mp') : route('admin.settings.test-mp'),
             'setup' => [
-                'mpAccessToken' => filled(MercadoPagoSettings::accessToken()),
+                'mpAccessToken' => MercadoPagoSettings::hasAccessToken(),
                 'mpPublicKey' => filled(MercadoPagoSettings::publicKey()),
                 'mpWebhookSecret' => filled(MercadoPagoSettings::webhookSecret()),
                 'mail' => MailSettings::isConfigured(),
@@ -214,6 +215,8 @@ class SettingsController extends Controller
 
         // Na plataforma não há "conta conectada": cada organizador conecta a sua.
         $account = $platform ? null : MercadoPagoAccount::current();
+        // Super admin dentro do painel do organizador não conecta conta por ele.
+        $impersonating = ! $platform && session()->has(ImpersonationController::SESSION_KEY);
 
         return [
             'enabled' => true,
@@ -221,7 +224,9 @@ class SettingsController extends Controller
             'connectUrl' => route('admin.settings.mp.connect'),
             'disconnectUrl' => route('admin.settings.mp.disconnect'),
             'flash' => session('mp_oauth'),
+            'blocked' => $impersonating,
             'account' => $account === null ? null : [
+                'needsReconnect' => $account->needsReconnect(),
                 'nickname' => $account->nickname,
                 'mpUserId' => $account->mp_user_id,
                 'liveMode' => $account->live_mode,

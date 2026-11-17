@@ -3,7 +3,7 @@ import { EventCard } from '@/pages/buyer/events';
 import type { ListedEvent } from '@/pages/buyer/events';
 
 interface OrganizerPageProps {
-    organization: { name: string; slug: string };
+    organization: { name: string; slug: string; email: string | null };
     events: ListedEvent[];
 }
 
@@ -20,6 +20,17 @@ export default function OrganizerPage({
                 <h1 className="mt-2 font-display text-display-lg text-foreground uppercase">
                     {organization.name}
                 </h1>
+                {organization.email && (
+                    <p className="mt-2 font-body text-sm text-muted-foreground">
+                        Dúvidas e reembolsos:{' '}
+                        <a
+                            href={`mailto:${organization.email}`}
+                            className="text-accent-text underline-offset-4 hover:underline"
+                        >
+                            {organization.email}
+                        </a>
+                    </p>
+                )}
 
                 {events.length === 0 ? (
                     <p className="mt-6 font-body text-sm text-muted-foreground">
