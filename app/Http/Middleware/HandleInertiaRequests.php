@@ -47,6 +47,13 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Identificação do fornecedor no rodapé (Decreto 7.962/2013).
+            'company' => [
+                'name' => (string) config('kena.legal.name'),
+                'document' => config('kena.legal.document') ?: null,
+                'address' => config('kena.legal.address') ?: null,
+                'email' => config('kena.support.email') ?: null,
+            ],
             'auth' => [
                 // Comprador (guard web) e conta de painel (guard painel) sao
                 // independentes — os dois podem estar nulos ao mesmo tempo.

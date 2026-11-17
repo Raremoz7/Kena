@@ -13,6 +13,13 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            /** Quem opera o Kena (Decreto 7.962/2013): vai no rodapé. */
+            company?: {
+                name: string;
+                document: string | null;
+                address: string | null;
+                email: string | null;
+            };
             activeReservation?: ActiveReservation | null;
             /** Existe galeria de fotos publicada: só aí "Fotos" entra no menu. */
             photosAvailable?: boolean;

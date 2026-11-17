@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import type {FormEvent} from 'react';
+import type { FormEvent } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
@@ -13,7 +13,10 @@ export default function SetPassword() {
         e.preventDefault();
         form.post('/definir-senha', {
             onSuccess: () => {
-                veludoToast.success('Senha criada', 'Agora você pode entrar com e-mail e senha.');
+                veludoToast.success(
+                    'Senha criada',
+                    'Agora você pode entrar com e-mail e senha.',
+                );
             },
         });
     }
@@ -28,19 +31,31 @@ export default function SetPassword() {
                 >
                     <Icon name="chevron-left" size={16} /> Meus ingressos
                 </Link>
-                <h1 className="mt-3 font-display text-display-lg text-foreground uppercase">Criar senha</h1>
+                <h1 className="mt-3 font-display text-display-lg text-foreground uppercase">
+                    Criar senha
+                </h1>
                 <p className="mt-2 font-body text-sm text-muted-foreground">
-                    Defina uma senha para entrar na sua conta sem precisar do link por e-mail.
+                    Defina uma senha para entrar na sua conta sem precisar do
+                    link por e-mail.
                 </p>
 
-                <form onSubmit={submit} className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
-                    <FormField label="Senha" htmlFor="password" error={form.errors.password}>
+                <form
+                    onSubmit={submit}
+                    className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-6"
+                >
+                    <FormField
+                        label="Senha"
+                        htmlFor="password"
+                        error={form.errors.password}
+                    >
                         <Input
                             id="password"
                             type="password"
                             autoComplete="new-password"
                             value={form.data.password}
-                            onChange={(e) => form.setData('password', e.target.value)}
+                            onChange={(e) =>
+                                form.setData('password', e.target.value)
+                            }
                             placeholder="Mínimo 8 caracteres"
                         />
                     </FormField>
@@ -54,7 +69,12 @@ export default function SetPassword() {
                             type="password"
                             autoComplete="new-password"
                             value={form.data.password_confirmation}
-                            onChange={(e) => form.setData('password_confirmation', e.target.value)}
+                            onChange={(e) =>
+                                form.setData(
+                                    'password_confirmation',
+                                    e.target.value,
+                                )
+                            }
                             placeholder="Repita a senha"
                         />
                     </FormField>

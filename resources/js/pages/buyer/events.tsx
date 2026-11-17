@@ -1,8 +1,8 @@
 import { Head, InfiniteScroll, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Badge  } from '@/components/atoms/Badge';
-import type {BadgeProps} from '@/components/atoms/Badge';
+import { Badge } from '@/components/atoms/Badge';
+import type { BadgeProps } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
@@ -28,7 +28,10 @@ export interface ListedEvent {
 /** Espelha as proporções do EventCard para o grid não pular ao carregar a página seguinte. */
 function EventCardSkeleton() {
     return (
-        <div className="overflow-hidden rounded-card border border-border bg-surface" aria-hidden="true">
+        <div
+            className="overflow-hidden rounded-card border border-border bg-surface"
+            aria-hidden="true"
+        >
             <div className="h-40 animate-pulse bg-surface-2" />
             <div className="p-5">
                 <span className="block h-2.5 w-20 animate-pulse rounded-full bg-surface-2" />
@@ -67,12 +70,16 @@ export function EventCard({ event }: { event: ListedEvent }) {
                     />
                 )}
                 <span className="absolute top-4 left-4">
-                    <Badge tone={event.status.tone as BadgeProps['tone']}>{event.status.label}</Badge>
+                    <Badge tone={event.status.tone as BadgeProps['tone']}>
+                        {event.status.label}
+                    </Badge>
                 </span>
             </div>
             <div className="p-5">
                 <Tag>{event.kicker}</Tag>
-                <h3 className="mt-1.5 font-display text-display-sm text-foreground uppercase">{event.title}</h3>
+                <h3 className="mt-1.5 font-display text-display-sm text-foreground uppercase">
+                    {event.title}
+                </h3>
                 <p className="mt-2 flex items-center gap-1.5 font-body text-sm text-muted-foreground">
                     <Icon name="calendar" size={15} />
                     {event.dateLabel} · {event.timeLabel}
@@ -97,7 +104,13 @@ interface EventsPaginator {
     data: ListedEvent[];
 }
 
-export default function EventsPage({ events, q = '' }: { events: EventsPaginator; q?: string }) {
+export default function EventsPage({
+    events,
+    q = '',
+}: {
+    events: EventsPaginator;
+    q?: string;
+}) {
     const [term, setTerm] = useState(q);
 
     function search(e: FormEvent) {
@@ -113,7 +126,9 @@ export default function EventsPage({ events, q = '' }: { events: EventsPaginator
             <Head title="Eventos" />
             <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
                 <Tag>Em cartaz</Tag>
-                <h1 className="mt-2 font-display text-display-lg text-foreground uppercase">Eventos</h1>
+                <h1 className="mt-2 font-display text-display-lg text-foreground uppercase">
+                    Eventos
+                </h1>
                 <p className="mt-1 font-body text-sm text-muted-foreground">
                     Teatro, concertos e espetáculos com assento marcado.
                 </p>
@@ -141,10 +156,15 @@ export default function EventsPage({ events, q = '' }: { events: EventsPaginator
                 {events.data.length === 0 ? (
                     <div className="mt-10 rounded-card border border-border bg-surface px-6 py-12 text-center">
                         <p className="font-body text-sm text-muted-foreground">
-                            {q ? `Nenhum evento para “${q}”.` : 'Nenhum evento em cartaz no momento.'}
+                            {q
+                                ? `Nenhum evento para “${q}”.`
+                                : 'Nenhum evento em cartaz no momento.'}
                         </p>
                         {q && (
-                            <Link href="/eventos" className="mt-2 inline-block font-body text-sm text-accent-text hover:underline">
+                            <Link
+                                href="/eventos"
+                                className="mt-2 inline-block font-body text-sm text-accent-text hover:underline"
+                            >
                                 Limpar busca
                             </Link>
                         )}

@@ -66,4 +66,26 @@ class LegalPagesTest extends TestCase
             ->where('fees.tickets', fn ($v): bool => (float) $v === 6.0)
             ->where('fees.photos', fn ($v): bool => (float) $v === 8.0));
     }
+
+    public function test_supplier_identification_and_dpo_come_from_config(): void
+    {
+        config([
+            'kena.legal.name' => 'Somo Tecnologia',
+            'kena.legal.document' => '00.000.000/0001-00',
+            'kena.legal.address' => 'Rua Exemplo, 100, Brasília/DF',
+            'kena.legal.dpo_name' => 'Fulana de Tal',
+            'kena.legal.dpo_email' => 'dpo@exemplo.test',
+        ]);
+
+        // Rodapé de qualquer página do comprador (Decreto 7.962/2013).
+        $this->get('/eventos')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('company.name', 'Somo Tecnologia')
+            ->where('company.document', '00.000.000/0001-00')
+            ->where('company.address', 'Rua Exemplo, 100, Brasília/DF'));
+
+        // Encarregado na Privacidade (LGPD art. 41).
+        $this->get('/privacidade')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('dpo.name', 'Fulana de Tal')
+            ->where('dpo.email', 'dpo@exemplo.test'));
+    }
 }

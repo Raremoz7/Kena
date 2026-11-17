@@ -121,6 +121,13 @@ export default function Terms({
             <LegalSection title="5. Cancelamento e reembolso">
                 <ul>
                     <li>
+                        Compras feitas pela internet podem ser desistidas em até
+                        7 dias, contados da compra, com devolução integral do
+                        valor pago (art. 49 do Código de Defesa do Consumidor).
+                        Peça ao organizador, pelo contato na página do evento,
+                        ou ao Kena.
+                    </li>
+                    <li>
                         Você pode pedir o reembolso em Meus ingressos até{' '}
                         {policy.refundDeadlineHours} horas antes da sessão. O
                         estorno volta pelo mesmo meio de pagamento, no prazo do

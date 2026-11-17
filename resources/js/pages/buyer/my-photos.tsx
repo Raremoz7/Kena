@@ -30,7 +30,10 @@ interface Props {
     needsPassword?: boolean;
 }
 
-export default function MyPhotosPage({ galleries, needsPassword = false }: Props) {
+export default function MyPhotosPage({
+    galleries,
+    needsPassword = false,
+}: Props) {
     return (
         <>
             <Head title="Minhas fotos" />
@@ -50,12 +53,21 @@ export default function MyPhotosPage({ galleries, needsPassword = false }: Props
                         className="mt-6 flex items-center justify-between gap-3 rounded-card border border-accent/40 bg-surface px-4 py-3 transition-colors hover:bg-surface-2"
                     >
                         <span className="flex items-center gap-2.5">
-                            <Icon name="lock" size={18} className="text-accent" />
+                            <Icon
+                                name="lock"
+                                size={18}
+                                className="text-accent"
+                            />
                             <span className="font-body text-sm text-foreground">
-                                Crie uma senha para voltar às fotos sem depender do link por e-mail.
+                                Crie uma senha para voltar às fotos sem depender
+                                do link por e-mail.
                             </span>
                         </span>
-                        <Icon name="chevron-right" size={16} className="shrink-0 text-faint" />
+                        <Icon
+                            name="chevron-right"
+                            size={16}
+                            className="shrink-0 text-faint"
+                        />
                     </Link>
                 )}
 
@@ -97,13 +109,18 @@ function GallerySection({ gallery }: { gallery: OwnedGallery }) {
                 <div className="min-w-0">
                     <p className="kicker text-faint">
                         {photoCount(gallery.photos.length)}
-                        {gallery.paidAt ? ` · comprado em ${gallery.paidAt}` : ''}
+                        {gallery.paidAt
+                            ? ` · comprado em ${gallery.paidAt}`
+                            : ''}
                     </p>
                     <h2
                         id={`g-${gallery.galleryId}`}
                         className="mt-1 font-display text-display-sm text-foreground uppercase"
                     >
-                        <Link href={gallery.galleryUrl} className="hover:underline">
+                        <Link
+                            href={gallery.galleryUrl}
+                            className="hover:underline"
+                        >
                             {gallery.event.title}
                         </Link>
                     </h2>
@@ -124,7 +141,11 @@ function GallerySection({ gallery }: { gallery: OwnedGallery }) {
                     role="status"
                     className="mt-4 flex items-start gap-2 rounded-card border border-warning bg-warning/15 px-4 py-3 font-body text-sm text-foreground"
                 >
-                    <Icon name="info" size={16} className="mt-0.5 shrink-0 text-warning" />
+                    <Icon
+                        name="info"
+                        size={16}
+                        className="mt-0.5 shrink-0 text-warning"
+                    />
                     {pending === 1
                         ? 'O original de 1 foto ainda está sendo preparado pelo fotógrafo.'
                         : `Os originais de ${pending} fotos ainda estão sendo preparados pelo fotógrafo.`}{' '}
