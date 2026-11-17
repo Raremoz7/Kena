@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Painel;
 
 use App\Http\Controllers\Controller;
+use App\Mail\NewOrganizerSignupMail;
 use App\Mail\OrganizerVerifyEmailMail;
 use App\Models\Organization;
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Rules\EmailDomainExists;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +76,12 @@ class OrganizerSignupController extends Controller
         });
 
         self::sendVerification($user);
+
+        // Avisa o super admin de cada cadastro novo.
+        $admins = PlatformAdmin::query()->pluck('email')->all();
+        if ($admins !== []) {
+            Mail::to($admins)->queue(new NewOrganizerSignupMail($data['organization_name'], $data['name'], $user->email));
+        }
 
         return redirect()->route('painel.login')->with('status', 'Conta criada! Enviamos um link para '.$user->email.'. Confirme o e-mail para entrar.');
     }

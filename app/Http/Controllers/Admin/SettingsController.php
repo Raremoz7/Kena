@@ -46,6 +46,8 @@ class SettingsController extends Controller
             'scope' => $platform ? 'platform' : 'organization',
             // Nome público do organizador (aparece no evento, na página dele e no e-mail).
             'organizationName' => $platform ? '' : (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('name'),
+            // Contato público para dúvidas e reembolsos (evento e e-mail dos ingressos).
+            'organizationEmail' => $platform ? '' : (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('contact_email'),
             'mp' => [
                 // Valores efetivos. Segredos nunca saem do servidor.
                 'publicKey' => $platform ? (string) MercadoPagoSettings::publicKey() : '',
@@ -96,6 +98,7 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'organization_name' => ['nullable', 'string', 'max:120'],
+            'organization_email' => ['nullable', 'email', 'max:255'],
             'mp_statement_descriptor' => ['nullable', 'string', 'max:60'],
             'mp_pix_expiration' => ['nullable', 'integer', 'min:1', 'max:1440'],
         ]);
@@ -103,6 +106,7 @@ class SettingsController extends Controller
         $organization = Organization::findOrFail(CurrentOrganization::id() ?? Organization::DEFAULT_ID);
         $organization->update([
             'name' => filled($data['organization_name'] ?? null) ? $data['organization_name'] : $organization->name,
+            'contact_email' => filled($data['organization_email'] ?? null) ? mb_strtolower(trim($data['organization_email'])) : null,
             'statement_descriptor' => filled($data['mp_statement_descriptor'] ?? null) ? $data['mp_statement_descriptor'] : null,
             'pix_expiration_minutes' => filled($data['mp_pix_expiration'] ?? null) ? (int) $data['mp_pix_expiration'] : $organization->pix_expiration_minutes,
         ]);

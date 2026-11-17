@@ -90,6 +90,8 @@ interface SettingsProps {
     saveUrl: string;
     /** Nome público do organizador. */
     organizationName: string;
+    /** E-mail público para dúvidas e reembolsos. */
+    organizationEmail: string;
     mp: Mp;
     mpOauth: MpOauth;
     mail: Mail;
@@ -277,6 +279,7 @@ export default function Settings({
     scope,
     saveUrl,
     organizationName,
+    organizationEmail,
     mp,
     mpOauth,
     mail,
@@ -346,6 +349,7 @@ export default function Settings({
 
     const form = useForm({
         organization_name: organizationName,
+        organization_email: organizationEmail,
         mp_access_token: '',
         mp_public_key: mp.publicKey,
         mp_webhook_secret: '',
@@ -595,6 +599,26 @@ export default function Settings({
                                             e.target.value,
                                         )
                                     }
+                                />
+                            </FormField>
+                            <FormField
+                                label="E-mail de contato"
+                                htmlFor="organization_email"
+                                helper="Aparece no evento e no e-mail dos ingressos para dúvidas e pedidos de reembolso."
+                                error={form.errors.organization_email}
+                                className="mt-4"
+                            >
+                                <Input
+                                    id="organization_email"
+                                    type="email"
+                                    value={form.data.organization_email}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'organization_email',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="contato@suaprodutora.com.br"
                                 />
                             </FormField>
                         </div>

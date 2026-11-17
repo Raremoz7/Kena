@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OrganizationStatusMail;
 use App\Models\Event;
 use App\Models\MercadoPagoAccount;
 use App\Models\Order;
@@ -15,6 +16,7 @@ use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,6 +52,7 @@ class OrganizationController extends Controller
                 'status' => $org->status,
                 'suspendedReason' => $org->suspended_reason,
                 'feePercent' => $org->service_fee_percent !== null ? (float) $org->service_fee_percent : null,
+                'photoFeePercent' => $org->photo_fee_percent !== null ? (float) $org->photo_fee_percent : null,
                 'events' => (int) ($events[$org->id] ?? 0),
                 'paidOrders' => (int) ($stats->orders ?? 0),
                 'gross' => Money::toReais((int) ($stats->gross ?? 0)),
@@ -61,6 +64,7 @@ class OrganizationController extends Controller
         return Inertia::render('super/organizations', [
             'organizations' => $organizations,
             'defaultFeePercent' => (float) config('kena.service_fee_percent', 6),
+            'defaultPhotoFeePercent' => (float) config('kena.photo_fee_percent', 6),
             'oauthEnabled' => MercadoPagoOAuth::enabled(),
         ]);
     }
@@ -75,6 +79,7 @@ class OrganizationController extends Controller
             'suspended_reason' => $data['reason'],
         ]);
         PlatformAuditLog::record($this->admin(), 'organization.suspend', $organization->id, ['reason' => $data['reason']]);
+        self::notifyOrganizers($organization, new OrganizationStatusMail($organization->name, true, $data['reason']));
 
         return back()->with('status', "Vendas de {$organization->name} suspensas.");
     }
@@ -83,19 +88,47 @@ class OrganizationController extends Controller
     {
         $organization->update(['status' => Organization::STATUS_ACTIVE, 'suspended_at' => null, 'suspended_reason' => null]);
         PlatformAuditLog::record($this->admin(), 'organization.reactivate', $organization->id);
+        self::notifyOrganizers($organization, new OrganizationStatusMail($organization->name, false));
 
         return back()->with('status', "{$organization->name} voltou a vender.");
     }
 
-    /** Taxa negociada. Em branco = volta para a taxa padrão da plataforma. */
+    /**
+     * Taxas negociadas: ingresso e fotos são independentes (mudar uma não mexe
+     * na outra). Em branco = volta para a taxa padrão da plataforma.
+     */
     public function fee(Request $request, Organization $organization): RedirectResponse
     {
-        $data = $request->validate(['fee_percent' => ['nullable', 'numeric', 'min:0', 'max:30']]);
+        $data = $request->validate([
+            'fee_percent' => ['nullable', 'numeric', 'min:0', 'max:30'],
+            'photo_fee_percent' => ['nullable', 'numeric', 'min:0', 'max:30'],
+        ]);
 
-        $organization->update(['service_fee_percent' => $data['fee_percent'] ?? null]);
-        PlatformAuditLog::record($this->admin(), 'organization.fee', $organization->id, ['fee_percent' => $data['fee_percent'] ?? null]);
+        $changes = [];
+        if ($request->exists('fee_percent')) {
+            $changes['service_fee_percent'] = $data['fee_percent'] ?? null;
+        }
+        if ($request->exists('photo_fee_percent')) {
+            $changes['photo_fee_percent'] = $data['photo_fee_percent'] ?? null;
+        }
+        $organization->update($changes);
+        PlatformAuditLog::record($this->admin(), 'organization.fee', $organization->id, $changes);
 
         return back()->with('status', "Taxa de {$organization->name} atualizada.");
+    }
+
+    /** Avisa os organizadores (não a equipe de check-in) da organização. */
+    private static function notifyOrganizers(Organization $organization, OrganizationStatusMail $mail): void
+    {
+        $emails = PanelUser::query()
+            ->where('organization_id', $organization->id)
+            ->where('role', PanelUser::ROLE_ORGANIZER)
+            ->pluck('email')
+            ->all();
+
+        if ($emails !== []) {
+            Mail::to($emails)->queue($mail);
+        }
     }
 
     /** Primeiro organizador da organização (quem o "entrar como" assume). */

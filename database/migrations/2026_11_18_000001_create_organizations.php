@@ -29,6 +29,8 @@ return new class extends Migration
             $table->string('suspended_reason')->nullable();
             // Null = taxa padrão da plataforma (config kena.service_fee_percent).
             $table->decimal('service_fee_percent', 5, 2)->nullable();
+            // Taxa das fotos, independente da do ingresso. Null = padrão (kena.photo_fee_percent).
+            $table->decimal('photo_fee_percent', 5, 2)->nullable();
             // Null = valor global (painel da plataforma ou .env).
             $table->string('statement_descriptor', 60)->nullable();
             $table->unsignedSmallInteger('pix_expiration_minutes')->nullable();
@@ -65,6 +67,14 @@ return new class extends Migration
         });
         DB::table('panel_users')->update(['email_verified_at' => $now]);
 
+        // Recuperação de senha do painel: tabela própria (o comprador usa
+        // password_reset_tokens; o mesmo e-mail pode existir nos dois).
+        Schema::create('panel_password_reset_tokens', function (Blueprint $table): void {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
         // Super admin: conta separada, guard próprio (admin).
         Schema::create('platform_admins', function (Blueprint $table): void {
             $table->id();
@@ -89,6 +99,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('panel_password_reset_tokens');
         Schema::dropIfExists('platform_audit_logs');
         Schema::dropIfExists('platform_admins');
 

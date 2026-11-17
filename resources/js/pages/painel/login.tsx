@@ -62,6 +62,14 @@ export default function PainelLogin({
                                 label="Senha"
                                 htmlFor="password"
                                 error={errors.password}
+                                action={
+                                    <Link
+                                        href="/painel/esqueci-senha"
+                                        className="font-body text-xs text-accent-text underline-offset-4 hover:underline"
+                                    >
+                                        Esqueci minha senha
+                                    </Link>
+                                }
                             >
                                 <PasswordInput
                                     id="password"

@@ -121,6 +121,7 @@ class PaymentService
                     'status' => Order::STATUS_PENDING,
                     'subtotal_cents' => $quote['subtotal_cents'],
                     'discount_cents' => $quote['discount_cents'],
+                    'fee_cents' => $quote['fee_cents'],
                     'total_cents' => $quote['total_cents'],
                 ]);
                 $fresh->photoItems()->update(['unit_price_cents' => $quote['unit_price_cents']]);

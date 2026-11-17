@@ -15,6 +15,7 @@ interface Organization {
     status: 'active' | 'suspended';
     suspendedReason: string | null;
     feePercent: number | null;
+    photoFeePercent: number | null;
     events: number;
     paidOrders: number;
     gross: number;
@@ -25,35 +26,80 @@ interface Organization {
 interface PlatformProps {
     organizations: Organization[];
     defaultFeePercent: number;
+    defaultPhotoFeePercent: number;
     oauthEnabled: boolean;
 }
 
 const brl = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-/** Ações de uma organização: taxa negociada e suspender/reativar as vendas. */
-function OrganizationActions({
-    org,
-    defaultFeePercent,
+/** Campo de taxa (%) com salvar próprio: ingresso e fotos são independentes. */
+function FeeField({
+    id,
+    label,
+    field,
+    current,
+    fallback,
+    url,
 }: {
-    org: Organization;
-    defaultFeePercent: number;
+    id: string;
+    label: string;
+    field: 'fee_percent' | 'photo_fee_percent';
+    current: number | null;
+    fallback: number;
+    url: string;
 }) {
-    const [fee, setFee] = useState(
-        org.feePercent !== null ? String(org.feePercent) : '',
-    );
-    const [suspending, setSuspending] = useState(false);
-    const [reason, setReason] = useState('');
-    const base = `/admin/organizacoes/${org.id}`;
+    const [value, setValue] = useState(current !== null ? String(current) : '');
 
-    function saveFee(e: FormEvent) {
+    function save(e: FormEvent) {
         e.preventDefault();
         router.put(
-            `${base}/taxa`,
-            { fee_percent: fee === '' ? null : fee },
+            url,
+            { [field]: value === '' ? null : value },
             { preserveScroll: true },
         );
     }
+
+    return (
+        <form onSubmit={save} className="flex items-center gap-2">
+            <label
+                htmlFor={id}
+                className="w-28 shrink-0 font-body text-xs text-muted-foreground"
+            >
+                {label}
+            </label>
+            <Input
+                id={id}
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                max="30"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={`${fallback} (padrão)`}
+                className="py-2"
+            />
+            <Button type="submit" size="sm" variant="secondary">
+                Salvar
+            </Button>
+        </form>
+    );
+}
+
+/** Ações de uma organização: entrar como, taxas negociadas e suspender/reativar. */
+function OrganizationActions({
+    org,
+    defaultFeePercent,
+    defaultPhotoFeePercent,
+}: {
+    org: Organization;
+    defaultFeePercent: number;
+    defaultPhotoFeePercent: number;
+}) {
+    const [suspending, setSuspending] = useState(false);
+    const [reason, setReason] = useState('');
+    const base = `/admin/organizacoes/${org.id}`;
 
     function suspend(e: FormEvent) {
         e.preventDefault();
@@ -77,29 +123,22 @@ function OrganizationActions({
             >
                 Entrar como {org.name}
             </Button>
-            <form onSubmit={saveFee} className="flex items-center gap-2">
-                <label
-                    htmlFor={`fee-${org.id}`}
-                    className="shrink-0 font-body text-xs text-muted-foreground"
-                >
-                    Taxa (%)
-                </label>
-                <Input
-                    id={`fee-${org.id}`}
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    min="0"
-                    max="30"
-                    value={fee}
-                    onChange={(e) => setFee(e.target.value)}
-                    placeholder={`${defaultFeePercent} (padrão)`}
-                    className="py-2"
-                />
-                <Button type="submit" size="sm" variant="secondary">
-                    Salvar
-                </Button>
-            </form>
+            <FeeField
+                id={`fee-${org.id}`}
+                label="Taxa ingressos (%)"
+                field="fee_percent"
+                current={org.feePercent}
+                fallback={defaultFeePercent}
+                url={`${base}/taxa`}
+            />
+            <FeeField
+                id={`photo-fee-${org.id}`}
+                label="Taxa fotos (%)"
+                field="photo_fee_percent"
+                current={org.photoFeePercent}
+                fallback={defaultPhotoFeePercent}
+                url={`${base}/taxa`}
+            />
 
             {org.status === 'suspended' ? (
                 <Button
@@ -149,6 +188,7 @@ function OrganizationActions({
 export default function Platform({
     organizations,
     defaultFeePercent,
+    defaultPhotoFeePercent,
     oauthEnabled,
 }: PlatformProps) {
     const totalFees = organizations.reduce((sum, o) => sum + o.fees, 0);
@@ -159,7 +199,7 @@ export default function Platform({
             <AdminPage>
                 <PageHeader
                     title="Organizações"
-                    description={`Todos os organizadores da plataforma. Taxa padrão: ${defaultFeePercent}%. Suspender fecha as vendas na hora; o organizador continua vendo pedidos e estornando. "Entrar como" abre o painel do organizador e fica registrado.`}
+                    description={`Todos os organizadores da plataforma. Taxa padrão: ${defaultFeePercent}% nos ingressos e ${defaultPhotoFeePercent}% nas fotos. Suspender fecha as vendas na hora; o organizador continua vendo pedidos e estornando. "Entrar como" abre o painel do organizador e fica registrado.`}
                 />
 
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -271,9 +311,16 @@ export default function Platform({
                                 <div>
                                     <dt className="text-faint">Taxa</dt>
                                     <dd className="text-foreground">
-                                        {org.feePercent !== null
-                                            ? `${org.feePercent}% (negociada)`
-                                            : `${defaultFeePercent}% (padrão)`}
+                                        ingressos{' '}
+                                        {org.feePercent ?? defaultFeePercent}%
+                                        {org.feePercent !== null &&
+                                            ' (negociada)'}{' '}
+                                        · fotos{' '}
+                                        {org.photoFeePercent ??
+                                            defaultPhotoFeePercent}
+                                        %
+                                        {org.photoFeePercent !== null &&
+                                            ' (negociada)'}
                                     </dd>
                                 </div>
                             </dl>
@@ -288,6 +335,9 @@ export default function Platform({
                                 <OrganizationActions
                                     org={org}
                                     defaultFeePercent={defaultFeePercent}
+                                    defaultPhotoFeePercent={
+                                        defaultPhotoFeePercent
+                                    }
                                 />
                             </div>
                         </li>

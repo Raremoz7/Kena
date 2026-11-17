@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Mail\PanelPasswordResetMail;
 use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\PanelUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Conta do painel — organizador ou staff de check-in. Vive fora de `users`,
@@ -54,5 +56,14 @@ class PanelUser extends Authenticatable
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
         ];
+    }
+
+    /** Link do "esqueci minha senha" do painel (não o do comprador). */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $url = route('painel.password.reset', ['token' => $token, 'email' => $this->email]);
+        $ttl = (int) config('auth.passwords.panel_users.expire', 60);
+
+        Mail::to($this->email)->send(new PanelPasswordResetMail((string) $this->name, $url, $ttl));
     }
 }

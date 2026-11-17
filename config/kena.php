@@ -14,6 +14,12 @@ return [
     /** Taxa de serviço (% sobre subtotal já com desconto). */
     'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 6),
 
+    /**
+     * Taxa de serviço das fotos (% sobre o valor das fotos), independente da do
+     * ingresso. Cada organização pode ter a sua (painel do super admin).
+     */
+    'photo_fee_percent' => (float) env('KENA_PHOTO_FEE_PERCENT', 6),
+
     /** Prazo (horas antes da sessão) até quando o comprador pode pedir reembolso sozinho. */
     'refund_deadline_hours' => (int) env('KENA_REFUND_DEADLINE_HOURS', 48),
 
