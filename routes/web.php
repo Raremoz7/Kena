@@ -47,6 +47,7 @@ Route::get('/', [BuyerController::class, 'events'])->name('home');
 Route::get('/eventos', [BuyerController::class, 'events'])->name('events.index');
 Route::get('/ajuda', [LegalController::class, 'help'])->name('help');
 Route::get('/termos', [LegalController::class, 'terms'])->name('terms');
+Route::get('/termos/organizadores', [LegalController::class, 'organizerTerms'])->name('terms.organizers');
 Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy');
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');

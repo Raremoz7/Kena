@@ -108,12 +108,12 @@ export default function OrganizerSignup() {
                                 >
                                     Li e aceito os{' '}
                                     <a
-                                        href="/termos"
+                                        href="/termos/organizadores"
                                         target="_blank"
                                         rel="noreferrer"
                                         className="text-accent-text underline"
                                     >
-                                        Termos de Uso
+                                        Termos do organizador
                                     </a>
                                     . Sou responsável pelos meus eventos e pelos
                                     reembolsos aos compradores.
