@@ -22,6 +22,7 @@ interface Organization {
     gross: number;
     fees: number;
     mpConnected: boolean;
+    mpStatus: 'ok' | 'expiring' | 'reconnect' | 'none';
 }
 
 interface PlatformProps {
@@ -30,6 +31,16 @@ interface PlatformProps {
     defaultPhotoFeePercent: number;
     oauthEnabled: boolean;
 }
+
+const mpBadge: Record<
+    Organization['mpStatus'],
+    { label: string; tone: 'info' | 'warning' | 'danger' }
+> = {
+    ok: { label: 'Mercado Pago ok', tone: 'info' },
+    expiring: { label: 'Reconectar Mercado Pago', tone: 'warning' },
+    reconnect: { label: 'Mercado Pago parado', tone: 'danger' },
+    none: { label: 'Sem Mercado Pago', tone: 'warning' },
+};
 
 const brl = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -334,15 +345,9 @@ export default function Platform({
                                     </Badge>
                                     {oauthEnabled && (
                                         <Badge
-                                            tone={
-                                                org.mpConnected
-                                                    ? 'info'
-                                                    : 'warning'
-                                            }
+                                            tone={mpBadge[org.mpStatus].tone}
                                         >
-                                            {org.mpConnected
-                                                ? 'Mercado Pago ok'
-                                                : 'Sem Mercado Pago'}
+                                            {mpBadge[org.mpStatus].label}
                                         </Badge>
                                     )}
                                 </div>

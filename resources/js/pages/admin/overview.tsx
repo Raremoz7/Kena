@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon';
 import type { IconName } from '@/components/atoms/Icon';
@@ -121,6 +121,7 @@ export default function Overview({
     onboarding?: OnboardingStep[] | null;
 }) {
     const occupancy = Math.min(100, Math.max(0, kpis.occupancy));
+    const organizationName = usePage().props.auth?.panelUser?.organizationName;
 
     return (
         <>
@@ -128,7 +129,11 @@ export default function Overview({
             <AdminPage>
                 <PageHeader
                     title="Visão geral"
-                    description="Resumo de vendas e eventos do Kena."
+                    description={
+                        organizationName
+                            ? `Resumo de vendas e eventos de ${organizationName}.`
+                            : 'Resumo de vendas e eventos.'
+                    }
                 />
 
                 {onboarding && <Onboarding steps={onboarding} />}

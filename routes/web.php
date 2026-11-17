@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\CouponController;
@@ -205,6 +206,12 @@ Route::middleware('auth:admin')->prefix('admin')->name('super.')->group(function
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
 Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
+    // Minha conta (organizador e staff): nome e senha.
+    Route::get('/painel/conta', [AccountController::class, 'show'])->name('admin.account');
+    Route::put('/painel/conta', [AccountController::class, 'update'])->name('admin.account.update');
+    Route::put('/painel/conta/senha', [AccountController::class, 'password'])
+        ->middleware('throttle:10,1')
+        ->name('admin.account.password');
     // Super admin "dentro" de um organizador: volta para o /admin.
     Route::post('/painel/sair-do-modo-admin', [ImpersonationController::class, 'stop'])->name('painel.impersonation.stop');
 

@@ -67,13 +67,21 @@ class FinalPolishTest extends TestCase
 
         $this->actingAs($organizer, 'painel')->get('/painel')
             ->assertInertia(fn (Assert $p) => $p
-                ->has('onboarding', 3)
+                ->has('onboarding', 4)
+                ->where('onboarding.0.key', 'profile')
                 ->where('onboarding.0.done', false));
 
-        // Organização principal já tem tudo: o card some.
+        // Organização de antes: tem evento, mas o nome provisório e a falta de
+        // contato mantêm o passo de perfil aberto.
         $this->makeSession(1);
-        $this->actingAs(PanelUser::factory()->create(), 'painel')->get('/painel')
-            ->assertInertia(fn (Assert $p) => $p->where('onboarding', null)->has('kpis.platformFee'));
+        $principal = PanelUser::factory()->create();
+        $this->actingAs($principal, 'painel')->get('/painel')
+            ->assertInertia(fn (Assert $p) => $p->has('onboarding', 4)->where('onboarding.0.done', false)->has('kpis.platformFee'));
+
+        // Perfil completo: o card some.
+        Organization::findOrFail(Organization::DEFAULT_ID)->update(['name' => 'Teatro Real', 'contact_email' => 'oi@real.test']);
+        $this->actingAs($principal, 'painel')->get('/painel')
+            ->assertInertia(fn (Assert $p) => $p->where('onboarding', null));
     }
 
     public function test_settings_show_the_public_page_link(): void

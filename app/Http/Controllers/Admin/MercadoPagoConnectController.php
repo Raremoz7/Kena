@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\PaymentException;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Models\MercadoPagoAccount;
 use App\Models\PanelUser;
 use App\Services\Payments\MercadoPagoOAuth;
@@ -26,6 +27,9 @@ class MercadoPagoConnectController extends Controller
     public function connect(Request $request): Response
     {
         $this->ensureEnabled();
+        if ($this->blockedByImpersonation($request)) {
+            return $this->back('error', 'No "entrar como" não dá para conectar o Mercado Pago: só o organizador pode fazer isso.');
+        }
 
         if (! MercadoPagoOAuth::configured()) {
             return $this->back('error', 'Faltam o Client ID e o Client Secret da aplicação do Mercado Pago no servidor.');
@@ -41,6 +45,9 @@ class MercadoPagoConnectController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $this->ensureEnabled();
+        if ($this->blockedByImpersonation($request)) {
+            return $this->back('error', 'No "entrar como" não dá para conectar o Mercado Pago: só o organizador pode fazer isso.');
+        }
 
         /** @var array{state: string, verifier: string|null}|null $attempt */
         $attempt = $request->session()->pull(self::SESSION_KEY);
@@ -71,9 +78,12 @@ class MercadoPagoConnectController extends Controller
      * Para de receber vendas nesta conta. Os tokens ficam guardados para
      * consultar e estornar os pagamentos que ela já recebeu.
      */
-    public function disconnect(): RedirectResponse
+    public function disconnect(Request $request): RedirectResponse
     {
         $this->ensureEnabled();
+        if ($this->blockedByImpersonation($request)) {
+            return $this->back('error', 'No "entrar como" não dá para desconectar o Mercado Pago: só o organizador pode fazer isso.');
+        }
 
         MercadoPagoAccount::connected()->update(['disconnected_at' => now()]);
 
@@ -83,6 +93,15 @@ class MercadoPagoConnectController extends Controller
     private function ensureEnabled(): void
     {
         abort_unless(MercadoPagoOAuth::enabled(), 404);
+    }
+
+    /**
+     * Super admin no "entrar como" não conecta nem desconecta a conta do
+     * organizador: isso é decisão do dono, e a conta seria a do admin.
+     */
+    private function blockedByImpersonation(Request $request): bool
+    {
+        return $request->session()->has(ImpersonationController::SESSION_KEY);
     }
 
     private function back(string $type, string $message): RedirectResponse

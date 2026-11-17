@@ -36,6 +36,9 @@ class Organization extends Model
     /** Organização criada pela migração com todos os dados de antes do multi-tenant. */
     public const DEFAULT_ID = 1;
 
+    /** Nome provisório que a migração dá à organização de antes (trocar no perfil). */
+    public const DEFAULT_NAME = 'Organização principal';
+
     protected $guarded = [];
 
     /** @return array<string, string> */
@@ -71,7 +74,12 @@ class Organization extends Model
             return false;
         }
 
-        return ! MercadoPagoOAuth::enabled() || MercadoPagoAccount::forOrganization($this->id) !== null;
+        if (! MercadoPagoOAuth::enabled()) {
+            return true;
+        }
+        $account = MercadoPagoAccount::forOrganization($this->id);
+
+        return $account !== null && $account->isUsable();
     }
 
     /**
@@ -88,7 +96,11 @@ class Organization extends Model
             $query->whereExists(fn ($q) => $q->selectRaw('1')
                 ->from('mercadopago_accounts')
                 ->whereColumn('mercadopago_accounts.organization_id', 'organizations.id')
-                ->whereNull('mercadopago_accounts.disconnected_at'));
+                ->whereNull('mercadopago_accounts.disconnected_at')
+                // Vencida e sem renovação não recebe: sai da vitrine.
+                ->where(fn ($u) => $u->whereNull('mercadopago_accounts.refresh_failed_at')
+                    ->orWhereNull('mercadopago_accounts.expires_at')
+                    ->orWhere('mercadopago_accounts.expires_at', '>', now())));
         }
     }
 

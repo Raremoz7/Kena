@@ -61,6 +61,18 @@ final class MercadoPagoSettings
         return self::accessToken();
     }
 
+    /** Para telas: há token? Nunca dispara a renovação (que pode falhar). */
+    public static function hasAccessToken(?int $organizationId = null): bool
+    {
+        if (MercadoPagoOAuth::enabled()) {
+            $account = MercadoPagoAccount::forOrganization($organizationId);
+
+            return $account !== null && $account->isUsable();
+        }
+
+        return filled(self::resolve('mp_access_token', 'access_token'));
+    }
+
     /** Há alguma credencial para operar (reconciliação em segundo plano)? */
     public static function anyCredentials(): bool
     {

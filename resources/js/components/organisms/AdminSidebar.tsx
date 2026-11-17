@@ -102,6 +102,11 @@ const groups: AdminNavGroup[] = [
                 icon: 'settings',
                 organizerOnly: true,
             },
+            {
+                label: 'Minha conta',
+                href: '/painel/conta',
+                icon: 'user',
+            },
         ],
     },
 ];

@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $connected_by
  * @property Carbon $connected_at
  * @property Carbon|null $disconnected_at
+ * @property Carbon|null $refresh_failed_at
  */
 class MercadoPagoAccount extends Model
 {
@@ -45,6 +46,7 @@ class MercadoPagoAccount extends Model
             'expires_at' => 'datetime',
             'connected_at' => 'datetime',
             'disconnected_at' => 'datetime',
+            'refresh_failed_at' => 'datetime',
         ];
     }
 
@@ -77,5 +79,17 @@ class MercadoPagoAccount extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /** A renovação falhou: o organizador precisa conectar a conta de novo. */
+    public function needsReconnect(): bool
+    {
+        return $this->refresh_failed_at !== null;
+    }
+
+    /** Ainda recebe pagamentos: não venceu ou, se venceu, a renovação não falhou. */
+    public function isUsable(): bool
+    {
+        return ! ($this->needsReconnect() && $this->isExpired());
     }
 }

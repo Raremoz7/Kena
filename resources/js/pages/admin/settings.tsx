@@ -62,6 +62,8 @@ interface Gw {
 }
 
 interface MpOauthAccount {
+    /** Renovação falhou: precisa conectar de novo. */
+    needsReconnect: boolean;
     nickname: string | null;
     mpUserId: string;
     liveMode: boolean | null;
@@ -78,6 +80,8 @@ type MpOauth =
           connectUrl: string;
           disconnectUrl: string;
           flash: { type: 'success' | 'error'; message: string } | null;
+          /** Super admin no "entrar como": não conecta pela organização. */
+          blocked: boolean;
           account: MpOauthAccount | null;
       };
 
@@ -230,6 +234,23 @@ function MercadoPagoConnection({
                 </p>
             )}
 
+            {oauth.blocked && (
+                <p className="mb-3 font-body text-sm text-muted-foreground">
+                    Você está no painel como super admin: conectar ou
+                    desconectar o Mercado Pago é só com o organizador.
+                </p>
+            )}
+
+            {account?.needsReconnect && (
+                <p
+                    role="alert"
+                    className="mb-3 rounded-btn border border-warning bg-warning/10 p-3 font-body text-sm text-foreground"
+                >
+                    Não conseguimos renovar a conexão com o Mercado Pago. Clique
+                    em “Reconectar” para continuar vendendo.
+                </p>
+            )}
+
             {account ? (
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -238,24 +259,39 @@ function MercadoPagoConnection({
                             {account.liveMode === false && ' (teste)'}
                         </p>
                         <p className="font-body text-xs text-muted-foreground">
-                            Conectada em {formatDate(account.connectedAt)} ·
-                            renovação automática antes de{' '}
-                            {formatDate(account.expiresAt)}
+                            Conectada em {formatDate(account.connectedAt)} ·{' '}
+                            {account.needsReconnect
+                                ? `vale até ${formatDate(account.expiresAt)}`
+                                : `renovação automática antes de ${formatDate(account.expiresAt)}`}
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button asChild variant="secondary" size="sm">
-                            <a href={oauth.connectUrl}>Trocar conta</a>
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={disconnect}
-                        >
-                            Desconectar
-                        </Button>
-                    </div>
+                    {!oauth.blocked && (
+                        <div className="flex gap-2">
+                            <Button
+                                asChild
+                                variant={
+                                    account.needsReconnect
+                                        ? 'primary'
+                                        : 'secondary'
+                                }
+                                size="sm"
+                            >
+                                <a href={oauth.connectUrl}>
+                                    {account.needsReconnect
+                                        ? 'Reconectar'
+                                        : 'Trocar conta'}
+                                </a>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={disconnect}
+                            >
+                                Desconectar
+                            </Button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -264,7 +300,7 @@ function MercadoPagoConnection({
                             ? 'Conecte a conta do Mercado Pago que vai receber as vendas.'
                             : 'Faltam o Client ID e o Client Secret da aplicação no servidor (.env).'}
                     </p>
-                    {oauth.configured && (
+                    {oauth.configured && !oauth.blocked && (
                         <Button asChild size="sm">
                             <a href={oauth.connectUrl}>
                                 Conectar com Mercado Pago

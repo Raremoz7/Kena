@@ -3,12 +3,15 @@
 namespace App\Services\Payments;
 
 use App\Exceptions\PaymentException;
+use App\Mail\MercadoPagoReconnectMail;
 use App\Models\MercadoPagoAccount;
 use App\Models\Organization;
+use App\Models\PanelUser;
 use App\Support\CurrentOrganization;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -102,6 +105,7 @@ class MercadoPagoOAuth
         }
         $account->organization_id = $organizationId;
         $account->fill($this->tokenFields($data) + [
+            'refresh_failed_at' => null,
             'nickname' => $this->nickname((string) $data['access_token']),
             'connected_by' => $panelUserId,
             'connected_at' => now(),
@@ -121,20 +125,49 @@ class MercadoPagoOAuth
     /** Renova pelo refresh_token. O MP devolve um refresh_token novo a cada vez. */
     public function refresh(MercadoPagoAccount $account): MercadoPagoAccount
     {
-        if (blank($account->refresh_token)) {
-            throw new PaymentException('Conta do Mercado Pago sem refresh_token: conecte de novo.');
+        try {
+            if (blank($account->refresh_token)) {
+                throw new PaymentException('Conta do Mercado Pago sem refresh_token: conecte de novo.');
+            }
+
+            $data = $this->tokenRequest([
+                'client_id' => (string) config('kena.mercadopago.oauth.client_id'),
+                'client_secret' => (string) config('kena.mercadopago.oauth.client_secret'),
+                'grant_type' => 'refresh_token',
+                'refresh_token' => (string) $account->refresh_token,
+            ]);
+        } catch (PaymentException $e) {
+            $this->markRefreshFailed($account);
+
+            throw $e;
         }
 
-        $data = $this->tokenRequest([
-            'client_id' => (string) config('kena.mercadopago.oauth.client_id'),
-            'client_secret' => (string) config('kena.mercadopago.oauth.client_secret'),
-            'grant_type' => 'refresh_token',
-            'refresh_token' => (string) $account->refresh_token,
-        ]);
-
-        $account->fill($this->tokenFields($data))->save();
+        $account->fill($this->tokenFields($data) + ['refresh_failed_at' => null])->save();
 
         return $account;
+    }
+
+    /**
+     * Marca a conta para reconectar e avisa os organizadores, uma vez só
+     * (na primeira falha). O aviso também aparece no painel e no /admin.
+     */
+    private function markRefreshFailed(MercadoPagoAccount $account): void
+    {
+        if ($account->refresh_failed_at !== null) {
+            return;
+        }
+
+        $account->forceFill(['refresh_failed_at' => now()])->save();
+
+        $organization = Organization::find($account->organization_id);
+        $emails = PanelUser::withoutGlobalScopes()
+            ->where('organization_id', $account->organization_id)
+            ->where('role', PanelUser::ROLE_ORGANIZER)
+            ->pluck('email')
+            ->all();
+        if ($organization !== null && $emails !== []) {
+            Mail::to($emails)->queue(new MercadoPagoReconnectMail($organization->name, $account->expires_at?->format('d/m/Y')));
+        }
     }
 
     /** Token válido da conta, renovando na hora se já venceu. */

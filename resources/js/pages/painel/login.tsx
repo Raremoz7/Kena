@@ -54,7 +54,7 @@ export default function PainelLogin({
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
-                                    placeholder="voce@somo.tec.br"
+                                    placeholder="voce@suaprodutora.com.br"
                                 />
                             </FormField>
 
@@ -123,5 +123,5 @@ export default function PainelLogin({
 
 PainelLogin.layout = {
     title: 'Painel Kena',
-    description: 'Acesso restrito à equipe',
+    description: 'Acesso para organizadores e equipes de evento',
 };
