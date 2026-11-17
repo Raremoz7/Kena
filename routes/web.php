@@ -186,7 +186,8 @@ Route::middleware('guest:admin')->group(function () {
 });
 Route::post('/admin/logout', [SuperAdminLoginController::class, 'destroy'])->name('super.logout');
 
-Route::middleware('auth:admin')->prefix('admin')->name('super.')->group(function () {
+// auth.session: trocar a senha encerra as outras sessões abertas dessa conta.
+Route::middleware(['auth:admin', 'auth.session'])->prefix('admin')->name('super.')->group(function () {
     Route::get('/', SuperAdminDashboardController::class)->name('dashboard');
     Route::get('/organizacoes', [SuperAdminOrganizationController::class, 'index'])->name('organizations');
     Route::post('/organizacoes', [SuperAdminOrganizationController::class, 'store'])->name('organizations.store');
@@ -204,7 +205,9 @@ Route::middleware('auth:admin')->prefix('admin')->name('super.')->group(function
 });
 
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
-Route::middleware(['auth:painel', 'can-manage'])->group(function () {
+// auth.session: trocar ou redefinir a senha encerra as outras sessões abertas
+// dessa conta (outros navegadores e "lembrar de mim").
+Route::middleware(['auth:painel', 'auth.session', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
     // Minha conta (organizador e staff): nome e senha.
     Route::get('/painel/conta', [AccountController::class, 'show'])->name('admin.account');

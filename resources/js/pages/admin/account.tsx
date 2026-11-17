@@ -91,7 +91,7 @@ export default function Account({
                         <FormField
                             label="Nova senha"
                             htmlFor="acc-new"
-                            helper="Mínimo de 8 caracteres, com letra e número."
+                            helper="Mínimo de 8 caracteres, com letra e número. As outras sessões abertas com esta conta são encerradas."
                             error={password.errors.password}
                         >
                             <PasswordInput
