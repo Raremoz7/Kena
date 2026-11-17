@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $suspended_at
  * @property string|null $suspended_reason
  * @property string|null $service_fee_percent
+ * @property string|null $photo_fee_percent
  * @property string|null $statement_descriptor
  * @property int|null $pix_expiration_minutes
  * @property Carbon|null $terms_accepted_at
@@ -89,6 +90,14 @@ class Organization extends Model
                 ->whereColumn('mercadopago_accounts.organization_id', 'organizations.id')
                 ->whereNull('mercadopago_accounts.disconnected_at'));
         }
+    }
+
+    /** Taxa das fotos desta organização (separada da do ingresso) ou a padrão. */
+    public function photoFeePercent(): float
+    {
+        return $this->photo_fee_percent !== null
+            ? (float) $this->photo_fee_percent
+            : (float) config('kena.photo_fee_percent', 6);
     }
 
     /** @return HasMany<Event, $this> */

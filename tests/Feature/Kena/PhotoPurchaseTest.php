@@ -38,6 +38,9 @@ class PhotoPurchaseTest extends TestCase
 
         $this->gateway = new FakeGateway;
         $this->app->instance(PaymentGateway::class, $this->gateway);
+        // Estes testes cobrem as faixas de preço; a taxa das fotos tem teste
+        // próprio (PendingFlowsTest), então aqui ela fica zerada.
+        config(['kena.photo_fee_percent' => 0]);
 
         $this->originals = sys_get_temp_dir().'/kena-originais-'.uniqid();
         File::ensureDirectoryExists($this->originals);

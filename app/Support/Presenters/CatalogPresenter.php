@@ -74,6 +74,7 @@ final class CatalogPresenter
             'organizer' => $event->organization !== null ? [
                 'name' => $event->organization->name,
                 'url' => route('organizers.show', $event->organization->slug, false),
+                'email' => $event->organization->contact_email,
             ] : null,
         ];
     }

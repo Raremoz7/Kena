@@ -42,14 +42,19 @@ final class MercadoPagoSettings
         if (MercadoPagoOAuth::enabled() && $gatewayPaymentId !== '') {
             $payment = Payment::withoutGlobalScopes()
                 ->where('gateway_payment_id', $gatewayPaymentId)
-                ->whereNotNull('mercadopago_account_id')
                 ->first();
-            $account = $payment !== null
-                ? MercadoPagoAccount::withoutGlobalScopes()->find($payment->mercadopago_account_id)
-                : null;
 
-            if ($account !== null) {
-                return app(MercadoPagoOAuth::class)->freshToken($account);
+            if ($payment !== null && $payment->mercadopago_account_id !== null) {
+                $account = MercadoPagoAccount::withoutGlobalScopes()->find($payment->mercadopago_account_id);
+
+                return $account !== null ? app(MercadoPagoOAuth::class)->freshToken($account) : null;
+            }
+
+            // Venda de antes de ligar o OAuth: foi criada com a credencial da
+            // plataforma, então consulta e estorno continuam nela (não na conta
+            // que o organizador conectou depois).
+            if ($payment !== null) {
+                return self::resolve('mp_access_token', 'access_token');
             }
         }
 

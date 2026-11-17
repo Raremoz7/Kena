@@ -125,6 +125,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // "Esqueci minha senha" do painel (organizador/staff).
+        'panel_users' => [
+            'provider' => 'panel_users',
+            'table' => 'panel_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

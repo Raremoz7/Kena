@@ -106,6 +106,18 @@ export default function EventPage({
                                 >
                                     {event.organizer.name}
                                 </Link>
+                                {event.organizer.email && (
+                                    <>
+                                        {' '}
+                                        · Dúvidas e reembolsos:{' '}
+                                        <a
+                                            href={`mailto:${event.organizer.email}`}
+                                            className="text-accent-text underline-offset-4 hover:underline"
+                                        >
+                                            {event.organizer.email}
+                                        </a>
+                                    </>
+                                )}
                             </p>
                         )}
                     </div>

@@ -70,7 +70,7 @@ export interface EventInfo {
     bannerTo: string;
     bannerImage?: string;
     /** Quem organiza o evento (multi-tenant). */
-    organizer?: { name: string; url: string } | null;
+    organizer?: { name: string; url: string; email?: string | null } | null;
 }
 
 export interface SelectedSeat {

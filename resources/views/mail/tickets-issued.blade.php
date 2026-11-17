@@ -7,6 +7,9 @@
 @if (! empty($organizerName))
 <p style="color:#6B5F57;font-size:13px;margin:0;">Organização: {{ $organizerName }}</p>
 @endif
+@if (! empty($organizerEmail))
+<p style="color:#6B5F57;font-size:13px;margin:0;">Dúvidas e reembolsos: <a href="mailto:{{ $organizerEmail }}" style="color:#A8323B;">{{ $organizerEmail }}</a></p>
+@endif
 
 @foreach ($order->tickets as $ticket)
 <x-mail.ticket-image

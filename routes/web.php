@@ -26,6 +26,7 @@ use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\MyPhotosController;
 use App\Http\Controllers\Painel\OrganizerSignupController;
 use App\Http\Controllers\Painel\PanelLoginController;
+use App\Http\Controllers\Painel\PasswordResetController as PanelPasswordResetController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
@@ -150,6 +151,15 @@ Route::middleware('guest:painel')->group(function () {
     Route::post('/painel/login', [PanelLoginController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('painel.login.store');
+    // Esqueci minha senha (painel).
+    Route::get('/painel/esqueci-senha', [PanelPasswordResetController::class, 'request'])->name('painel.password.request');
+    Route::post('/painel/esqueci-senha', [PanelPasswordResetController::class, 'send'])
+        ->middleware('throttle:5,1')
+        ->name('painel.password.email');
+    Route::get('/painel/redefinir-senha/{token}', [PanelPasswordResetController::class, 'edit'])->name('painel.password.reset');
+    Route::post('/painel/redefinir-senha', [PanelPasswordResetController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('painel.password.update');
 });
 Route::post('/painel/logout', [PanelLoginController::class, 'destroy'])->name('painel.logout');
 
