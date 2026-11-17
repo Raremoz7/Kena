@@ -11,12 +11,15 @@ return [
      */
     'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 8),
 
-    /** Taxa de serviço (% sobre subtotal já com desconto). */
+    /**
+     * Taxa da plataforma nos ingressos (% sobre o valor pago, já com desconto).
+     * Interna: não soma no preço do comprador; sai do que o organizador recebe.
+     */
     'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 6),
 
     /**
-     * Taxa de serviço das fotos (% sobre o valor das fotos), independente da do
-     * ingresso. Cada organização pode ter a sua (painel do super admin).
+     * Taxa da plataforma nas fotos (% sobre o valor das fotos), independente da
+     * do ingresso e também interna. Cada organização pode ter a sua (/admin).
      */
     'photo_fee_percent' => (float) env('KENA_PHOTO_FEE_PERCENT', 6),
 

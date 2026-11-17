@@ -92,8 +92,8 @@ class SuperAdminTest extends TestCase
             ->assertInertia(fn (Assert $p) => $p
                 ->component('super/dashboard')
                 ->where('kpis.orders', 2)
-                ->where('kpis.gross', round($orders->sum('total_cents') / 100, 2))
-                ->where('kpis.fees', round($orders->sum('fee_cents') / 100, 2))
+                ->where('kpis.gross', fn ($v): bool => (float) $v === round($orders->sum('total_cents') / 100, 2))
+                ->where('kpis.fees', fn ($v): bool => (float) $v === round($orders->sum('fee_cents') / 100, 2))
                 ->has('byOrganization', 2)
                 ->has('months', 12));
     }

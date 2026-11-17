@@ -37,6 +37,7 @@ class PasswordResetController extends Controller
         return Inertia::render('painel/reset-password', [
             'token' => $token,
             'email' => (string) $request->query('email', ''),
+            'invite' => $request->boolean('convite'),
         ]);
     }
 
@@ -48,7 +49,9 @@ class PasswordResetController extends Controller
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
-        $status = Password::broker('panel_users')->reset($data, function (PanelUser $user, string $password): void {
+        // Convite tem prazo maior: valida no broker dele.
+        $broker = $request->boolean('invite') ? 'panel_invites' : 'panel_users';
+        $status = Password::broker($broker)->reset($data, function (PanelUser $user, string $password): void {
             // Quem redefine pelo link do e-mail prova que o e-mail é dele.
             $user->forceFill([
                 'password' => $password,

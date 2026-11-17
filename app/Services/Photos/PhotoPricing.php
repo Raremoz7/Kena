@@ -13,8 +13,9 @@ use App\Models\PhotoGallery;
 class PhotoPricing
 {
     /**
-     * Taxa de serviço das fotos: da organização dona do evento (separada da do
-     * ingresso), sobre o valor das fotos já com o desconto do pacote.
+     * Taxa da plataforma nas fotos: INTERNA, sobre o valor das fotos já com o
+     * desconto do pacote (separada da do ingresso). Não soma no total do
+     * comprador: sai do que o organizador recebe.
      *
      * @return array{qty: int, unit_price_cents: int, base_price_cents: int, subtotal_cents: int, discount_cents: int, fee_cents: int, total_cents: int}
      */
@@ -46,7 +47,7 @@ class PhotoPricing
             'subtotal_cents' => $qty * $base,
             'discount_cents' => max(0, $qty * ($base - $unit)),
             'fee_cents' => $fee,
-            'total_cents' => $photos + $fee,
+            'total_cents' => $photos,
         ];
     }
 }

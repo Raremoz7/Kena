@@ -133,6 +133,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Convite de organizador criado pelo super admin: mesmo fluxo de criar
+        // senha, com prazo maior (7 dias).
+        'panel_invites' => [
+            'provider' => 'panel_users',
+            'table' => 'panel_invite_tokens',
+            'expire' => 10080,
+            'throttle' => 0,
+        ],
     ],
 
     /*

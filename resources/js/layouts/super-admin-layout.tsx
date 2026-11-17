@@ -13,6 +13,7 @@ const nav: { label: string; href: string; icon: IconName }[] = [
     { label: 'Organizações', href: '/admin/organizacoes', icon: 'users' },
     { label: 'Eventos', href: '/admin/eventos', icon: 'ticket' },
     { label: 'Pedidos', href: '/admin/pedidos', icon: 'receipt' },
+    { label: 'Registro', href: '/admin/registro', icon: 'shield' },
     { label: 'Configurações', href: '/admin/config', icon: 'settings' },
 ];
 

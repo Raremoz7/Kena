@@ -92,6 +92,8 @@ interface SettingsProps {
     organizationName: string;
     /** E-mail público para dúvidas e reembolsos. */
     organizationEmail: string;
+    /** Página pública do organizador. */
+    organizationUrl: string;
     mp: Mp;
     mpOauth: MpOauth;
     mail: Mail;
@@ -280,6 +282,7 @@ export default function Settings({
     saveUrl,
     organizationName,
     organizationEmail,
+    organizationUrl,
     mp,
     mpOauth,
     mail,
@@ -601,6 +604,18 @@ export default function Settings({
                                     }
                                 />
                             </FormField>
+                            <p className="mt-3 font-body text-xs text-muted-foreground">
+                                Sua página pública:{' '}
+                                <a
+                                    href={organizationUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="break-all text-accent-text underline-offset-4 hover:underline"
+                                >
+                                    {organizationUrl}
+                                </a>{' '}
+                                (aparece quando houver evento à venda).
+                            </p>
                             <FormField
                                 label="E-mail de contato"
                                 htmlFor="organization_email"

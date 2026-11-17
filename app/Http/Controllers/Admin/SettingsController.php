@@ -46,6 +46,8 @@ class SettingsController extends Controller
             'scope' => $platform ? 'platform' : 'organization',
             // Nome público do organizador (aparece no evento, na página dele e no e-mail).
             'organizationName' => $platform ? '' : (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('name'),
+            // Página pública do organizador (lista os eventos à venda dele).
+            'organizationUrl' => $platform ? '' : route('organizers.show', (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('slug')),
             // Contato público para dúvidas e reembolsos (evento e e-mail dos ingressos).
             'organizationEmail' => $platform ? '' : (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('contact_email'),
             'mp' => [

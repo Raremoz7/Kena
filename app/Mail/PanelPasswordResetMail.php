@@ -16,18 +16,33 @@ class PanelPasswordResetMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public string $name, public string $url, public int $ttlMinutes) {}
+    public function __construct(
+        public string $name,
+        public string $url,
+        public int $ttlMinutes,
+        /** Convite (conta criada pelo super admin) em vez de "esqueci minha senha". */
+        public bool $invite = false,
+        public ?string $organizationName = null,
+    ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Redefinir sua senha do painel Kena');
+        return new Envelope(subject: $this->invite
+            ? 'Seu acesso ao painel Kena está pronto'
+            : 'Redefinir sua senha do painel Kena');
     }
 
     public function content(): Content
     {
         return new Content(
             view: 'mail.panel-password-reset',
-            with: ['name' => $this->name, 'url' => $this->url, 'ttlMinutes' => $this->ttlMinutes],
+            with: [
+                'name' => $this->name,
+                'url' => $this->url,
+                'ttlMinutes' => $this->ttlMinutes,
+                'invite' => $this->invite,
+                'organizationName' => $this->organizationName,
+            ],
         );
     }
 }

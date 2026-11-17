@@ -69,11 +69,15 @@ return new class extends Migration
 
         // Recuperação de senha do painel: tabela própria (o comprador usa
         // password_reset_tokens; o mesmo e-mail pode existir nos dois).
-        Schema::create('panel_password_reset_tokens', function (Blueprint $table): void {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
+        // Convites (conta criada pelo super admin, 7 dias) em tabela separada:
+        // um link de "esqueci minha senha" (60 min) nunca vale como convite.
+        foreach (['panel_password_reset_tokens', 'panel_invite_tokens'] as $tokens) {
+            Schema::create($tokens, function (Blueprint $table): void {
+                $table->string('email')->primary();
+                $table->string('token');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
 
         // Super admin: conta separada, guard próprio (admin).
         Schema::create('platform_admins', function (Blueprint $table): void {
@@ -99,6 +103,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('panel_invite_tokens');
         Schema::dropIfExists('panel_password_reset_tokens');
         Schema::dropIfExists('platform_audit_logs');
         Schema::dropIfExists('platform_admins');

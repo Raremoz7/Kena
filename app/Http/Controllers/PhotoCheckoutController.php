@@ -212,13 +212,6 @@ class PhotoCheckoutController extends Controller
                 'tone' => 'success',
             ];
         }
-        if ($order->fee_cents > 0) {
-            $lines[] = [
-                'label' => 'Taxa de serviço',
-                'value' => Money::toReais($order->fee_cents),
-                'tone' => 'muted',
-            ];
-        }
 
         return ['lines' => $lines, 'total' => Money::toReais($order->total_cents)];
     }
