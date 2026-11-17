@@ -82,8 +82,12 @@ type MpOauth =
       };
 
 interface SettingsProps {
-    /** Admin da plataforma: também vê SMTP, Wallet, webhook e credenciais globais. */
-    isPlatformAdmin: boolean;
+    /**
+     * organization: painel do organizador (nome, Mercado Pago dele, fatura, Pix).
+     * platform: super admin em /admin (SMTP, Wallet, webhook, credenciais e padrões).
+     */
+    scope: 'organization' | 'platform';
+    saveUrl: string;
     /** Nome público do organizador. */
     organizationName: string;
     mp: Mp;
@@ -270,7 +274,8 @@ function MercadoPagoConnection({
 }
 
 export default function Settings({
-    isPlatformAdmin,
+    scope,
+    saveUrl,
     organizationName,
     mp,
     mpOauth,
@@ -283,6 +288,7 @@ export default function Settings({
     testMailUrl,
     testMpUrl,
 }: SettingsProps) {
+    const platform = scope === 'platform';
     const [testingMail, setTestingMail] = useState(false);
     const [testingMp, setTestingMp] = useState(false);
     const [mpDiagnostic, setMpDiagnostic] = useState<MpDiagnostic | null>(null);
@@ -370,7 +376,7 @@ export default function Settings({
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        form.post('/painel/config', {
+        form.post(saveUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 veludoToast.success(
@@ -386,21 +392,37 @@ export default function Settings({
         });
     }
 
+    // Organizador: com OAuth, falta só conectar a conta. Plataforma: credenciais
+    // (ou a aplicação OAuth), webhook e SMTP.
+    const mpReady = mpOauth.enabled
+        ? platform
+            ? mpOauth.configured
+            : setup.mpAccessToken && setup.mpPublicKey
+        : platform
+          ? setup.mpAccessToken && setup.mpPublicKey
+          : true;
     const allReady =
-        setup.mpAccessToken &&
-        setup.mpPublicKey &&
-        (!isPlatformAdmin || (setup.mpWebhookSecret && setup.mail));
+        mpReady && (!platform || (setup.mpWebhookSecret && setup.mail));
+    // Diagnóstico confere as credenciais de quem as configura.
+    const showDiagnostic = platform ? !mpOauth.enabled : mpOauth.enabled;
 
     return (
         <>
-            <Head title="Painel — Configurações" />
+            <Head
+                title={
+                    platform
+                        ? 'Admin — Configurações da plataforma'
+                        : 'Painel — Configurações'
+                }
+            />
             <div className="mx-auto max-w-2xl px-4 pt-5 pb-8 sm:px-8 sm:py-8">
                 <h1 className="font-display text-display-md text-foreground uppercase sm:text-display-lg">
-                    Configurações
+                    {platform ? 'Configurações da plataforma' : 'Configurações'}
                 </h1>
                 <p className="mt-1 font-body text-sm text-muted-foreground">
-                    Preencha as etapas abaixo para deixar o sistema pronto para
-                    vender.
+                    {platform
+                        ? 'Valem para todos os organizadores: e-mail, Google Wallet, webhook e padrões do Mercado Pago.'
+                        : 'Preencha as etapas abaixo para deixar seus eventos prontos para vender.'}
                 </p>
 
                 {/* Checklist */}
@@ -414,12 +436,25 @@ export default function Settings({
                         </Badge>
                     </div>
                     <ul className="mt-4 flex flex-col gap-2.5">
-                        {mpOauth.enabled ? (
+                        {mpOauth.enabled && !platform && (
                             <ChecklistItem
                                 done={setup.mpAccessToken && setup.mpPublicKey}
                                 label="Mercado Pago — conta conectada"
                             />
-                        ) : (
+                        )}
+                        {mpOauth.enabled && platform && (
+                            <ChecklistItem
+                                done={mpOauth.configured}
+                                label="Mercado Pago — aplicação OAuth (Client ID e Secret)"
+                            />
+                        )}
+                        {!mpOauth.enabled && !platform && (
+                            <ChecklistItem
+                                done={setup.mpAccessToken}
+                                label="Mercado Pago — vendas pela conta da plataforma"
+                            />
+                        )}
+                        {!mpOauth.enabled && platform && (
                             <>
                                 <ChecklistItem
                                     done={setup.mpAccessToken}
@@ -431,7 +466,7 @@ export default function Settings({
                                 />
                             </>
                         )}
-                        {isPlatformAdmin && (
+                        {platform && (
                             <>
                                 <ChecklistItem
                                     done={setup.mpWebhookSecret}
@@ -445,55 +480,59 @@ export default function Settings({
                         )}
                     </ul>
 
-                    <div className="mt-5 border-t border-border pt-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="min-w-0">
-                                <p className="kicker text-faint">
-                                    Diagnóstico da integração
-                                </p>
-                                <p className="mt-1 font-body text-xs text-muted-foreground">
-                                    Confere as credenciais direto na API do
-                                    Mercado Pago. Não cria cobrança nem deixa
-                                    registro na sua conta.
-                                </p>
+                    {showDiagnostic && (
+                        <div className="mt-5 border-t border-border pt-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="kicker text-faint">
+                                        Diagnóstico da integração
+                                    </p>
+                                    <p className="mt-1 font-body text-xs text-muted-foreground">
+                                        Confere as credenciais direto na API do
+                                        Mercado Pago. Não cria cobrança nem
+                                        deixa registro na sua conta.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={testMercadoPago}
+                                    disabled={testingMp}
+                                >
+                                    {testingMp
+                                        ? 'Testando…'
+                                        : 'Testar integração'}
+                                </Button>
                             </div>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={testMercadoPago}
-                                disabled={testingMp}
-                            >
-                                {testingMp ? 'Testando…' : 'Testar integração'}
-                            </Button>
+
+                            {mpDiagnostic && (
+                                <div
+                                    className={`mt-4 rounded-card border p-4 ${
+                                        mpDiagnostic.ok
+                                            ? 'border-success bg-success/5'
+                                            : 'border-danger bg-danger/5'
+                                    }`}
+                                >
+                                    <p className="font-body text-sm font-medium text-foreground">
+                                        {mpDiagnostic.ok
+                                            ? 'Integração pronta para receber pagamentos.'
+                                            : 'A integração não está pronta:'}
+                                    </p>
+                                    <ul className="mt-3 flex flex-col gap-3">
+                                        {mpDiagnostic.checks.map((check) => (
+                                            <DiagnosticItem
+                                                key={check.key}
+                                                check={check}
+                                            />
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
+                    )}
 
-                        {mpDiagnostic && (
-                            <div
-                                className={`mt-4 rounded-card border p-4 ${
-                                    mpDiagnostic.ok
-                                        ? 'border-success bg-success/5'
-                                        : 'border-danger bg-danger/5'
-                                }`}
-                            >
-                                <p className="font-body text-sm font-medium text-foreground">
-                                    {mpDiagnostic.ok
-                                        ? 'Integração pronta para receber pagamentos.'
-                                        : 'A integração não está pronta:'}
-                                </p>
-                                <ul className="mt-3 flex flex-col gap-3">
-                                    {mpDiagnostic.checks.map((check) => (
-                                        <DiagnosticItem
-                                            key={check.key}
-                                            check={check}
-                                        />
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
-                    {isPlatformAdmin && (
+                    {platform && (
                         <>
                             <div className="mt-5 border-t border-border pt-4">
                                 <p className="kicker text-faint">
@@ -538,26 +577,28 @@ export default function Settings({
 
                 <form onSubmit={submit} className="mt-6 flex flex-col gap-6">
                     {/* Organização */}
-                    <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
-                        <FormField
-                            label="Nome do organizador"
-                            htmlFor="organization_name"
-                            helper="Aparece para o público no evento, na sua página e no e-mail dos ingressos."
-                            error={form.errors.organization_name}
-                        >
-                            <Input
-                                id="organization_name"
-                                value={form.data.organization_name}
-                                maxLength={120}
-                                onChange={(e) =>
-                                    form.setData(
-                                        'organization_name',
-                                        e.target.value,
-                                    )
-                                }
-                            />
-                        </FormField>
-                    </div>
+                    {!platform && (
+                        <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
+                            <FormField
+                                label="Nome do organizador"
+                                htmlFor="organization_name"
+                                helper="Aparece para o público no evento, na sua página e no e-mail dos ingressos."
+                                error={form.errors.organization_name}
+                            >
+                                <Input
+                                    id="organization_name"
+                                    value={form.data.organization_name}
+                                    maxLength={120}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'organization_name',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </FormField>
+                        </div>
+                    )}
 
                     {/* Mercado Pago */}
                     <div className="rounded-card border border-border bg-surface p-4 sm:p-6">
@@ -587,8 +628,16 @@ export default function Settings({
 
                         <div className="mt-5 flex flex-col gap-4">
                             {mpOauth.enabled ? (
-                                <MercadoPagoConnection oauth={mpOauth} />
-                            ) : !isPlatformAdmin ? (
+                                platform ? (
+                                    <p className="font-body text-sm text-muted-foreground">
+                                        Cada organizador conecta a própria conta
+                                        do Mercado Pago no painel dele. Aqui
+                                        ficam o webhook e os padrões.
+                                    </p>
+                                ) : (
+                                    <MercadoPagoConnection oauth={mpOauth} />
+                                )
+                            ) : !platform ? (
                                 <p className="font-body text-sm text-muted-foreground">
                                     As vendas usam a conta do Mercado Pago da
                                     plataforma.
@@ -644,7 +693,7 @@ export default function Settings({
                                 </>
                             )}
 
-                            {isPlatformAdmin && (
+                            {platform && (
                                 <FormField
                                     label="Webhook Secret"
                                     htmlFor="mp_webhook_secret"
@@ -716,7 +765,7 @@ export default function Settings({
                         </div>
                     </div>
 
-                    {isPlatformAdmin && (
+                    {platform && (
                         <>
                             {/* E-mail (SMTP) */}
                             <div className="rounded-card border border-border bg-surface p-4 sm:p-6">

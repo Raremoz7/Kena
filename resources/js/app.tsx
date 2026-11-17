@@ -3,6 +3,7 @@ import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import BuyerLayout from '@/layouts/buyer-layout';
 import SettingsLayout from '@/layouts/settings-layout';
+import SuperAdminLayout from '@/layouts/super-admin-layout';
 import { Toaster } from '@/lib/veludo/Toaster';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Kena';
@@ -13,6 +14,11 @@ createInertiaApp({
         switch (true) {
             case name.startsWith('admin/'):
                 return AdminLayout;
+            // Super admin (/admin): área própria; o login usa a casca enxuta.
+            case name === 'super/login':
+                return AuthLayout;
+            case name.startsWith('super/'):
+                return SuperAdminLayout;
             // Entradas (comprador e painel) usam a casca enxuta, sem a
             // navegação da loja.
             case name.startsWith('auth/'):

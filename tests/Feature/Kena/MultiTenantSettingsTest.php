@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Models\Organization;
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +23,7 @@ class MultiTenantSettingsTest extends TestCase
 
         $this->actingAs($organizer, 'painel')->get('/painel/config')
             ->assertInertia(fn (Assert $page) => $page
-                ->where('isPlatformAdmin', false)
+                ->where('scope', 'organization')
                 ->where('mail.host', '')
                 ->where('testMailUrl', ''));
     }
@@ -53,19 +54,25 @@ class MultiTenantSettingsTest extends TestCase
         $this->assertSame('KENA INGRESSOS', MercadoPagoSettings::statementDescriptor(Organization::DEFAULT_ID));
     }
 
-    public function test_only_platform_admin_sends_test_email(): void
+    public function test_organizer_cannot_reach_platform_settings(): void
     {
-        $this->actingAs(PanelUser::factory()->create(), 'painel')
-            ->postJson('/painel/config/testar-email')
-            ->assertForbidden();
+        $as = $this->actingAs(PanelUser::factory()->create(), 'painel');
+
+        $as->get('/admin/config')->assertRedirect('/admin/login');
+        $as->post('/admin/config', ['mail_host' => 'x'])->assertRedirect('/admin/login');
+        $as->postJson('/admin/config/testar-email')->assertUnauthorized();
+        $this->assertNull(Setting::get('mail_host'));
     }
 
-    public function test_platform_admin_still_manages_global_settings(): void
+    public function test_super_admin_manages_global_settings(): void
     {
-        $this->actingAs(PanelUser::factory()->platformAdmin()->create(), 'painel')->post('/painel/config', [
+        $this->actingAs(PlatformAdmin::factory()->create(), 'admin')->post('/admin/config', [
             'mail_host' => 'smtp.plataforma.test',
+            'mp_statement_descriptor' => 'KENA PADRAO',
         ])->assertRedirect();
 
         $this->assertSame('smtp.plataforma.test', Setting::get('mail_host'));
+        // Padrão da plataforma: vale para quem não definiu o próprio.
+        $this->assertSame('KENA PADRAO', MercadoPagoSettings::statementDescriptor(Organization::DEFAULT_ID));
     }
 }

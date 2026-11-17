@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Kena;
 
-use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Support\MailSettings;
 use App\Support\MailUsage;
@@ -61,9 +61,9 @@ class MailFailoverTest extends TestCase
 
     public function test_panel_saves_and_clears_the_backup(): void
     {
-        $organizer = PanelUser::factory()->platformAdmin()->create();
+        $organizer = PlatformAdmin::factory()->create();
 
-        $this->actingAs($organizer, 'painel')->post('/painel/config', [
+        $this->actingAs($organizer, 'admin')->post('/admin/config', [
             'mail_backup_host' => 'mail.smtp2go.com',
             'mail_backup_port' => 2525,
             'mail_backup_username' => 'kena',
@@ -77,11 +77,11 @@ class MailFailoverTest extends TestCase
         $this->assertTrue(MailSettings::backupDisplay()['passwordConfigured']);
 
         // Salvar de novo sem redigitar a senha mantém a senha.
-        $this->actingAs($organizer, 'painel')->post('/painel/config', ['mail_backup_host' => 'mail.smtp2go.com'])->assertRedirect();
+        $this->actingAs($organizer, 'admin')->post('/admin/config', ['mail_backup_host' => 'mail.smtp2go.com'])->assertRedirect();
         $this->assertSame('segredo', Setting::get('mail_backup_password'));
 
         // Servidor em branco desliga o secundário e apaga a senha.
-        $this->actingAs($organizer, 'painel')->post('/painel/config', ['mail_backup_host' => ''])->assertRedirect();
+        $this->actingAs($organizer, 'admin')->post('/admin/config', ['mail_backup_host' => ''])->assertRedirect();
         $this->assertFalse(MailSettings::backupDisplay()['configured']);
         $this->assertNull(Setting::get('mail_backup_password'));
     }

@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Multi-tenant: cada organizador de eventos é uma organização. Tudo o que já
  * existe vira a "Organização principal" (id 1), então nada muda para quem já usa.
- * Quem hoje é organizador do painel vira também admin da plataforma, porque
- * hoje já configura SMTP, Wallet e credenciais globais.
+ * O super admin (Somo) tem conta própria em platform_admins, fora de qualquer
+ * organização, e entra pelo /admin. Cada "entrar como" fica no registro.
  */
 return new class extends Migration
 {
@@ -61,17 +61,39 @@ return new class extends Migration
         });
 
         Schema::table('panel_users', function (Blueprint $t): void {
-            $t->boolean('is_platform_admin')->default(false)->after('role');
             $t->timestamp('email_verified_at')->nullable()->after('email');
         });
         DB::table('panel_users')->update(['email_verified_at' => $now]);
-        DB::table('panel_users')->where('role', 'organizer')->update(['is_platform_admin' => true]);
+
+        // Super admin: conta separada, guard próprio (admin).
+        Schema::create('platform_admins', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        // Registro do que o super admin faz em nome de um organizador.
+        Schema::create('platform_audit_logs', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('platform_admin_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('organization_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('action', 60);
+            $table->json('meta')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('platform_audit_logs');
+        Schema::dropIfExists('platform_admins');
+
         Schema::table('panel_users', function (Blueprint $t): void {
-            $t->dropColumn(['is_platform_admin', 'email_verified_at']);
+            $t->dropColumn('email_verified_at');
         });
 
         // No MySQL o índice único (organization_id, code) sustenta a chave

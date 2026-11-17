@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Models\PanelUser;
 use App\Models\PhotoGallery;
 use App\Models\Reservation;
@@ -47,8 +48,10 @@ class HandleInertiaRequests extends Middleware
                 // Comprador (guard web) e conta de painel (guard painel) sao
                 // independentes — os dois podem estar nulos ao mesmo tempo.
                 // So os campos que o front usa: isto vai em toda pagina.
-                'user' => self::buyer($request->user()),
+                'user' => self::buyer($request->user('web')),
                 'panelUser' => self::panelUser($request->user('painel')),
+                // Super admin (/admin): conta separada da do painel.
+                'superAdmin' => $request->user('admin')?->only(['id', 'name', 'email']),
             ],
             // Reserva em andamento do comprador: alimenta o aviso flutuante
             // "retomar ou cancelar" em todas as telas do comprador.
@@ -57,6 +60,8 @@ class HandleInertiaRequests extends Middleware
             // galeria publicada. Vale para todos, inclusive quem está logado no
             // painel: a equipe confere as fotos pelo próprio painel.
             'photosAvailable' => fn (): bool => PhotoGallery::where('status', 'published')->exists(),
+            // Super admin "dentro" de um organizador: aviso fixo no painel.
+            'impersonation' => self::impersonation($request),
             // Mensagens flash viram toast no front (useFlashToasts).
             'flash' => [
                 'success' => $request->session()->get('status'),
@@ -78,8 +83,22 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $user->only(['id', 'name', 'email', 'role']) + [
-            'isPlatformAdmin' => $user->isPlatformAdmin(),
             'organizationName' => $user->organization?->name,
+        ];
+    }
+
+    /** @return array<string, string>|null */
+    private static function impersonation(Request $request): ?array
+    {
+        $data = $request->session()->get(ImpersonationController::SESSION_KEY);
+        if (! is_array($data) || $request->user('painel') === null) {
+            return null;
+        }
+
+        return [
+            'adminName' => (string) ($data['admin_name'] ?? ''),
+            'organizationName' => (string) ($data['organization_name'] ?? ''),
+            'stopUrl' => route('painel.impersonation.stop'),
         ];
     }
 
