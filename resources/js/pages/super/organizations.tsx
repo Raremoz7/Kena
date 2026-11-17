@@ -44,7 +44,7 @@ function OrganizationActions({
     );
     const [suspending, setSuspending] = useState(false);
     const [reason, setReason] = useState('');
-    const base = `/painel/plataforma/organizacoes/${org.id}`;
+    const base = `/admin/organizacoes/${org.id}`;
 
     function saveFee(e: FormEvent) {
         e.preventDefault();
@@ -69,6 +69,14 @@ function OrganizationActions({
 
     return (
         <div className="flex w-full flex-col gap-2">
+            <Button
+                type="button"
+                size="sm"
+                disabled={org.owner === null}
+                onClick={() => router.post(`${base}/entrar`)}
+            >
+                Entrar como {org.name}
+            </Button>
             <form onSubmit={saveFee} className="flex items-center gap-2">
                 <label
                     htmlFor={`fee-${org.id}`}
@@ -137,7 +145,7 @@ function OrganizationActions({
     );
 }
 
-/** Plataforma (Somo): todas as organizações, vendas, taxas e Mercado Pago. */
+/** Super admin: todas as organizações, vendas, taxas e Mercado Pago. */
 export default function Platform({
     organizations,
     defaultFeePercent,
@@ -147,11 +155,11 @@ export default function Platform({
 
     return (
         <>
-            <Head title="Painel — Organizações" />
+            <Head title="Admin — Organizações" />
             <AdminPage>
                 <PageHeader
                     title="Organizações"
-                    description={`Todos os organizadores da plataforma. Taxa padrão: ${defaultFeePercent}%. Suspender fecha as vendas na hora; o organizador continua vendo pedidos e estornando.`}
+                    description={`Todos os organizadores da plataforma. Taxa padrão: ${defaultFeePercent}%. Suspender fecha as vendas na hora; o organizador continua vendo pedidos e estornando. "Entrar como" abre o painel do organizador e fica registrado.`}
                 />
 
                 <div className="grid gap-3 sm:grid-cols-3">

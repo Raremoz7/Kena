@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -37,7 +38,7 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $admin = PanelUser::updateOrCreate(
+        PanelUser::updateOrCreate(
             ['email' => $email],
             [
                 'name' => config('kena.admin.name', 'Administrador'),
@@ -46,8 +47,13 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
-        // O admin inicial administra a plataforma (organizações, SMTP, Wallet).
-        $admin->forceFill(['is_platform_admin' => true])->save();
+
+        // Super admin da plataforma (/admin): conta separada, mesmas credenciais
+        // iniciais. Troque depois com `php artisan kena:super-admin email`.
+        PlatformAdmin::updateOrCreate(
+            ['email' => $email],
+            ['name' => config('kena.admin.name', 'Administrador'), 'password' => $password],
+        );
     }
 
     /** Contas de demonstração — nunca em produção. */

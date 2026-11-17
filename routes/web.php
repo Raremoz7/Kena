@@ -29,8 +29,13 @@ use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PhotoImageController;
-use App\Http\Controllers\Platform\OrganizationController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\EventController as SuperAdminEventController;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
+use App\Http\Controllers\SuperAdmin\LoginController as SuperAdminLoginController;
+use App\Http\Controllers\SuperAdmin\OrderController as SuperAdminOrderController;
+use App\Http\Controllers\SuperAdmin\OrganizationController as SuperAdminOrganizationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -158,9 +163,36 @@ Route::get('/organizador/verificar/{panelUser}', [OrganizerSignupController::cla
     ->middleware(['signed', 'throttle:10,1'])
     ->name('organizador.verificar');
 
+// Super admin da plataforma (Somo): conta e login próprios, fora de qualquer
+// organização. Vê todos os organizadores; não passa pelo filtro do painel.
+Route::middleware('guest:admin')->group(function () {
+    Route::get('/admin/login', [SuperAdminLoginController::class, 'show'])->name('super.login');
+    Route::post('/admin/login', [SuperAdminLoginController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('super.login.store');
+});
+Route::post('/admin/logout', [SuperAdminLoginController::class, 'destroy'])->name('super.logout');
+
+Route::middleware('auth:admin')->prefix('admin')->name('super.')->group(function () {
+    Route::get('/', SuperAdminDashboardController::class)->name('dashboard');
+    Route::get('/organizacoes', [SuperAdminOrganizationController::class, 'index'])->name('organizations');
+    Route::post('/organizacoes/{organization}/suspender', [SuperAdminOrganizationController::class, 'suspend'])->name('organizations.suspend');
+    Route::post('/organizacoes/{organization}/reativar', [SuperAdminOrganizationController::class, 'reactivate'])->name('organizations.reactivate');
+    Route::put('/organizacoes/{organization}/taxa', [SuperAdminOrganizationController::class, 'fee'])->name('organizations.fee');
+    Route::post('/organizacoes/{organization}/entrar', [ImpersonationController::class, 'start'])->name('organizations.impersonate');
+    Route::get('/eventos', [SuperAdminEventController::class, 'index'])->name('events');
+    Route::get('/pedidos', [SuperAdminOrderController::class, 'index'])->name('orders');
+    Route::get('/config', [SettingsController::class, 'showPlatform'])->name('settings');
+    Route::post('/config', [SettingsController::class, 'updatePlatform'])->name('settings.update');
+    Route::post('/config/testar-email', [SettingsController::class, 'testMail'])->name('settings.test-mail');
+    Route::post('/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('settings.test-mp');
+});
+
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
 Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
+    // Super admin "dentro" de um organizador: volta para o /admin.
+    Route::post('/painel/sair-do-modo-admin', [ImpersonationController::class, 'stop'])->name('painel.impersonation.stop');
 
     // Check-in scanner (staff + organizer)
     Route::get('/painel/checkin', [CheckInController::class, 'show'])->name('admin.checkin');
@@ -239,20 +271,12 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
 
         Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
-        Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->middleware('platform-admin')->name('admin.settings.test-mail');
         Route::post('/painel/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('admin.settings.test-mp');
         // Conectar com Mercado Pago (OAuth). 404 enquanto KENA_MP_OAUTH_ENABLED estiver desligado.
         Route::get('/painel/config/mercadopago/conectar', [MercadoPagoConnectController::class, 'connect'])->name('admin.settings.mp.connect');
         Route::get('/painel/config/mercadopago/callback', [MercadoPagoConnectController::class, 'callback'])->name('admin.settings.mp.callback');
         Route::post('/painel/config/mercadopago/desconectar', [MercadoPagoConnectController::class, 'disconnect'])->name('admin.settings.mp.disconnect');
 
-        // Plataforma (Somo): todas as organizações. Só admin da plataforma.
-        Route::middleware('platform-admin')->group(function () {
-            Route::get('/painel/plataforma', [OrganizationController::class, 'index'])->name('platform.organizations');
-            Route::post('/painel/plataforma/organizacoes/{organization}/suspender', [OrganizationController::class, 'suspend'])->name('platform.organizations.suspend');
-            Route::post('/painel/plataforma/organizacoes/{organization}/reativar', [OrganizationController::class, 'reactivate'])->name('platform.organizations.reactivate');
-            Route::put('/painel/plataforma/organizacoes/{organization}/taxa', [OrganizationController::class, 'fee'])->name('platform.organizations.fee');
-        });
     });
 });
 

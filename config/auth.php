@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\User;
 
 return [
@@ -50,6 +51,13 @@ return [
             'driver' => 'session',
             'provider' => 'panel_users',
         ],
+
+        // Super admin da plataforma (Somo): /admin. Conta separada, fora de
+        // qualquer organização.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'platform_admins',
+        ],
     ],
 
     /*
@@ -78,6 +86,11 @@ return [
         'panel_users' => [
             'driver' => 'eloquent',
             'model' => PanelUser::class,
+        ],
+
+        'platform_admins' => [
+            'driver' => 'eloquent',
+            'model' => PlatformAdmin::class,
         ],
 
         // 'users' => [

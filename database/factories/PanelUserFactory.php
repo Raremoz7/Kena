@@ -38,12 +38,6 @@ class PanelUserFactory extends Factory
         return $this->state(fn () => ['role' => PanelUser::ROLE_STAFF]);
     }
 
-    /** Admin da plataforma (Somo). */
-    public function platformAdmin(): static
-    {
-        return $this->state(fn () => ['is_platform_admin' => true]);
-    }
-
     /** Organizador de outra organização (cria a organização junto). */
     public function forOrganization(?Organization $organization = null): static
     {

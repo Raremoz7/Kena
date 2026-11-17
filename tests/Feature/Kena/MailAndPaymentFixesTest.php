@@ -4,6 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Models\Order;
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CourtesyService;
@@ -35,7 +36,7 @@ class MailAndPaymentFixesTest extends TestCase
         ]);
 
         // Exatamente o que o painel gravou em produção: servidor sim, usuário vazio, sem senha.
-        $this->actingAs(PanelUser::factory()->platformAdmin()->create(), 'painel')->post('/painel/config', [
+        $this->actingAs(PlatformAdmin::factory()->create(), 'admin')->post('/admin/config', [
             'mail_mailer' => 'smtp',
             'mail_host' => 'smtp-relay.brevo.com',
             'mail_port' => 587,

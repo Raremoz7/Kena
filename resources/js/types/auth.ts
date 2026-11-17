@@ -12,15 +12,28 @@ export type PanelUser = {
     name: string;
     email: string;
     role: 'organizer' | 'staff';
-    /** Admin da plataforma (Somo): vê todas as organizações. */
-    isPlatformAdmin: boolean;
     organizationName: string | null;
 };
 
-/** Comprador e painel são independentes: os dois podem ser nulos ao mesmo tempo. */
+/** Super admin da plataforma (/admin): conta separada da do painel. */
+export type SuperAdmin = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+/** Comprador, painel e super admin são independentes: podem ser nulos ao mesmo tempo. */
 export type Auth = {
     user: User | null;
     panelUser: PanelUser | null;
+    superAdmin: SuperAdmin | null;
+};
+
+/** Super admin "dentro" do painel de um organizador. */
+export type Impersonation = {
+    adminName: string;
+    organizationName: string;
+    stopUrl: string;
 };
 
 /* @chisel-passkeys */

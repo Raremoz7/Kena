@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Kena;
 
-use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,16 +38,16 @@ class MercadoPagoSettingsTest extends TestCase
 
     public function test_panel_save_then_screen_reflects_value(): void
     {
-        $organizer = PanelUser::factory()->platformAdmin()->create();
+        $organizer = PlatformAdmin::factory()->create();
 
-        $this->actingAs($organizer, 'painel')->post('/painel/config', [
+        $this->actingAs($organizer, 'admin')->post('/admin/config', [
             'mp_public_key' => 'APP_USR-PANEL-KEY',
             'mp_access_token' => 'APP_USR-PANEL-TOKEN',
             'mp_pix_expiration' => 20,
         ])->assertRedirect();
 
-        $this->actingAs($organizer, 'painel')
-            ->get('/painel/config')
+        $this->actingAs($organizer, 'admin')
+            ->get('/admin/config')
             ->assertInertia(fn (Assert $page) => $page
                 ->where('mp.publicKey', 'APP_USR-PANEL-KEY')
                 ->where('mp.accessTokenConfigured', true)
