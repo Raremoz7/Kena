@@ -56,4 +56,14 @@ class LegalPagesTest extends TestCase
             ->where('support.email', null)
             ->where('support.whatsapp', null));
     }
+
+    public function test_organizer_terms_are_public_and_show_platform_fees(): void
+    {
+        config(['kena.service_fee_percent' => 6, 'kena.photo_fee_percent' => 8]);
+
+        $this->get('/termos/organizadores')->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
+            ->component('buyer/organizer-terms')
+            ->where('fees.tickets', fn ($v): bool => (float) $v === 6.0)
+            ->where('fees.photos', fn ($v): bool => (float) $v === 8.0));
+    }
 }

@@ -27,6 +27,12 @@ class LegalController extends Controller
         return Inertia::render('buyer/privacy', $this->props());
     }
 
+    /** Termos de quem vende no Kena (aceitos no cadastro de organizador). */
+    public function organizerTerms(): Response
+    {
+        return Inertia::render('buyer/organizer-terms', $this->props());
+    }
+
     /** @return array<string, mixed> */
     private function props(): array
     {
@@ -47,6 +53,10 @@ class LegalController extends Controller
                 'pixMinutes' => (int) config('kena.mercadopago.pix_expiration_minutes', 30),
                 'refundDeadlineHours' => (int) config('kena.refund_deadline_hours', 48),
                 'maxTickets' => $maxTickets !== null ? (int) $maxTickets : null,
+            ],
+            'fees' => [
+                'tickets' => (float) config('kena.service_fee_percent', 6),
+                'photos' => (float) config('kena.photo_fee_percent', 6),
             ],
             'updatedAt' => (string) config('kena.legal.updated_at'),
         ];

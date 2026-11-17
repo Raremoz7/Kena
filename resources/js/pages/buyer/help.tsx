@@ -13,7 +13,9 @@ export default function Help({ support, policy }: LegalPageProps) {
             intro={
                 <p>
                     Dúvidas sobre compra, ingressos ou acesso à conta? Fale com
-                    a gente: <SupportContact support={support} />.
+                    a gente: <SupportContact support={support} />. Dúvidas sobre
+                    um evento (programação, local, reembolso fora do prazo) são
+                    com o organizador, pelo contato na página do evento.
                 </p>
             }
         >
@@ -27,8 +29,8 @@ export default function Help({ support, policy }: LegalPageProps) {
                 </p>
                 {policy.maxTickets !== null && (
                     <p>
-                        Cada CPF pode levar até {policy.maxTickets}{' '}
-                        ingressos por sessão.
+                        Cada CPF pode levar até {policy.maxTickets} ingressos
+                        por sessão.
                     </p>
                 )}
             </LegalSection>
@@ -85,11 +87,33 @@ export default function Help({ support, policy }: LegalPageProps) {
                     {policy.refundDeadlineHours} horas antes da sessão. O valor
                     volta pelo mesmo meio de pagamento, no prazo do Mercado
                     Pago. Depois desse prazo, ou se algum ingresso do pedido já
-                    foi transferido ou usado, fale com a gente.
+                    foi transferido ou usado, fale com o organizador do evento
+                    pelo contato na página do evento ou no e-mail dos ingressos.
                 </p>
                 <p>
                     Se o evento for cancelado, todos os pedidos são reembolsados
                     integralmente.
+                </p>
+            </LegalSection>
+
+            <LegalSection title="Pago alguma taxa?">
+                <p>
+                    Não. O valor mostrado no checkout é o total: não há taxa de
+                    serviço somada ao preço do ingresso ou das fotos.
+                </p>
+            </LegalSection>
+
+            <LegalSection title="Quero vender ingressos no Kena">
+                <p>
+                    Fale com a gente: <SupportContact support={support} />. As
+                    regras para organizadores estão nos{' '}
+                    <Link
+                        href="/termos/organizadores"
+                        className="text-foreground underline underline-offset-2"
+                    >
+                        Termos do organizador
+                    </Link>
+                    .
                 </p>
             </LegalSection>
 

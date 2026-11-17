@@ -11,6 +11,8 @@ export interface LegalPageProps {
         refundDeadlineHours: number;
         maxTickets: number | null;
     };
+    /** Taxas padrão da plataforma (%), internas: saem do valor do organizador. */
+    fees: { tickets: number; photos: number };
     updatedAt: string;
 }
 
