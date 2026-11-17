@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
@@ -15,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class PhotoPerson extends Model
 {
+    use ScopedThroughParent;
+
     protected $table = 'photo_people';
 
     protected $guarded = [];
@@ -23,5 +27,16 @@ class PhotoPerson extends Model
     public function photos(): BelongsToMany
     {
         return $this->belongsToMany(Photo::class, 'photo_person')->withPivot('region');
+    }
+
+    public function organizationParent(): string
+    {
+        return 'gallery';
+    }
+
+    /** @return BelongsTo<PhotoGallery, $this> */
+    public function gallery(): BelongsTo
+    {
+        return $this->belongsTo(PhotoGallery::class, 'photo_gallery_id');
     }
 }

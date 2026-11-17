@@ -23,7 +23,7 @@ class SettingsPanelTest extends TestCase
 
     public function test_saving_mail_settings_persists_and_applies_to_mailer(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PanelUser::factory()->platformAdmin()->create();
 
         $this->actingAs($organizer, 'painel')->post('/painel/config', [
             'mail_host' => 'smtp.test.com',
@@ -46,7 +46,7 @@ class SettingsPanelTest extends TestCase
 
     public function test_settings_page_exposes_checklist_and_webhook_url(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PanelUser::factory()->platformAdmin()->create();
 
         $this->actingAs($organizer, 'painel')
             ->get(route('admin.settings'))
@@ -69,7 +69,7 @@ class SettingsPanelTest extends TestCase
     public function test_organizer_can_send_test_email(): void
     {
         Mail::fake();
-        $organizer = PanelUser::factory()->create(['email' => 'op@test.com']);
+        $organizer = PanelUser::factory()->platformAdmin()->create(['email' => 'op@test.com']);
 
         $this->actingAs($organizer, 'painel')
             ->postJson(route('admin.settings.test-mail'))

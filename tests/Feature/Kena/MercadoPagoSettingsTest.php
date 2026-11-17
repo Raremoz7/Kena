@@ -38,7 +38,7 @@ class MercadoPagoSettingsTest extends TestCase
 
     public function test_panel_save_then_screen_reflects_value(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PanelUser::factory()->platformAdmin()->create();
 
         $this->actingAs($organizer, 'painel')->post('/painel/config', [
             'mp_public_key' => 'APP_USR-PANEL-KEY',

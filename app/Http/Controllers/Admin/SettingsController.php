@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\TicketsIssuedMail;
 use App\Models\MercadoPagoAccount;
+use App\Models\Organization;
+use App\Models\PanelUser;
 use App\Models\Setting;
 use App\Services\Payments\MercadoPagoDiagnostic;
 use App\Services\Payments\MercadoPagoOAuth;
+use App\Support\CurrentOrganization;
 use App\Support\GoogleWalletSettings;
 use App\Support\MailSettings;
 use App\Support\MailUsage;
@@ -26,7 +29,13 @@ class SettingsController extends Controller
 {
     public function show(): Response
     {
+        $admin = $this->isPlatformAdmin();
+
         return Inertia::render('admin/settings', [
+            // Admin da plataforma vê também SMTP, Wallet, webhook e credenciais globais.
+            'isPlatformAdmin' => $admin,
+            // Nome público do organizador (aparece no evento, na página dele e no e-mail).
+            'organizationName' => (string) Organization::query()->whereKey(CurrentOrganization::id() ?? Organization::DEFAULT_ID)->value('name'),
             'mp' => [
                 // Valores efetivos (painel tem prioridade; cai para .env). Segredos nunca saem do servidor.
                 'publicKey' => (string) MercadoPagoSettings::publicKey(),
@@ -35,19 +44,20 @@ class SettingsController extends Controller
                 'statementDescriptor' => MercadoPagoSettings::statementDescriptor(),
                 'pixExpiration' => MercadoPagoSettings::pixExpirationMinutes(),
             ],
-            'mail' => MailSettings::display(),
-            'mailBackup' => MailSettings::backupDisplay(),
-            'mailUsage' => MailUsage::summary(),
-            'gw' => [
+            // Configuração da plataforma: só sai do servidor para o admin dela.
+            'mail' => $admin ? MailSettings::display() : self::blankMail(),
+            'mailBackup' => $admin ? MailSettings::backupDisplay() : self::blankMailBackup(),
+            'mailUsage' => $admin ? MailUsage::summary() : ['sentToday' => 0, 'dailyLimit' => 0, 'warn' => false, 'over' => false],
+            'gw' => $admin ? [
                 'issuerId' => (string) GoogleWalletSettings::issuerId(),
                 'classId' => (string) GoogleWalletSettings::classId(),
                 'saEmail' => (string) GoogleWalletSettings::serviceAccountEmail(),
                 'privateKeyConfigured' => filled(GoogleWalletSettings::privateKey()),
                 'configured' => GoogleWalletSettings::isConfigured(),
-            ],
+            ] : ['issuerId' => '', 'classId' => '', 'saEmail' => '', 'privateKeyConfigured' => false, 'configured' => false],
             'mpOauth' => $this->oauthDisplay(),
             'webhookUrl' => route('webhooks.mercadopago'),
-            'testMailUrl' => route('admin.settings.test-mail'),
+            'testMailUrl' => $admin ? route('admin.settings.test-mail') : '',
             'testMpUrl' => route('admin.settings.test-mp'),
             'setup' => [
                 'mpAccessToken' => filled(MercadoPagoSettings::accessToken()),
@@ -58,9 +68,29 @@ class SettingsController extends Controller
         ]);
     }
 
+    private function isPlatformAdmin(): bool
+    {
+        $user = Auth::guard('painel')->user();
+
+        return $user instanceof PanelUser && $user->isPlatformAdmin();
+    }
+
+    /** @return array<string, mixed> */
+    private static function blankMail(): array
+    {
+        return ['mailer' => '', 'host' => '', 'port' => 0, 'username' => '', 'encryption' => '', 'fromAddress' => '', 'fromName' => '', 'passwordConfigured' => false];
+    }
+
+    /** @return array<string, mixed> */
+    private static function blankMailBackup(): array
+    {
+        return ['configured' => false, 'host' => '', 'port' => 0, 'username' => '', 'encryption' => '', 'passwordConfigured' => false];
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'organization_name' => ['nullable', 'string', 'max:120'],
             'mp_access_token' => ['nullable', 'string', 'max:255'],
             'mp_public_key' => ['nullable', 'string', 'max:255'],
             'mp_webhook_secret' => ['nullable', 'string', 'max:255'],
@@ -90,6 +120,19 @@ class SettingsController extends Controller
             'gw_private_key' => ['nullable', 'string', 'max:8000'],
         ]);
 
+        // Da organização: nome na fatura e prazo do Pix (vale para qualquer organizador).
+        $organization = Organization::findOrFail(CurrentOrganization::id() ?? Organization::DEFAULT_ID);
+        $organization->update([
+            'name' => filled($data['organization_name'] ?? null) ? $data['organization_name'] : $organization->name,
+            'statement_descriptor' => filled($data['mp_statement_descriptor'] ?? null) ? $data['mp_statement_descriptor'] : null,
+            'pix_expiration_minutes' => filled($data['mp_pix_expiration'] ?? null) ? (int) $data['mp_pix_expiration'] : $organization->pix_expiration_minutes,
+        ]);
+
+        // Daqui para baixo é configuração da plataforma: só o admin dela grava.
+        if (! $this->isPlatformAdmin()) {
+            return back();
+        }
+
         // Com OAuth ligado, token e Public Key vêm só da conta conectada: o painel não grava.
         $oauth = MercadoPagoOAuth::enabled();
 
@@ -107,10 +150,6 @@ class SettingsController extends Controller
         // MP — demais campos (permitem editar/limpar).
         if (! $oauth) {
             Setting::put('mp_public_key', $data['mp_public_key'] ?? null);
-        }
-        Setting::put('mp_statement_descriptor', $data['mp_statement_descriptor'] ?? null);
-        if (filled($data['mp_pix_expiration'] ?? null)) {
-            Setting::put('mp_pix_expiration', (string) $data['mp_pix_expiration']);
         }
 
         // E-mail (SMTP).

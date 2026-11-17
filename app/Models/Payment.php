@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -24,6 +25,8 @@ use Illuminate\Support\Carbon;
  */
 class Payment extends Model
 {
+    use ScopedThroughParent;
+
     public const METHOD_CARD = 'card';
 
     public const METHOD_PIX = 'pix';
@@ -66,5 +69,10 @@ class Payment extends Model
     public function mercadopagoAccount(): BelongsTo
     {
         return $this->belongsTo(MercadoPagoAccount::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

@@ -24,11 +24,13 @@ use App\Http\Controllers\EmailCodeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\MyPhotosController;
+use App\Http\Controllers\Painel\OrganizerSignupController;
 use App\Http\Controllers\Painel\PanelLoginController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PhotoImageController;
+use App\Http\Controllers\Platform\OrganizationController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
@@ -42,6 +44,7 @@ Route::get('/termos', [LegalController::class, 'terms'])->name('terms');
 Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy');
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
+Route::get('/o/{slug}', [BuyerController::class, 'organizer'])->name('organizers.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');
 
 // Fotos do espetáculo à venda
@@ -145,6 +148,17 @@ Route::middleware('guest:painel')->group(function () {
 });
 Route::post('/painel/logout', [PanelLoginController::class, 'destroy'])->name('painel.logout');
 
+// Cadastro aberto de organizador (404 enquanto KENA_ORGANIZER_SIGNUP_ENABLED estiver desligado).
+Route::middleware('guest:painel')->group(function () {
+    Route::get('/organizador/cadastro', [OrganizerSignupController::class, 'show'])->name('organizador.cadastro');
+    Route::post('/organizador/cadastro', [OrganizerSignupController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('organizador.cadastro.store');
+});
+Route::get('/organizador/verificar/{panelUser}', [OrganizerSignupController::class, 'verify'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('organizador.verificar');
+
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
 Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
@@ -231,12 +245,20 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
 
         Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
-        Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
+        Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->middleware('platform-admin')->name('admin.settings.test-mail');
         Route::post('/painel/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('admin.settings.test-mp');
         // Conectar com Mercado Pago (OAuth). 404 enquanto KENA_MP_OAUTH_ENABLED estiver desligado.
         Route::get('/painel/config/mercadopago/conectar', [MercadoPagoConnectController::class, 'connect'])->name('admin.settings.mp.connect');
         Route::get('/painel/config/mercadopago/callback', [MercadoPagoConnectController::class, 'callback'])->name('admin.settings.mp.callback');
         Route::post('/painel/config/mercadopago/desconectar', [MercadoPagoConnectController::class, 'disconnect'])->name('admin.settings.mp.disconnect');
+
+        // Plataforma (Somo): todas as organizações. Só admin da plataforma.
+        Route::middleware('platform-admin')->group(function () {
+            Route::get('/painel/plataforma', [OrganizationController::class, 'index'])->name('platform.organizations');
+            Route::post('/painel/plataforma/organizacoes/{organization}/suspender', [OrganizationController::class, 'suspend'])->name('platform.organizations.suspend');
+            Route::post('/painel/plataforma/organizacoes/{organization}/reativar', [OrganizationController::class, 'reactivate'])->name('platform.organizations.reactivate');
+            Route::put('/painel/plataforma/organizacoes/{organization}/taxa', [OrganizationController::class, 'fee'])->name('platform.organizations.fee');
+        });
     });
 });
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Coupon;
+use App\Models\Organization;
 use App\Models\Reservation;
 use App\Support\Money;
 
@@ -17,13 +18,13 @@ class PricingService
     /** @return Quote */
     public function quoteForReservation(Reservation $reservation, ?Coupon $coupon = null): array
     {
-        $reservation->loadMissing(['seats.sessionSeat.sector']);
+        $reservation->loadMissing(['seats.sessionSeat.sector', 'session.event.organization']);
 
         $subtotal = (int) $reservation->seats->sum('price_cents');
         $discount = $coupon !== null
             ? $coupon->discountForPrices($reservation->seats->pluck('price_cents')->map(fn ($p): int => (int) $p)->all())
             : 0;
-        $fee = $this->fee($subtotal - $discount);
+        $fee = $this->fee($subtotal - $discount, $reservation->session->event->organization);
         $total = $subtotal - $discount + $fee;
 
         $lines = [];
@@ -59,9 +60,12 @@ class PricingService
         ];
     }
 
-    private function fee(int $base): int
+    /** Taxa da organização dona do evento (exceção negociada) ou a padrão. */
+    private function fee(int $base, ?Organization $organization): int
     {
-        $percent = (float) config('kena.service_fee_percent', 10);
+        $percent = $organization !== null
+            ? $organization->serviceFeePercent()
+            : (float) config('kena.service_fee_percent', 6);
 
         return (int) round($base * $percent / 100);
     }

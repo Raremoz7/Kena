@@ -37,14 +37,17 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        PanelUser::updateOrCreate(
+        $admin = PanelUser::updateOrCreate(
             ['email' => $email],
             [
                 'name' => config('kena.admin.name', 'Administrador'),
                 'password' => $password,
                 'role' => PanelUser::ROLE_ORGANIZER,
+                'email_verified_at' => now(),
             ],
         );
+        // O admin inicial administra a plataforma (organizações, SMTP, Wallet).
+        $admin->forceFill(['is_platform_admin' => true])->save();
     }
 
     /** Contas de demonstração — nunca em produção. */
@@ -64,6 +67,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Produção Kena',
                 'password' => 'veludo123',
+                'email_verified_at' => now(),
                 'role' => PanelUser::ROLE_ORGANIZER,
             ],
         );
@@ -73,6 +77,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Portaria Kena',
                 'password' => 'veludo123',
+                'email_verified_at' => now(),
                 'role' => PanelUser::ROLE_STAFF,
             ],
         );

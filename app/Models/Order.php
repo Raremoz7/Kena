@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +39,8 @@ use Illuminate\Support\Carbon;
  */
 class Order extends Model
 {
+    use BelongsToOrganization;
+
     /** Pedido de ingressos (assentos de uma sessão). */
     public const KIND_TICKETS = 'tickets';
 
@@ -158,5 +161,22 @@ class Order extends Model
     public function scopePhotoOrders(Builder $query): void
     {
         $query->where('kind', self::KIND_PHOTOS);
+    }
+
+    /** Pedido pertence ao organizador do evento (pela sessão ou pela galeria de fotos). */
+    protected function inferOrganizationId(): ?int
+    {
+        if ($this->session_id !== null) {
+            $session = EventSession::withoutGlobalScopes()->with(['event' => fn ($q) => $q->withoutGlobalScopes()])->find($this->session_id);
+
+            return $session?->event?->organization_id;
+        }
+        if ($this->photo_gallery_id !== null) {
+            $gallery = PhotoGallery::withoutGlobalScopes()->with(['event' => fn ($q) => $q->withoutGlobalScopes()])->find($this->photo_gallery_id);
+
+            return $gallery?->event?->organization_id;
+        }
+
+        return null;
     }
 }

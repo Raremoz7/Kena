@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kena;
 
 use App\Models\EventSession;
+use App\Models\Organization;
 use App\Models\PanelUser;
 use App\Support\SessionOptionsCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -83,11 +84,11 @@ class SessionOptionsCacheTest extends TestCase
         $this->makeSession(1);
         $organizer = $this->organizer();
 
-        Cache::forget(SessionOptionsCache::KEY);
-        $this->assertFalse(Cache::has(SessionOptionsCache::KEY));
+        Cache::forget(SessionOptionsCache::key(Organization::DEFAULT_ID));
+        $this->assertFalse(Cache::has(SessionOptionsCache::key(Organization::DEFAULT_ID)));
 
         $this->actingAs($organizer, 'painel')->get(route('admin.orders'));
 
-        $this->assertTrue(Cache::has(SessionOptionsCache::KEY));
+        $this->assertTrue(Cache::has(SessionOptionsCache::key(Organization::DEFAULT_ID)));
     }
 }

@@ -35,7 +35,7 @@ class MailAndPaymentFixesTest extends TestCase
         ]);
 
         // Exatamente o que o painel gravou em produção: servidor sim, usuário vazio, sem senha.
-        $this->actingAs(PanelUser::factory()->create(), 'painel')->post('/painel/config', [
+        $this->actingAs(PanelUser::factory()->platformAdmin()->create(), 'painel')->post('/painel/config', [
             'mail_mailer' => 'smtp',
             'mail_host' => 'smtp-relay.brevo.com',
             'mail_port' => 587,

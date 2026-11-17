@@ -74,6 +74,14 @@ return [
         ],
     ],
 
+    /**
+     * Cadastro aberto de organizadores (multi-tenant). DESLIGADO por padrão:
+     * ligar só com aprovação formal. Também exige o OAuth do Mercado Pago ligado.
+     */
+    'organizer_signup' => [
+        'enabled' => (bool) env('KENA_ORGANIZER_SIGNUP_ENABLED', false),
+    ],
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),

@@ -6,6 +6,7 @@ use App\Exceptions\PaymentException;
 use App\Mail\OrderCancelledMail;
 use App\Mail\RefundConfirmedMail;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -48,6 +49,7 @@ class PaymentService
         if ($reservation->session->status === 'cancelled') {
             throw new PaymentException('Esta sessão foi cancelada e não aceita mais pagamentos.');
         }
+        $this->ensureOrganizationCanSell($reservation->session->event->organization ?? null);
 
         $coupon = $this->coupons->resolveForReservation($input['coupon_code'] ?? null, $reservation);
         $order = $this->orders->createFromReservation($reservation, $coupon);
@@ -99,6 +101,7 @@ class PaymentService
         if (! $order->isPhotos()) {
             throw new PaymentException('Pedido inválido.');
         }
+        $this->ensureOrganizationCanSell($order->organization);
 
         $order = DB::transaction(function () use ($order): Order {
             $fresh = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -143,6 +146,16 @@ class PaymentService
             ->get();
 
         return $this->charge($order, $input, $pendingPayments, null);
+    }
+
+    /** Organizador suspenso ou sem conta do Mercado Pago (com OAuth) não recebe pagamentos. */
+    private function ensureOrganizationCanSell(?Organization $organization): void
+    {
+        if ($organization !== null && ! $organization->canSell()) {
+            throw new PaymentException($organization->isSuspended()
+                ? 'As vendas deste organizador estão suspensas.'
+                : 'Este organizador ainda não está recebendo pagamentos.');
+        }
     }
 
     /**
@@ -206,7 +219,7 @@ class PaymentService
             'order_id' => $order->id,
             'gateway' => 'mercadopago',
             // Conta conectada por OAuth que recebeu a venda (null com OAuth desligado).
-            'mercadopago_account_id' => MercadoPagoSettings::currentAccountId(),
+            'mercadopago_account_id' => MercadoPagoSettings::currentAccountId($order->organization_id),
             'method' => $method,
             'status' => $result->status,
             'amount_cents' => $order->total_cents,

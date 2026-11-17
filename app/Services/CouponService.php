@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
+use App\Models\Event;
 use App\Models\Order;
 use App\Models\Reservation;
 use Illuminate\Support\Str;
@@ -19,10 +20,19 @@ class CouponService
             return null;
         }
 
+        // Multi-tenant: o código é único por organização, então só vale o
+        // cupom do organizador dono do evento.
+        $organizationId = $eventId !== null
+            ? Event::withoutGlobalScopes()->whereKey($eventId)->value('organization_id')
+            : null;
+        $byCode = fn (string $value): ?Coupon => Coupon::query()
+            ->where('code', $value)
+            ->when($organizationId !== null, fn ($q) => $q->where('organization_id', $organizationId))
+            ->first();
+
         // Cortesia é o nome da criança: aceita digitado com espaço ou acento
         // ("Maria Silva 7q2", "JOÃO…") além do código exato.
-        $coupon = Coupon::where('code', $code)->first()
-            ?? Coupon::where('code', self::compact($code))->first();
+        $coupon = $byCode($code) ?? $byCode(self::compact($code));
         if ($coupon === null || ! $coupon->isRedeemable($eventId)) {
             return null;
         }

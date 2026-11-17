@@ -22,7 +22,8 @@ final class SessionOptionsCache
     /** @return array<int, array<string, mixed>> */
     public static function get(): array
     {
-        return Cache::remember(self::KEY, self::TTL_SECONDS, fn (): array => EventSession::with('event')
+        // Por organização: cada painel só vê as próprias sessões.
+        return Cache::remember(self::key(CurrentOrganization::id()), self::TTL_SECONDS, fn (): array => EventSession::with('event')
             ->get()
             ->map(fn (EventSession $s): array => [
                 'id' => $s->id,
@@ -30,8 +31,14 @@ final class SessionOptionsCache
             ])->all());
     }
 
-    public static function forget(): void
+    public static function forget(?int $organizationId = null): void
     {
-        Cache::forget(self::KEY);
+        Cache::forget(self::key($organizationId));
+        Cache::forget(self::key(null));
+    }
+
+    public static function key(?int $organizationId): string
+    {
+        return self::KEY.'.'.($organizationId ?? 'all');
     }
 }

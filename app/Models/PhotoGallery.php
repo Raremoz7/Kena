@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use App\Services\Photos\PhotoRenditions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,8 @@ use Illuminate\Support\Carbon;
  */
 class PhotoGallery extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** Palavras do ballet: fáceis de ditar e de ler em voz alta. */
@@ -127,5 +130,10 @@ class PhotoGallery extends Model
         usort($tiers, fn ($a, $b) => $a['min_qty'] <=> $b['min_qty']);
 
         return $tiers;
+    }
+
+    public function organizationParent(): string
+    {
+        return 'event';
     }
 }

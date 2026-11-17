@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\Organization;
 use App\Models\PhotoGallery;
 use App\Models\User;
 use App\Services\LotSnapshot;
@@ -32,6 +33,8 @@ class BuyerController extends Controller
 
         $events = Event::with(['venue', 'sectors', 'sessions'])
             ->whereIn('status', ['on_sale', 'sold_out'])
+            // Organizador suspenso (ou sem Mercado Pago, com OAuth) sai da vitrine.
+            ->whereIn('organization_id', Organization::query()->selling()->select('id'))
             ->when($q !== '', function ($query) use ($q): void {
                 $query->where(function ($w) use ($q): void {
                     $w->where('title', 'like', "%{$q}%")
@@ -57,7 +60,7 @@ class BuyerController extends Controller
 
     public function event(string $slug): Response
     {
-        $event = Event::with(['venue', 'sectors', 'sessions'])
+        $event = Event::with(['venue', 'sectors', 'sessions', 'organization'])
             ->where('slug', $slug)
             ->whereIn('status', ['on_sale', 'sold_out']) // draft/encerrado não é público
             ->firstOrFail();
@@ -103,6 +106,25 @@ class BuyerController extends Controller
             'reserveUrl' => route('sessions.reserve', ['slug' => $event->slug, 'session' => $session->id]),
             'availabilityUrl' => route('api.sessions.availability', ['session' => $session->id]),
             'emailCodeUrl' => route('email-code.send'),
+        ]);
+    }
+
+    /** Página pública do organizador: os eventos à venda dele. */
+    public function organizer(string $slug): Response
+    {
+        $organization = Organization::query()->selling()->where('slug', $slug)->firstOrFail();
+
+        $events = Event::with(['venue', 'sectors', 'sessions'])
+            ->where('organization_id', $organization->id)
+            ->whereIn('status', ['on_sale', 'sold_out'])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Event $e): array => CatalogPresenter::listItem($e))
+            ->all();
+
+        return Inertia::render('buyer/organizer', [
+            'organization' => ['name' => $organization->name, 'slug' => $organization->slug],
+            'events' => $events,
         ]);
     }
 

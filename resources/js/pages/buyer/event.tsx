@@ -96,6 +96,18 @@ export default function EventPage({
                             />
                             <InfoCard icon="clock" label="Duração" value={event.durationLabel} />
                         </div>
+
+                        {event.organizer && (
+                            <p className="mt-6 font-body text-sm text-muted-foreground">
+                                Organização:{' '}
+                                <Link
+                                    href={event.organizer.url}
+                                    className="font-medium text-accent-text underline-offset-4 hover:underline"
+                                >
+                                    {event.organizer.name}
+                                </Link>
+                            </p>
+                        )}
                     </div>
 
                     <aside className="lg:sticky lg:top-20 lg:self-start">

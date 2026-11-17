@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Event;
 use App\Support\Money;
+use App\Support\OrganizationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -93,13 +94,13 @@ class CouponController extends Controller
     private function validated(Request $request, ?int $ignoreId = null): array
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:40', Rule::unique('coupons', 'code')->ignore($ignoreId)],
+            'code' => ['required', 'string', 'max:40', OrganizationRules::unique('coupons', 'code')->ignore($ignoreId)],
             'type' => ['required', Rule::in([Coupon::TYPE_PERCENT, Coupon::TYPE_FIXED])],
             'value' => ['required', 'numeric', 'min:0', $request->input('type') === Coupon::TYPE_PERCENT ? 'max:100' : 'max:100000'],
             'max_uses' => ['nullable', 'integer', 'min:1'],
             'expires_at' => ['nullable', 'date'],
             'active' => ['boolean'],
-            'event_id' => ['nullable', 'integer', 'exists:events,id'],
+            'event_id' => ['nullable', 'integer', OrganizationRules::exists('events')],
         ]);
 
         // Fixo: reais → centavos. Percentual: inteiro.

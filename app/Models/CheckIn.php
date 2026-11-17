@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -18,6 +19,8 @@ use Illuminate\Support\Carbon;
  */
 class CheckIn extends Model
 {
+    use ScopedThroughParent;
+
     public const RESULT_OK = 'ok';
 
     public const RESULT_DENIED = 'denied';
@@ -36,5 +39,16 @@ class CheckIn extends Model
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'session';
+    }
+
+    /** @return BelongsTo<EventSession, $this> */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(EventSession::class, 'session_id');
     }
 }

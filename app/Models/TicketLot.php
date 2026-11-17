@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -22,11 +23,18 @@ use Illuminate\Support\Carbon;
  */
 class TicketLot extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return BelongsTo<EventSession, $this> */
     public function session(): BelongsTo
     {
         return $this->belongsTo(EventSession::class, 'session_id');
+    }
+
+    public function organizationParent(): string
+    {
+        return 'session';
     }
 }

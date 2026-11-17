@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,11 +19,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Seat extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return BelongsTo<Venue, $this> */
     public function venue(): BelongsTo
     {
         return $this->belongsTo(Venue::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'venue';
     }
 }

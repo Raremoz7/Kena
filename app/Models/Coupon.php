@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -23,6 +24,8 @@ use Illuminate\Support\Carbon;
  */
 class Coupon extends Model
 {
+    use BelongsToOrganization;
+
     public const TYPE_PERCENT = 'percent';
 
     public const TYPE_FIXED = 'fixed';
@@ -126,5 +129,13 @@ class Coupon extends Model
             : $this->value;
 
         return min($discount, $subtotalCents);
+    }
+
+    /** Cupom de um evento pertence ao organizador do evento. */
+    protected function inferOrganizationId(): ?int
+    {
+        return $this->event_id !== null
+            ? Event::withoutGlobalScopes()->whereKey($this->event_id)->value('organization_id')
+            : null;
     }
 }
