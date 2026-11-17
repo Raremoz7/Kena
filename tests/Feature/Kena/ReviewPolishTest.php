@@ -154,4 +154,28 @@ class ReviewPolishTest extends TestCase
 
         $this->get('/o/teatro-b')->assertInertia(fn (Assert $p) => $p->where('organization.email', 'oi@b.test'));
     }
+
+    public function test_password_change_ends_other_sessions(): void
+    {
+        // Sessão aberta em "outro navegador".
+        $this->actingAs($this->ownerB, 'painel')->get('/painel/conta')->assertOk();
+
+        // A senha muda (por "Minha conta" em outro lugar, ou pelo link de redefinir).
+        $this->ownerB->forceFill(['password' => 'trocada123'])->save();
+
+        // A sessão antiga cai na próxima requisição e volta ao login do painel.
+        $this->get('/painel/conta')->assertRedirect('/painel/login');
+        $this->assertGuest('painel');
+    }
+
+    public function test_changing_own_password_keeps_the_current_session(): void
+    {
+        $as = $this->actingAs($this->ownerB, 'painel');
+        $as->get('/painel/conta')->assertOk();
+
+        $as->put('/painel/conta/senha', ['current_password' => 'password', 'password' => 'outra1234', 'password_confirmation' => 'outra1234'])
+            ->assertSessionHasNoErrors();
+
+        $this->get('/painel/conta')->assertOk();
+    }
 }
