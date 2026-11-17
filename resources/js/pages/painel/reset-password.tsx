@@ -8,17 +8,20 @@ import PasswordInput from '@/components/password-input';
 export default function PanelResetPassword({
     token,
     email,
+    invite = false,
 }: {
     token: string;
     email: string;
+    /** Convite de conta criada pelo super admin (prazo maior). */
+    invite?: boolean;
 }) {
     return (
         <>
-            <Head title="Nova senha" />
+            <Head title={invite ? 'Criar senha' : 'Nova senha'} />
             <Form
                 action="/painel/redefinir-senha"
                 method="post"
-                transform={(data) => ({ ...data, token, email })}
+                transform={(data) => ({ ...data, token, email, invite })}
                 resetOnSuccess={['password', 'password_confirmation']}
                 className="flex flex-col gap-6"
             >

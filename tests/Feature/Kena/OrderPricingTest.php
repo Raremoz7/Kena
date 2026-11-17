@@ -17,7 +17,7 @@ class OrderPricingTest extends TestCase
     use MakesKenaData;
     use RefreshDatabase;
 
-    public function test_order_totals_apply_coupon_and_service_fee(): void
+    public function test_order_totals_apply_coupon_and_internal_platform_fee(): void
     {
         config(['kena.service_fee_percent' => 10]);
 
@@ -31,11 +31,13 @@ class OrderPricingTest extends TestCase
         $coupon = app(CouponService::class)->resolve('NOITE10', $session->event_id);
         $order = app(OrderService::class)->createFromReservation($reservation, $coupon);
 
-        // 3 × 4500 = 13500 | desconto 10% = 1350 | taxa 10% sobre 12150 = 1215 | total 13365
+        // 3 × 4500 = 13500 | desconto 10% = 1350 | comprador paga 12150.
+        // Taxa interna da plataforma: 10% de 12150 = 1215, sai do organizador
+        // (não soma no total do comprador).
         $this->assertSame(13500, $order->subtotal_cents);
         $this->assertSame(1350, $order->discount_cents);
         $this->assertSame(1215, $order->fee_cents);
-        $this->assertSame(13365, $order->total_cents);
+        $this->assertSame(12150, $order->total_cents);
         $this->assertCount(3, $order->items);
 
         $this->assertSame(1, Coupon::where('code', 'NOITE10')->first()->used);

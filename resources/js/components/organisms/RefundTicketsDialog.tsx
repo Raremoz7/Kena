@@ -217,7 +217,7 @@ export function RefundTicketsDialog({
                     <p className="font-body text-xs text-faint">
                         {completesOrder
                             ? 'Com esses assentos o pedido inteiro fica reembolsado e o cupom, se houver, volta a valer.'
-                            : 'Valor proporcional ao que foi pago no pedido (cupom e taxa rateados). Os demais ingressos continuam válidos e os assentos devolvidos voltam à venda.'}
+                            : 'Valor proporcional ao que foi pago no pedido (com o desconto do cupom rateado). Os demais ingressos continuam válidos e os assentos devolvidos voltam à venda.'}
                     </p>
                 </div>
             )}

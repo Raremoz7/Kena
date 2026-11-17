@@ -31,6 +31,7 @@ use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PhotoImageController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SuperAdmin\AuditLogController as SuperAdminAuditLogController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\EventController as SuperAdminEventController;
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
@@ -186,6 +187,8 @@ Route::post('/admin/logout', [SuperAdminLoginController::class, 'destroy'])->nam
 Route::middleware('auth:admin')->prefix('admin')->name('super.')->group(function () {
     Route::get('/', SuperAdminDashboardController::class)->name('dashboard');
     Route::get('/organizacoes', [SuperAdminOrganizationController::class, 'index'])->name('organizations');
+    Route::post('/organizacoes', [SuperAdminOrganizationController::class, 'store'])->name('organizations.store');
+    Route::get('/registro', [SuperAdminAuditLogController::class, 'index'])->name('audit');
     Route::post('/organizacoes/{organization}/suspender', [SuperAdminOrganizationController::class, 'suspend'])->name('organizations.suspend');
     Route::post('/organizacoes/{organization}/reativar', [SuperAdminOrganizationController::class, 'reactivate'])->name('organizations.reactivate');
     Route::put('/organizacoes/{organization}/taxa', [SuperAdminOrganizationController::class, 'fee'])->name('organizations.fee');

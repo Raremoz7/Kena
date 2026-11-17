@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\OrganizationStatusMail;
+use App\Mail\PanelPasswordResetMail;
 use App\Models\Event;
 use App\Models\MercadoPagoAccount;
 use App\Models\Order;
@@ -16,7 +17,11 @@ use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -67,6 +72,51 @@ class OrganizationController extends Controller
             'defaultPhotoFeePercent' => (float) config('kena.photo_fee_percent', 6),
             'oauthEnabled' => MercadoPagoOAuth::enabled(),
         ]);
+    }
+
+    /**
+     * Cria uma organização com o primeiro organizador (para quando o cadastro
+     * aberto estiver desligado). O organizador recebe por e-mail o link para
+     * criar a própria senha; ninguém conhece a senha dele.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'organization_name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('panel_users', 'email')],
+        ], ['email.unique' => 'Este e-mail já tem conta no painel.']);
+
+        /** @var PanelUser|null $owner */
+        $owner = null;
+        $organization = DB::transaction(function () use ($data, &$owner): Organization {
+            $organization = Organization::create([
+                'name' => $data['organization_name'],
+                'slug' => Organization::uniqueSlug($data['organization_name']),
+                'contact_email' => mb_strtolower(trim($data['email'])),
+            ]);
+            $owner = PanelUser::create([
+                'organization_id' => $organization->id,
+                'name' => $data['name'],
+                'email' => mb_strtolower(trim($data['email'])),
+                'password' => Str::random(40),
+                'role' => PanelUser::ROLE_ORGANIZER,
+                'email_verified_at' => now(),
+            ]);
+
+            return $organization;
+        });
+
+        // Convite: link para criar a senha, válido por 7 dias.
+        /** @var PanelUser $owner */
+        $token = Password::broker('panel_invites')->createToken($owner);
+        $url = route('painel.password.reset', ['token' => $token, 'email' => $owner->email, 'convite' => 1]);
+        Mail::to($owner->email)->send(new PanelPasswordResetMail(
+            (string) $owner->name, $url, (int) config('auth.passwords.panel_invites.expire', 10080), invite: true, organizationName: $organization->name,
+        ));
+        PlatformAuditLog::record($this->admin(), 'organization.create', $organization->id, ['email' => $data['email']]);
+
+        return back()->with('status', "{$organization->name} criada. Enviamos para {$data['email']} o link para criar a senha.");
     }
 
     public function suspend(Request $request, Organization $organization): RedirectResponse

@@ -1,9 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { FormField } from '@/components/molecules/FormField';
 import { AdminPage, PageHeader } from '@/components/molecules/PageHeader';
 
 interface Organization {
@@ -184,6 +185,72 @@ function OrganizationActions({
     );
 }
 
+/**
+ * Cria organização + primeiro organizador (para quando o cadastro aberto
+ * estiver desligado). Ele recebe o convite por e-mail para criar a senha.
+ */
+function NewOrganization() {
+    const form = useForm({ organization_name: '', name: '', email: '' });
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        form.post('/admin/organizacoes', {
+            preserveScroll: true,
+            onSuccess: () => form.reset(),
+        });
+    }
+
+    return (
+        <form
+            onSubmit={submit}
+            className="mt-6 grid gap-3 rounded-card border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end"
+        >
+            <FormField
+                label="Organização"
+                htmlFor="new-org"
+                error={form.errors.organization_name}
+            >
+                <Input
+                    id="new-org"
+                    value={form.data.organization_name}
+                    onChange={(e) =>
+                        form.setData('organization_name', e.target.value)
+                    }
+                    placeholder="Cia. Teatro Aberto"
+                />
+            </FormField>
+            <FormField
+                label="Organizador"
+                htmlFor="new-owner"
+                error={form.errors.name}
+            >
+                <Input
+                    id="new-owner"
+                    value={form.data.name}
+                    onChange={(e) => form.setData('name', e.target.value)}
+                    placeholder="Nome de quem vai usar o painel"
+                />
+            </FormField>
+            <FormField
+                label="E-mail"
+                htmlFor="new-email"
+                error={form.errors.email}
+            >
+                <Input
+                    id="new-email"
+                    type="email"
+                    value={form.data.email}
+                    onChange={(e) => form.setData('email', e.target.value)}
+                    placeholder="contato@produtora.com.br"
+                />
+            </FormField>
+            <Button type="submit" disabled={form.processing}>
+                Criar e convidar
+            </Button>
+        </form>
+    );
+}
+
 /** Super admin: todas as organizações, vendas, taxas e Mercado Pago. */
 export default function Platform({
     organizations,
@@ -233,6 +300,8 @@ export default function Platform({
                         </p>
                     </div>
                 </div>
+
+                <NewOrganization />
 
                 <ul className="mt-6 flex flex-col gap-3">
                     {organizations.map((org) => (

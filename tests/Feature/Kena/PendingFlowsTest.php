@@ -180,8 +180,8 @@ class PendingFlowsTest extends TestCase
         $org = Organization::findOrFail(Organization::DEFAULT_ID);
 
         $quote = app(PhotoPricing::class)->quote($gallery, 3);
-        $this->assertSame(360, $quote['fee_cents']); // 6% de 6000
-        $this->assertSame(6360, $quote['total_cents']);
+        $this->assertSame(360, $quote['fee_cents']); // 6% de 6000, interna
+        $this->assertSame(6000, $quote['total_cents']); // comprador paga só as fotos
 
         // Muda só a das fotos: o ingresso continua com a dele.
         $admin = $this->actingAs(PlatformAdmin::factory()->create(), 'admin');

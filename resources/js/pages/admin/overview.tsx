@@ -17,6 +17,15 @@ interface Kpis {
     available: number;
     occupancy: number;
     revenue: number;
+    /** Parte da plataforma (interna), já incluída na receita. */
+    platformFee: number;
+}
+
+interface OnboardingStep {
+    key: string;
+    label: string;
+    done: boolean;
+    href: string;
 }
 
 function Metric({
@@ -53,14 +62,63 @@ const shortcuts: { label: string; href: string; icon: IconName }[] = [
     { label: 'Cortesias', href: '/painel/cortesias', icon: 'gift' },
 ];
 
+/** Primeiros passos do organizador novo: some quando tudo estiver feito. */
+function Onboarding({ steps }: { steps: OnboardingStep[] }) {
+    return (
+        <section className="mb-6 rounded-card border border-accent/40 bg-surface p-4 sm:p-6">
+            <h2 className="font-display text-display-sm text-foreground uppercase">
+                Primeiros passos
+            </h2>
+            <p className="mt-1 font-body text-sm text-muted-foreground">
+                Siga as etapas para começar a vender ingressos.
+            </p>
+            <ol className="mt-4 flex flex-col gap-2">
+                {steps.map((step, i) => (
+                    <li key={step.key}>
+                        <Link
+                            href={step.href}
+                            className="flex items-center gap-3 rounded-btn px-2 py-1.5 font-body text-sm hover:bg-surface-2"
+                        >
+                            <span
+                                className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
+                                    step.done
+                                        ? 'bg-success text-white'
+                                        : 'border border-border text-faint'
+                                }`}
+                            >
+                                {step.done ? (
+                                    <Icon name="check" size={12} />
+                                ) : (
+                                    i + 1
+                                )}
+                            </span>
+                            <span
+                                className={
+                                    step.done
+                                        ? 'text-muted-foreground line-through'
+                                        : 'text-foreground'
+                                }
+                            >
+                                {step.label}
+                            </span>
+                        </Link>
+                    </li>
+                ))}
+            </ol>
+        </section>
+    );
+}
+
 export default function Overview({
     kpis,
     events,
     insights,
+    onboarding = null,
 }: {
     kpis: Kpis;
     events: EventRow[];
     insights?: OverviewInsightsData;
+    onboarding?: OnboardingStep[] | null;
 }) {
     const occupancy = Math.min(100, Math.max(0, kpis.occupancy));
 
@@ -73,12 +131,18 @@ export default function Overview({
                     description="Resumo de vendas e eventos do Kena."
                 />
 
+                {onboarding && <Onboarding steps={onboarding} />}
+
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <div className="col-span-2 lg:col-span-1">
                         <Metric
                             label="Receita"
                             value={<Price value={kpis.revenue} />}
-                            hint="Só o que foi pago (cortesias não contam)"
+                            hint={
+                                kpis.platformFee > 0
+                                    ? `Pago pelos compradores (cortesias não contam). Inclui a taxa da plataforma: ${kpis.platformFee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`
+                                    : 'Só o que foi pago (cortesias não contam)'
+                            }
                         />
                     </div>
                     <Metric label="Vendidos" value={kpis.sold}>

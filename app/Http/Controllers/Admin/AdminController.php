@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\MercadoPagoAccount;
 use App\Models\Order;
 use App\Models\Refund;
 use App\Models\SessionSeat;
+use App\Models\Venue;
 use App\Services\OverviewInsightsService;
+use App\Services\Payments\MercadoPagoOAuth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -49,13 +52,35 @@ class AdminController extends Controller
                 'available' => $available,
                 'occupancy' => $capacity > 0 ? (int) round($sold / $capacity * 100) : 0,
                 'revenue' => $revenueCents / 100,
+                // Parte da plataforma (interna): já está dentro da receita e sai
+                // do repasse do organizador. Antes de estornos.
+                'platformFee' => (int) Order::where('status', Order::STATUS_PAID)->sum('fee_cents') / 100,
             ],
+            'onboarding' => $this->onboarding(),
             'insights' => $insights->build(),
             // O overview é um resumo: mostra só os primeiros e linka "Ver todos".
             'events' => $this->rowsFor(
                 Event::query()->with(['venue', 'sessions'])->orderBy('title')->limit(self::OVERVIEW_EVENTS)->get()
             ),
         ]);
+    }
+
+    /**
+     * Primeiros passos do organizador novo. Some quando tudo estiver feito.
+     *
+     * @return list<array{key: string, label: string, done: bool, href: string}>|null
+     */
+    private function onboarding(): ?array
+    {
+        $steps = [];
+        if (MercadoPagoOAuth::enabled()) {
+            $steps[] = ['key' => 'mp', 'label' => 'Conectar sua conta do Mercado Pago', 'done' => MercadoPagoAccount::current() !== null, 'href' => '/painel/config'];
+        }
+        $steps[] = ['key' => 'venue', 'label' => 'Cadastrar o local e o mapa de assentos', 'done' => Venue::query()->exists(), 'href' => '/painel/locais/novo'];
+        $steps[] = ['key' => 'event', 'label' => 'Criar o evento e as sessões', 'done' => Event::query()->exists(), 'href' => '/painel/eventos/novo'];
+        $steps[] = ['key' => 'publish', 'label' => 'Publicar (status "À venda")', 'done' => Event::query()->whereIn('status', ['on_sale', 'sold_out'])->exists(), 'href' => '/painel/eventos'];
+
+        return collect($steps)->every(fn (array $s): bool => $s['done']) ? null : $steps;
     }
 
     public function events(): Response
