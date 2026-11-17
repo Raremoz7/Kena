@@ -18,7 +18,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $pix_copy_paste
  * @property Carbon|null $pix_expires_at
  * @property array<string, mixed>|null $payload
+ * @property int|null $mercadopago_account_id
  * @property-read Order $order
+ * @property-read MercadoPagoAccount|null $mercadopagoAccount
  */
 class Payment extends Model
 {
@@ -54,5 +56,15 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Conta do Mercado Pago (OAuth) que criou o pagamento.
+     *
+     * @return BelongsTo<MercadoPagoAccount, $this>
+     */
+    public function mercadopagoAccount(): BelongsTo
+    {
+        return $this->belongsTo(MercadoPagoAccount::class);
     }
 }

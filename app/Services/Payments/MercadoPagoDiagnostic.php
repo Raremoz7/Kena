@@ -27,13 +27,21 @@ class MercadoPagoDiagnostic
     {
         $checks = [];
 
-        $token = MercadoPagoSettings::accessToken();
+        try {
+            $token = MercadoPagoSettings::accessToken();
+        } catch (\Throwable $e) {
+            // OAuth: token vencido e o refresh falhou.
+            $checks[] = $this->check('token', 'Access Token', self::FAIL, $e->getMessage());
+
+            return $this->result($checks);
+        }
         $publicKey = MercadoPagoSettings::publicKey();
 
         // 1. Token presente
         if (blank($token)) {
-            $checks[] = $this->check('token', 'Access Token', self::FAIL,
-                'Não configurado. Preencha o Access Token abaixo ou defina MP_ACCESS_TOKEN no .env.');
+            $checks[] = $this->check('token', 'Access Token', self::FAIL, MercadoPagoOAuth::enabled()
+                ? 'Nenhuma conta conectada. Clique em "Conectar com Mercado Pago".'
+                : 'Não configurado. Preencha o Access Token abaixo ou defina MP_ACCESS_TOKEN no .env.');
 
             return $this->result($checks);
         }

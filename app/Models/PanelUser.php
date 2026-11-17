@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
  * Conta do painel — organizador ou staff de check-in. Vive fora de `users`,
  * que e so do comprador: guard proprio, sessao propria, sem ponte entre os dois.
  *
+ * @property int $id
  * @property string $name
  * @property string $email
  * @property string $role

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\LotController;
+use App\Http\Controllers\Admin\MercadoPagoConnectController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PhotoGalleryController as AdminPhotoGalleryController;
 use App\Http\Controllers\Admin\SeatController;
@@ -226,6 +227,10 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
         Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
         Route::post('/painel/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('admin.settings.test-mp');
+        // Conectar com Mercado Pago (OAuth). 404 enquanto KENA_MP_OAUTH_ENABLED estiver desligado.
+        Route::get('/painel/config/mercadopago/conectar', [MercadoPagoConnectController::class, 'connect'])->name('admin.settings.mp.connect');
+        Route::get('/painel/config/mercadopago/callback', [MercadoPagoConnectController::class, 'callback'])->name('admin.settings.mp.callback');
+        Route::post('/painel/config/mercadopago/desconectar', [MercadoPagoConnectController::class, 'disconnect'])->name('admin.settings.mp.disconnect');
     });
 });
 
