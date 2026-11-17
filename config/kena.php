@@ -101,6 +101,12 @@ return [
     'legal' => [
         'name' => env('KENA_LEGAL_NAME', 'Somo'),
         'document' => env('KENA_LEGAL_DOCUMENT'), // CNPJ ou CPF
+        // Endereço físico do fornecedor: o Decreto 7.962/2013 (comércio
+        // eletrônico) pede nome, CNPJ/CPF e endereço em local de destaque.
+        'address' => env('KENA_LEGAL_ADDRESS'),
+        // Encarregado de dados (LGPD art. 41): identidade e contato públicos.
+        'dpo_name' => env('KENA_DPO_NAME'),
+        'dpo_email' => env('KENA_DPO_EMAIL'),
         'updated_at' => env('KENA_LEGAL_UPDATED_AT', '22/10/2026'),
     ],
 ];

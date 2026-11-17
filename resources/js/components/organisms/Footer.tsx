@@ -1,9 +1,19 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 
 const footerLink =
     'inline-flex min-h-6 items-center py-1.5 -my-1.5 font-body text-xs text-muted-foreground transition-colors hover:text-foreground';
 
 export function Footer() {
+    const company = usePage().props.company;
+    const identity = company
+        ? [
+              company.name,
+              company.document,
+              company.address,
+              company.email,
+          ].filter(Boolean)
+        : [];
+
     return (
         // No mobile o rodapé também aparece (Termos/Privacidade precisam estar
         // acessíveis), com folga para a área segura do iPhone.
@@ -11,6 +21,11 @@ export function Footer() {
             <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-7 md:flex-row md:items-center md:justify-between">
                 <p className="font-body text-xs text-faint">
                     Kena · Entre em cena · {new Date().getFullYear()}
+                    {identity.length > 1 && (
+                        <span className="mt-1 block">
+                            {identity.join(' · ')}
+                        </span>
+                    )}
                 </p>
                 {/*
                  * O padding vertical (com margem negativa compensando) leva a área

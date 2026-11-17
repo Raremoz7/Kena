@@ -10,6 +10,7 @@ import type { LegalPageProps } from '@/components/organisms/LegalPage';
 export default function Privacy({
     company,
     support,
+    dpo,
     updatedAt,
 }: LegalPageProps) {
     return (
@@ -159,6 +160,34 @@ export default function Privacy({
                 <p>
                     Responsáveis podem pedir a retirada de uma criança do filtro
                     por rosto direto na galeria de fotos.
+                </p>
+            </LegalSection>
+
+            <LegalSection title="Encarregado de dados">
+                <p>
+                    {dpo.name ? (
+                        <>
+                            O encarregado pelo tratamento de dados pessoais é{' '}
+                            {dpo.name}
+                            {dpo.email ? (
+                                <>
+                                    , pelo e-mail{' '}
+                                    <a
+                                        href={`mailto:${dpo.email}`}
+                                        className="text-foreground underline underline-offset-2"
+                                    >
+                                        {dpo.email}
+                                    </a>
+                                </>
+                            ) : null}
+                            .
+                        </>
+                    ) : (
+                        <>
+                            Para assuntos de dados pessoais, fale com a gente:{' '}
+                            <SupportContact support={support} />.
+                        </>
+                    )}
                 </p>
             </LegalSection>
 

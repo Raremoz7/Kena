@@ -43,6 +43,11 @@ class LegalController extends Controller
             'company' => [
                 'name' => (string) config('kena.legal.name'),
                 'document' => config('kena.legal.document') ?: null,
+                'address' => config('kena.legal.address') ?: null,
+            ],
+            'dpo' => [
+                'name' => config('kena.legal.dpo_name') ?: null,
+                'email' => config('kena.legal.dpo_email') ?: null,
             ],
             'support' => [
                 'email' => config('kena.support.email') ?: null,

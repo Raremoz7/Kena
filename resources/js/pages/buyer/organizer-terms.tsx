@@ -113,6 +113,11 @@ export default function OrganizerTerms({
                         não puder comparecer tem direito ao reembolso.
                     </li>
                     <li>
+                        Você atende os pedidos de desistência feitos em até 7
+                        dias da compra (art. 49 do Código de Defesa do
+                        Consumidor), com devolução integral.
+                    </li>
+                    <li>
                         Contestações de compra no cartão (chargeback) são
                         tratadas pelo Mercado Pago com a sua conta.
                     </li>
@@ -158,6 +163,11 @@ export default function OrganizerTerms({
                     <li>
                         A suspensão não afasta a sua responsabilidade pelos
                         eventos já vendidos e pelos reembolsos devidos.
+                    </li>
+                    <li>
+                        Se o Kena tiver de pagar a um comprador ou a terceiros
+                        por fato do seu evento (por exemplo, cancelamento sem
+                        reembolso), você deve ressarcir o Kena desse valor.
                     </li>
                 </ul>
             </LegalSection>

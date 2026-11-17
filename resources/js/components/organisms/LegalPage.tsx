@@ -3,7 +3,9 @@ import type { ReactNode } from 'react';
 
 /** Props comuns de Ajuda, Termos e Privacidade (LegalController). */
 export interface LegalPageProps {
-    company: { name: string; document: string | null };
+    company: { name: string; document: string | null; address: string | null };
+    /** Encarregado de dados (LGPD art. 41). */
+    dpo: { name: string | null; email: string | null };
     support: { email: string | null; whatsapp: string | null };
     policy: {
         holdMinutes: number;
