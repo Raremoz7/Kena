@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class CouponRedemption extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return BelongsTo<Coupon, $this> */
@@ -26,5 +29,10 @@ class CouponRedemption extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'coupon';
     }
 }

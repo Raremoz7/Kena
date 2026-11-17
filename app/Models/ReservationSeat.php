@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ReservationSeat extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return array<string, string> */
@@ -39,5 +42,10 @@ class ReservationSeat extends Model
     public function sessionSeat(): BelongsTo
     {
         return $this->belongsTo(SessionSeat::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'reservation';
     }
 }

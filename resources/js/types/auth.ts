@@ -12,6 +12,9 @@ export type PanelUser = {
     name: string;
     email: string;
     role: 'organizer' | 'staff';
+    /** Admin da plataforma (Somo): vê todas as organizações. */
+    isPlatformAdmin: boolean;
+    organizationName: string | null;
 };
 
 /** Comprador e painel são independentes: os dois podem ser nulos ao mesmo tempo. */

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Refund extends Model
 {
+    use ScopedThroughParent;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_DONE = 'done';
@@ -34,5 +37,10 @@ class Refund extends Model
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

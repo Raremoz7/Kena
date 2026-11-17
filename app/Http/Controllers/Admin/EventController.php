@@ -10,6 +10,7 @@ use App\Models\SessionSeat;
 use App\Models\Venue;
 use App\Services\SessionSeatGenerator;
 use App\Support\BannerImage;
+use App\Support\OrganizationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -157,7 +158,7 @@ class EventController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'venue_id' => ['required', 'integer', 'exists:venues,id'],
+            'venue_id' => ['required', 'integer', OrganizationRules::exists('venues')],
             'title' => ['required', 'string', 'max:120'],
             'kicker' => ['required', 'string', 'max:60'],
             'description' => ['required', 'string', 'max:2000'],
@@ -255,7 +256,7 @@ class EventController extends Controller
         $base = Str::slug($title);
         $slug = $base;
         $i = 2;
-        while (Event::where('slug', $slug)->exists()) {
+        while (Event::withoutGlobalScopes()->where('slug', $slug)->exists()) {
             $slug = $base.'-'.$i++;
         }
 

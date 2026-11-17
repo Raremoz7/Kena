@@ -4,6 +4,8 @@ namespace App\Services\Payments;
 
 use App\Exceptions\PaymentException;
 use App\Models\MercadoPagoAccount;
+use App\Models\Organization;
+use App\Support\CurrentOrganization;
 use App\Support\MercadoPagoSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -90,8 +92,15 @@ class MercadoPagoOAuth
         }
 
         $data = $this->tokenRequest($body);
+        $organizationId = CurrentOrganization::id() ?? Organization::DEFAULT_ID;
 
-        $account = MercadoPagoAccount::firstOrNew(['mp_user_id' => (string) $data['user_id']]);
+        // Uma conta do Mercado Pago recebe por um organizador só: senão a venda
+        // de um cairia na conta do outro.
+        $account = MercadoPagoAccount::withoutGlobalScopes()->firstOrNew(['mp_user_id' => (string) $data['user_id']]);
+        if ($account->exists && $account->organization_id !== $organizationId) {
+            throw new PaymentException('Esta conta do Mercado Pago já está conectada a outro organizador. Use outra conta.');
+        }
+        $account->organization_id = $organizationId;
         $account->fill($this->tokenFields($data) + [
             'nickname' => $this->nickname((string) $data['access_token']),
             'connected_by' => $panelUserId,
@@ -101,7 +110,10 @@ class MercadoPagoOAuth
 
         // Uma conta recebendo por vez: as outras deixam de receber vendas novas
         // (os pagamentos antigos delas continuam estornáveis).
-        MercadoPagoAccount::connected()->whereKeyNot($account->id)->update(['disconnected_at' => now()]);
+        MercadoPagoAccount::withoutGlobalScopes()->connected()
+            ->where('organization_id', $organizationId)
+            ->whereKeyNot($account->id)
+            ->update(['disconnected_at' => now()]);
 
         return $account;
     }

@@ -2,12 +2,14 @@
 
 use App\Http\Middleware\EnsureCanManage;
 use App\Http\Middleware\EnsureCanManageOrganization;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,7 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'can-manage' => EnsureCanManage::class,
             'can-organize' => EnsureCanManageOrganization::class,
+            'platform-admin' => EnsurePlatformAdmin::class,
         ]);
+
+        // Multi-tenant: a organização do painel precisa estar definida ANTES de
+        // resolver {event}, {order} etc. da URL, senão o filtro não vale no
+        // route model binding e um id de outro organizador abriria a página.
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureCanManage::class);
 
         // Sem sessão de painel, /painel/* vai para o login do painel — nunca
         // para o /login do comprador, que é outro guard.

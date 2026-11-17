@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -24,6 +25,8 @@ use Illuminate\Support\Carbon;
  */
 class SessionSeat extends Model
 {
+    use ScopedThroughParent;
+
     public const STATUS_AVAILABLE = 'available';
 
     public const STATUS_HELD = 'held';
@@ -70,5 +73,10 @@ class SessionSeat extends Model
         return $this->status === self::STATUS_HELD
             && $this->hold_expires_at !== null
             && $this->hold_expires_at->isPast();
+    }
+
+    public function organizationParent(): string
+    {
+        return 'session';
     }
 }

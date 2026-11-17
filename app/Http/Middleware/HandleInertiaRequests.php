@@ -48,7 +48,7 @@ class HandleInertiaRequests extends Middleware
                 // independentes — os dois podem estar nulos ao mesmo tempo.
                 // So os campos que o front usa: isto vai em toda pagina.
                 'user' => self::buyer($request->user()),
-                'panelUser' => $request->user('painel')?->only(['id', 'name', 'email', 'role']),
+                'panelUser' => self::panelUser($request->user('painel')),
             ],
             // Reserva em andamento do comprador: alimenta o aviso flutuante
             // "retomar ou cancelar" em todas as telas do comprador.
@@ -63,6 +63,23 @@ class HandleInertiaRequests extends Middleware
                 'warning' => $request->session()->get('warning'),
                 'error' => $request->session()->get('error'),
             ],
+        ];
+    }
+
+    /**
+     * Conta do painel: papel, se administra a plataforma e o nome da organização.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function panelUser(mixed $user): ?array
+    {
+        if (! $user instanceof PanelUser) {
+            return null;
+        }
+
+        return $user->only(['id', 'name', 'email', 'role']) + [
+            'isPlatformAdmin' => $user->isPlatformAdmin(),
+            'organizationName' => $user->organization?->name,
         ];
     }
 

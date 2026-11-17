@@ -69,6 +69,11 @@ final class CatalogPresenter
             // Degradê horizontal por cima da foto, só no topo do evento.
             'bannerFromOpacity' => (int) $event->banner_from_opacity,
             'bannerToOpacity' => (int) $event->banner_to_opacity,
+            // Quem organiza (multi-tenant): nome e página pública.
+            'organizer' => $event->organization !== null ? [
+                'name' => $event->organization->name,
+                'url' => route('organizers.show', $event->organization->slug, false),
+            ] : null,
         ];
     }
 

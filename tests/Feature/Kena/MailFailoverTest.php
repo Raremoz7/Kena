@@ -61,7 +61,7 @@ class MailFailoverTest extends TestCase
 
     public function test_panel_saves_and_clears_the_backup(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PanelUser::factory()->platformAdmin()->create();
 
         $this->actingAs($organizer, 'painel')->post('/painel/config', [
             'mail_backup_host' => 'mail.smtp2go.com',

@@ -4,6 +4,9 @@
 <p style="color:#6B5F57;font-size:14px;line-height:1.6;margin:0 0 4px;">Olá {{ $order->user->name }}, seus ingressos para <strong style="color:#2A1F1A;">{{ $event->title }}</strong> foram emitidos.</p>
 <p style="color:#6B5F57;font-size:13px;margin:8px 0 0;"><strong style="color:#2A1F1A;">{{ $sessionLabel }}</strong></p>
 <p style="color:#6B5F57;font-size:13px;margin:0;">{{ $venue->name }} — {{ $venue->city }}/{{ $venue->state }}</p>
+@if (! empty($organizerName))
+<p style="color:#6B5F57;font-size:13px;margin:0;">Organização: {{ $organizerName }}</p>
+@endif
 
 @foreach ($order->tickets as $ticket)
 <x-mail.ticket-image

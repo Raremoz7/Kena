@@ -69,6 +69,8 @@ export interface EventInfo {
     bannerToOpacity: number;
     bannerTo: string;
     bannerImage?: string;
+    /** Quem organiza o evento (multi-tenant). */
+    organizer?: { name: string; url: string } | null;
 }
 
 export interface SelectedSeat {

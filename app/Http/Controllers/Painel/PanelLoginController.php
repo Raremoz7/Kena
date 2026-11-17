@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Painel;
 
 use App\Http\Controllers\Controller;
+use App\Models\PanelUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,9 +18,12 @@ use Inertia\Response;
  */
 class PanelLoginController extends Controller
 {
-    public function show(): Response
+    public function show(Request $request): Response
     {
-        return Inertia::render('painel/login');
+        return Inertia::render('painel/login', [
+            'signupEnabled' => OrganizerSignupController::enabled(),
+            'status' => $request->session()->get('status'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -34,6 +38,17 @@ class PanelLoginController extends Controller
             // existe do lado do comprador.
             throw ValidationException::withMessages([
                 'email' => 'Credenciais inválidas.',
+            ]);
+        }
+
+        // Conta criada pelo cadastro aberto só entra depois de confirmar o e-mail.
+        $user = Auth::guard('painel')->user();
+        if ($user instanceof PanelUser && $user->email_verified_at === null) {
+            Auth::guard('painel')->logout();
+            OrganizerSignupController::sendVerification($user);
+
+            throw ValidationException::withMessages([
+                'email' => 'Confirme seu e-mail antes de entrar. Reenviamos o link para '.$user->email.'.',
             ]);
         }
 

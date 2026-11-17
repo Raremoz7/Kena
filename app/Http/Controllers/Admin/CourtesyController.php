@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Services\CourtesyService;
 use App\Support\Csv;
+use App\Support\OrganizationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -42,7 +43,7 @@ class CourtesyController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'event_id' => ['required', 'integer', 'exists:events,id'],
+            'event_id' => ['required', 'integer', OrganizationRules::exists('events')],
             'people' => ['required', 'string', 'max:20000'],
             'tickets' => ['required', 'integer', 'min:1', 'max:10'],
             'expires_at' => ['nullable', 'date'],

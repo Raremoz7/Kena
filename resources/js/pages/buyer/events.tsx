@@ -10,7 +10,7 @@ import { Price } from '@/components/atoms/Price';
 import { Tag } from '@/components/atoms/Tag';
 import type { EventStatus, VenueInfo } from '@/lib/veludo/types';
 
-interface ListedEvent {
+export interface ListedEvent {
     id: number;
     slug: string;
     title: string;
@@ -42,7 +42,7 @@ function EventCardSkeleton() {
     );
 }
 
-function EventCard({ event }: { event: ListedEvent }) {
+export function EventCard({ event }: { event: ListedEvent }) {
     const soldOut = event.status.tone === 'danger';
 
     return (

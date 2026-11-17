@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\PanelUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
 /**
  * Conta do painel — organizador ou staff de check-in. Vive fora de `users`,
@@ -17,11 +19,15 @@ use Illuminate\Notifications\Notifiable;
  * @property string $name
  * @property string $email
  * @property string $role
+ * @property bool $is_platform_admin
+ * @property Carbon|null $email_verified_at
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'organization_id', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class PanelUser extends Authenticatable
 {
+    use BelongsToOrganization;
+
     /** @use HasFactory<PanelUserFactory> */
     use HasFactory, Notifiable;
 
@@ -41,12 +47,24 @@ class PanelUser extends Authenticatable
     }
 
     /**
+     * Admin da plataforma (Somo): gerencia organizações e as configurações
+     * globais (SMTP, Wallet, webhook). Continua vendo só os dados da própria
+     * organização nas telas do dia a dia.
+     */
+    public function isPlatformAdmin(): bool
+    {
+        return $this->is_platform_admin === true;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'password' => 'hashed',
+            'is_platform_admin' => 'boolean',
+            'email_verified_at' => 'datetime',
         ];
     }
 }

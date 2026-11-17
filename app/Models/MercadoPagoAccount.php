@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
+use App\Support\CurrentOrganization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -25,6 +27,8 @@ use Illuminate\Support\Carbon;
  */
 class MercadoPagoAccount extends Model
 {
+    use BelongsToOrganization;
+
     protected $table = 'mercadopago_accounts';
 
     protected $guarded = [];
@@ -44,13 +48,20 @@ class MercadoPagoAccount extends Model
         ];
     }
 
-    /**
-     * Conta que recebe as vendas novas: a última conectada e não desconectada.
-     * Com vários organizadores, este ponto passa a filtrar pelo dono do evento.
-     */
+    /** Conta que recebe as vendas novas da organização do contexto (painel). */
     public static function current(): ?self
     {
-        return static::query()
+        return static::forOrganization(null);
+    }
+
+    /**
+     * Conta conectada que recebe as vendas da organização (dona do evento).
+     * Null = organização do painel ou, fora dele, a principal.
+     */
+    public static function forOrganization(?int $organizationId): ?self
+    {
+        return static::withoutGlobalScopes()
+            ->where('organization_id', $organizationId ?? CurrentOrganization::id() ?? Organization::DEFAULT_ID)
             ->whereNull('disconnected_at')
             ->latest('connected_at')
             ->latest('id')

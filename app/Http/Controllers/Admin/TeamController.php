@@ -65,6 +65,9 @@ class TeamController extends Controller
             'email' => mb_strtolower(trim($data['email'])),
             'role' => $data['role'],
             'password' => $data['password'],
+            // Criada pelo organizador: entra direto (a confirmação de e-mail é
+            // do cadastro aberto). A organização vem do contexto do painel.
+            'email_verified_at' => now(),
         ]);
 
         return back()->with('status', "{$data['name']} agora tem acesso ao painel como ".$this->roleLabel($data['role']).'.');

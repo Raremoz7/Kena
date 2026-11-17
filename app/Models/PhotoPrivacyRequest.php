@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PhotoPrivacyRequest extends Model
 {
+    use ScopedThroughParent;
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_DONE = 'done';
@@ -29,5 +32,10 @@ class PhotoPrivacyRequest extends Model
     public function gallery(): BelongsTo
     {
         return $this->belongsTo(PhotoGallery::class, 'photo_gallery_id');
+    }
+
+    public function organizationParent(): string
+    {
+        return 'gallery';
     }
 }

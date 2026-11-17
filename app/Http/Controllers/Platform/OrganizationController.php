@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Controllers\Platform;
+
+use App\Http\Controllers\Controller;
+use App\Models\Event;
+use App\Models\MercadoPagoAccount;
+use App\Models\Order;
+use App\Models\Organization;
+use App\Models\PanelUser;
+use App\Services\Payments\MercadoPagoOAuth;
+use App\Support\Money;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * Painel da plataforma (Somo): todas as organizações, com vendas, taxas e
+ * conexão do Mercado Pago. Suspender fecha as vendas na hora, mas mantém o
+ * painel do organizador (ele ainda precisa ver pedidos e estornar).
+ * Lê sem o filtro de organização, de propósito: é a visão de todas.
+ */
+class OrganizationController extends Controller
+{
+    public function index(): Response
+    {
+        $paid = Order::withoutGlobalScopes()
+            ->where('status', Order::STATUS_PAID)
+            ->selectRaw('organization_id, count(*) as orders, sum(total_cents) as gross, sum(fee_cents) as fees')
+            ->groupBy('organization_id')
+            ->get()
+            ->keyBy('organization_id');
+        $events = Event::withoutGlobalScopes()->selectRaw('organization_id, count(*) as total')->groupBy('organization_id')->pluck('total', 'organization_id');
+        $connected = MercadoPagoAccount::withoutGlobalScopes()->whereNull('disconnected_at')->pluck('organization_id')->flip();
+
+        $organizations = Organization::query()->orderBy('name')->get()->map(function (Organization $org) use ($paid, $events, $connected): array {
+            $stats = $paid->get($org->id);
+            $owner = PanelUser::withoutGlobalScopes()->where('organization_id', $org->id)->where('role', PanelUser::ROLE_ORGANIZER)->orderBy('id')->first();
+
+            return [
+                'id' => $org->id,
+                'name' => $org->name,
+                'slug' => $org->slug,
+                'owner' => $owner !== null ? ['name' => $owner->name, 'email' => $owner->email, 'verified' => $owner->email_verified_at !== null] : null,
+                'createdAt' => $org->created_at?->toIso8601String(),
+                'status' => $org->status,
+                'suspendedReason' => $org->suspended_reason,
+                'feePercent' => $org->service_fee_percent !== null ? (float) $org->service_fee_percent : null,
+                'events' => (int) ($events[$org->id] ?? 0),
+                'paidOrders' => (int) ($stats->orders ?? 0),
+                'gross' => Money::toReais((int) ($stats->gross ?? 0)),
+                'fees' => Money::toReais((int) ($stats->fees ?? 0)),
+                'mpConnected' => $connected->has($org->id),
+            ];
+        });
+
+        return Inertia::render('admin/platform', [
+            'organizations' => $organizations,
+            'defaultFeePercent' => (float) config('kena.service_fee_percent', 6),
+            'oauthEnabled' => MercadoPagoOAuth::enabled(),
+        ]);
+    }
+
+    public function suspend(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        $organization->update([
+            'status' => Organization::STATUS_SUSPENDED,
+            'suspended_at' => now(),
+            'suspended_reason' => $data['reason'],
+        ]);
+
+        return back()->with('status', "Vendas de {$organization->name} suspensas.");
+    }
+
+    public function reactivate(Organization $organization): RedirectResponse
+    {
+        $organization->update(['status' => Organization::STATUS_ACTIVE, 'suspended_at' => null, 'suspended_reason' => null]);
+
+        return back()->with('status', "{$organization->name} voltou a vender.");
+    }
+
+    /** Taxa negociada. Em branco = volta para a taxa padrão da plataforma. */
+    public function fee(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $request->validate(['fee_percent' => ['nullable', 'numeric', 'min:0', 'max:30']]);
+
+        $organization->update(['service_fee_percent' => $data['fee_percent'] ?? null]);
+
+        return back()->with('status', "Taxa de {$organization->name} atualizada.");
+    }
+}

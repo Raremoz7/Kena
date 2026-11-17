@@ -14,6 +14,8 @@ export interface AdminNavItem {
     icon: IconName;
     /** Só organizador/admin — staff não vê. */
     organizerOnly?: boolean;
+    /** Só admin da plataforma (Somo). */
+    platformOnly?: boolean;
     /** Fica na barra inferior do mobile; o resto vai para "Mais". */
     primary?: boolean;
 }
@@ -104,6 +106,17 @@ const groups: AdminNavGroup[] = [
             },
         ],
     },
+    {
+        label: 'Plataforma',
+        items: [
+            {
+                label: 'Organizações',
+                href: '/painel/plataforma',
+                icon: 'shield',
+                platformOnly: true,
+            },
+        ],
+    },
 ];
 
 export function isNavActive(url: string, href: string): boolean {
@@ -121,7 +134,9 @@ export function useAdminNav() {
         .map((group) => ({
             ...group,
             items: group.items.filter(
-                (item) => !item.organizerOnly || canOrganize,
+                (item) =>
+                    (!item.organizerOnly || canOrganize) &&
+                    (!item.platformOnly || user?.isPlatformAdmin === true),
             ),
         }))
         .filter((group) => group.items.length > 0);
@@ -156,6 +171,7 @@ export function AdminUserCard({ onNavigate }: { onNavigate?: () => void }) {
                 </p>
                 <p className="truncate font-body text-xs text-faint">
                     {user.role === 'organizer' ? 'Organizador' : 'Equipe'}
+                    {user.organizationName && ` · ${user.organizationName}`}
                 </p>
             </div>
             <Link
