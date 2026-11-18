@@ -1,4 +1,5 @@
-import { Deferred, Head, Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icon  } from '@/components/atoms/Icon';
 import type {IconName} from '@/components/atoms/Icon';
@@ -62,6 +63,17 @@ export default function EventPage({
     courtesyOnly,
 }: EventPageProps) {
     const multi = sessions.length > 1;
+
+    // O mapa é deferido: quando a reserva volta com erro, a página recarrega e
+    // o prop some até o deferido chegar de novo. Guardar o último mapa evita
+    // desmontar a seleção (o modal de CPF fechava e a mensagem se perdia).
+    const [lastSeatMap, setLastSeatMap] = useState(seatMap);
+
+    if (seatMap && seatMap !== lastSeatMap) {
+        setLastSeatMap(seatMap);
+    }
+
+    const shownSeatMap = seatMap ?? lastSeatMap;
 
     return (
         <>
@@ -147,20 +159,17 @@ export default function EventPage({
                                 {sessionLabel} · {event.venue.name}, {event.venue.city}
                             </p>
                             <LotBanner lot={lot} courtesyOnly={courtesyOnly} className="mt-3" />
-                            <Deferred
-                                data="seatMap"
-                                fallback={<SeatSelectionSkeleton className="mt-6" />}
-                            >
-                                {seatMap ? (
-                                    <SeatSelection
-                                        seatMap={seatMap}
-                                        reserveUrl={reserveUrl}
-                                        availabilityUrl={availabilityUrl}
-                                        emailCodeUrl={emailCodeUrl}
-                                        className="mt-6"
-                                    />
-                                ) : null}
-                            </Deferred>
+                            {shownSeatMap ? (
+                                <SeatSelection
+                                    seatMap={shownSeatMap}
+                                    reserveUrl={reserveUrl}
+                                    availabilityUrl={availabilityUrl}
+                                    emailCodeUrl={emailCodeUrl}
+                                    className="mt-6"
+                                />
+                            ) : (
+                                <SeatSelectionSkeleton className="mt-6" />
+                            )}
                         </>
                     )}
                 </section>
