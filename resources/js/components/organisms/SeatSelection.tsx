@@ -284,6 +284,9 @@ export function SeatSelection({
             {
                 // Checkout abre no topo; só fica no lugar se voltar com erro.
                 preserveScroll: 'errors',
+                // Com erro, mantém o modal (CPF/dados) aberto para mostrar a
+                // mensagem; sem isso a página remonta e o modal fecha mudo.
+                preserveState: 'errors',
                 onError: (errors) => {
                     if (errors.seats) {
                         veludoToast.warning(
