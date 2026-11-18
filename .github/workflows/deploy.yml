@@ -23,6 +23,8 @@ jobs:
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SSH_HOST }}
+          # 22 so aceita IPs da equipe no ufw; os runners do GitHub mudam de IP.
+          port: 2222
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
