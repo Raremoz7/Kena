@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\BuyerController as AdminBuyerController;
 use App\Http\Controllers\Admin\CheckInController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourtesyController;
@@ -215,6 +216,10 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
         Route::post('/painel/assentos/toggle', [SeatController::class, 'toggle'])->name('admin.seats.toggle');
         Route::post('/painel/sessoes/{session}/assentos/varios', [SeatController::class, 'bulk'])->name('admin.seats.bulk');
         Route::post('/painel/sessoes/{session}/assentos/emitir', [SeatController::class, 'issue'])->name('admin.seats.issue');
+
+        // Compradores: cadastros e liberação de CPF preso em conta errada
+        Route::get('/painel/compradores', [AdminBuyerController::class, 'index'])->name('admin.buyers');
+        Route::delete('/painel/compradores/{user}/cpf', [AdminBuyerController::class, 'unlinkCpf'])->name('admin.buyers.unlink-cpf');
 
         // Equipe (organizadores e staff)
         Route::get('/painel/equipe', [TeamController::class, 'index'])->name('admin.team');
