@@ -56,6 +56,12 @@ const groups: AdminNavGroup[] = [
                 icon: 'image',
                 organizerOnly: true,
             },
+            {
+                label: 'Compradores',
+                href: '/painel/compradores',
+                icon: 'user',
+                organizerOnly: true,
+            },
         ],
     },
     {
