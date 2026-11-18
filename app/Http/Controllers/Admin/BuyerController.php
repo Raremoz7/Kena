@@ -49,7 +49,7 @@ class BuyerController extends Controller
                 'email' => $u->email,
                 'cpf' => self::maskCpf($u->cpf),
                 'createdAt' => $u->created_at?->format('d/m/Y'),
-                'paidOrders' => (int) $u->paid_orders_count,
+                'paidOrders' => (int) $u->getAttribute('paid_orders_count'),
             ]);
 
         return Inertia::render('admin/buyers', [
