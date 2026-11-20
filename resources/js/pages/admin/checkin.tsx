@@ -6,6 +6,7 @@ import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { CheckinResultDialog } from '@/components/organisms/CheckinResultDialog';
 import type { CheckinOutcome } from '@/components/organisms/CheckinResultDialog';
+import { CheckinSeatMap } from '@/components/organisms/CheckinSeatMap';
 import { api, ApiError } from '@/lib/veludo/api';
 import { veludoToast } from '@/lib/veludo/toast';
 
@@ -65,6 +66,7 @@ interface CheckinPageProps {
     previewUrl: string;
     lookupUrl: string;
     admitUrl: string;
+    mapUrl: string;
 }
 
 function toOutcome(res: ScanResult): CheckinOutcome {
@@ -89,7 +91,9 @@ export default function CheckinPage({
     previewUrl,
     lookupUrl,
     admitUrl,
+    mapUrl,
 }: CheckinPageProps) {
+    const [showMap, setShowMap] = useState(false);
     const [sessionId, setSessionId] = useState<number>(sessions[0]?.id ?? 0);
     const [token, setToken] = useState('');
     const [busy, setBusy] = useState(false);
@@ -508,6 +512,38 @@ export default function CheckinPage({
                                 </li>
                             ))}
                         </ul>
+                    )}
+                </div>
+
+                {/* Mapa de cadeiras */}
+                <div className="rounded-card border border-border bg-surface p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <p className="kicker text-faint">
+                                Mapa de cadeiras
+                            </p>
+                            <p className="mt-1 font-body text-xs text-muted-foreground">
+                                Quem já entrou, quem falta chegar e o que está
+                                livre.
+                            </p>
+                        </div>
+                        <Button
+                            variant={showMap ? 'secondary' : 'primary'}
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => setShowMap((v) => !v)}
+                        >
+                            {showMap ? 'Fechar mapa' : 'Ver mapa'}
+                        </Button>
+                    </div>
+                    {showMap && (
+                        <div className="mt-3">
+                            <CheckinSeatMap
+                                mapUrl={mapUrl}
+                                sessionId={sessionId}
+                                refreshKey={progress.checkedIn}
+                            />
+                        </div>
                     )}
                 </div>
 

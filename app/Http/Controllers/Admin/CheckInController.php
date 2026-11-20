@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
+use App\Models\SessionSeat;
 use App\Models\Ticket;
 use App\Services\CheckInService;
 use App\Support\Presenters\CatalogPresenter;
@@ -42,7 +43,54 @@ class CheckInController extends Controller
             'previewUrl' => route('admin.checkin.preview'),
             'lookupUrl' => route('admin.checkin.lookup'),
             'admitUrl' => route('admin.checkin.admit'),
+            'mapUrl' => route('admin.checkin.map'),
         ]);
+    }
+
+    /**
+     * Mapa de cadeiras da portaria: estado de cada assento da sessão
+     * (entrou, vendido e falta entrar, livre, bloqueado).
+     */
+    public function map(Request $request): JsonResponse
+    {
+        $data = $request->validate(['session_id' => ['required', 'integer']]);
+        $sessionId = (int) $data['session_id'];
+
+        $tickets = Ticket::query()
+            ->where('session_id', $sessionId)
+            ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED])
+            ->get(['session_seat_id', 'status', 'holder_name', 'code'])
+            ->keyBy('session_seat_id');
+
+        $seats = SessionSeat::query()
+            ->with(['seat', 'sector'])
+            ->where('session_id', $sessionId)
+            ->get()
+            ->map(function (SessionSeat $ss) use ($tickets): array {
+                /** @var Ticket|null $ticket */
+                $ticket = $tickets->get($ss->id);
+
+                $state = match (true) {
+                    $ticket !== null => $ticket->status === Ticket::STATUS_USED ? 'in' : 'pending',
+                    $ss->status === SessionSeat::STATUS_SOLD => 'pending',
+                    $ss->status === SessionSeat::STATUS_AVAILABLE => 'free',
+                    default => 'blocked',
+                };
+
+                return [
+                    'id' => $ss->id,
+                    'x' => $ss->seat->pos_x,
+                    'y' => $ss->seat->pos_y,
+                    'row' => $ss->seat->line,
+                    'number' => $ss->seat->number,
+                    'sector' => $ss->sector->name,
+                    'state' => $state,
+                    'holder' => $ticket?->holder_name,
+                    'code' => $ticket?->code,
+                ];
+            })->values()->all();
+
+        return response()->json(['seats' => $seats]);
     }
 
     /** Busca ingressos por nome, código ou assento (admissão manual). */
