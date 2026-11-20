@@ -57,6 +57,22 @@ class CheckInLookupTest extends TestCase
         ])->assertOk()->assertJson(['result' => 'denied']);
     }
 
+    public function test_seat_map_shows_pending_then_in_and_staff_can_see_it(): void
+    {
+        $ticket = $this->issuedTicket();
+        $staff = PanelUser::factory()->staff()->create();
+
+        $res = $this->actingAs($staff, 'painel')->getJson(route('admin.checkin.map', ['session_id' => $ticket->session_id]));
+        $res->assertOk();
+        $seats = collect($res->json('seats'));
+        $this->assertSame('pending', $seats->firstWhere('id', $ticket->session_seat_id)['state']);
+
+        $ticket->update(['status' => Ticket::STATUS_USED]);
+
+        $seats = collect($this->actingAs($staff, 'painel')->getJson(route('admin.checkin.map', ['session_id' => $ticket->session_id]))->json('seats'));
+        $this->assertSame('in', $seats->firstWhere('id', $ticket->session_seat_id)['state']);
+    }
+
     public function test_preview_does_not_consume_until_confirmed(): void
     {
         $ticket = $this->issuedTicket();

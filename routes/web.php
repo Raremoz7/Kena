@@ -154,6 +154,7 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
     Route::post('/api/checkin/conferir', [CheckInController::class, 'preview'])->name('admin.checkin.preview');
     Route::post('/api/checkin/buscar', [CheckInController::class, 'lookup'])->name('admin.checkin.lookup');
     Route::post('/api/checkin/admitir', [CheckInController::class, 'admit'])->name('admin.checkin.admit');
+    Route::get('/api/checkin/mapa', [CheckInController::class, 'map'])->name('admin.checkin.map');
 
     // Gestão sensível — só organizer/admin (staff recebe 403).
     Route::middleware('can-organize')->group(function () {
