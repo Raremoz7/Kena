@@ -39,6 +39,15 @@ class PanelLoginController extends Controller
 
         $request->session()->regenerate();
 
+        // Staff so alcanca o check-in. Se ele chegou por um link de outra tela
+        // (ex.: o organizador mandou o link da Equipe), o intended o levaria a
+        // um 403 logo depois de entrar, e parece que o login falhou.
+        if (! Auth::guard('painel')->user()?->canManageOrganization()) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('admin.checkin');
+        }
+
         return redirect()->intended(route('painel'));
     }
 
