@@ -75,10 +75,10 @@ class PhotoGalleryAdminTest extends TestCase
         $person = $this->person($gallery, 'Alice');
 
         $this->actingAs($staff, 'painel');
-        $this->get(route('admin.photos'))->assertForbidden();
-        $this->get(route('admin.photos.edit', $event))->assertForbidden();
-        $this->get(route('admin.photos.people', $event))->assertForbidden();
-        $this->get(route('admin.photos.photos', $event))->assertForbidden();
+        $this->get(route('admin.photos'))->assertRedirect(route('admin.checkin'));
+        $this->get(route('admin.photos.edit', $event))->assertRedirect(route('admin.checkin'));
+        $this->get(route('admin.photos.people', $event))->assertRedirect(route('admin.checkin'));
+        $this->get(route('admin.photos.photos', $event))->assertRedirect(route('admin.checkin'));
         $this->put(route('admin.photos.save', $event), $this->payload([['min_qty' => 1, 'price' => '30']]))->assertForbidden();
         $this->post(route('admin.photos.publish', $event))->assertForbidden();
         $this->post(route('admin.photos.unpublish', $event))->assertForbidden();

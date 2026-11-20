@@ -144,6 +144,6 @@ class CourtesyAdminTest extends TestCase
     {
         $staff = PanelUser::factory()->create(['role' => PanelUser::ROLE_STAFF]);
 
-        $this->actingAs($staff, 'painel')->get(route('admin.courtesies'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.courtesies'))->assertRedirect(route('admin.checkin'));
     }
 }

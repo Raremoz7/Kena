@@ -254,6 +254,6 @@ class TicketLotTest extends TestCase
         $session = $this->makeSession(1);
         $staff = PanelUser::factory()->create(['role' => PanelUser::ROLE_STAFF]);
 
-        $this->actingAs($staff, 'painel')->get(route('admin.lots', $session))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.lots', $session))->assertRedirect(route('admin.checkin'));
     }
 }
