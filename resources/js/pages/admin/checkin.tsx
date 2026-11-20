@@ -542,6 +542,8 @@ export default function CheckinPage({
                                 mapUrl={mapUrl}
                                 sessionId={sessionId}
                                 refreshKey={progress.checkedIn}
+                                admitUrl={admitUrl}
+                                onAdmitted={setProgress}
                             />
                         </div>
                     )}

@@ -59,7 +59,7 @@ class CheckInController extends Controller
         $tickets = Ticket::query()
             ->where('session_id', $sessionId)
             ->whereIn('status', [Ticket::STATUS_VALID, Ticket::STATUS_USED])
-            ->get(['session_seat_id', 'status', 'holder_name', 'code'])
+            ->get(['id', 'session_seat_id', 'status', 'holder_name', 'code'])
             ->keyBy('session_seat_id');
 
         $seats = SessionSeat::query()
@@ -87,6 +87,7 @@ class CheckInController extends Controller
                     'state' => $state,
                     'holder' => $ticket?->holder_name,
                     'code' => $ticket?->code,
+                    'ticketId' => $ticket?->id,
                 ];
             })->values()->all();
 

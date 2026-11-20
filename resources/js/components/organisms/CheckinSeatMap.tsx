@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/veludo/api';
+import { api, ApiError } from '@/lib/veludo/api';
+import { veludoToast } from '@/lib/veludo/toast';
 
 export type CheckinSeatState = 'in' | 'pending' | 'free' | 'blocked';
 
@@ -15,6 +16,7 @@ export interface CheckinSeat {
     state: CheckinSeatState;
     holder: string | null;
     code: string | null;
+    ticketId: number | null;
 }
 
 interface MapResponse {
@@ -46,6 +48,39 @@ const SWATCH: Record<CheckinSeatState, string> = {
     blocked: 'bg-border',
 };
 
+function AdmitButton({
+    seat,
+    busy,
+    onAdmit,
+}: {
+    seat: CheckinSeat;
+    busy: boolean;
+    onAdmit: (s: CheckinSeat) => void;
+}) {
+    if (seat.state === 'in') {
+        return (
+            <span className="shrink-0 font-body text-xs font-medium text-success-text">
+                Entrou ✓
+            </span>
+        );
+    }
+
+    if (seat.state !== 'pending' || !seat.ticketId) {
+        return null;
+    }
+
+    return (
+        <Button
+            size="sm"
+            className="shrink-0"
+            disabled={busy}
+            onClick={() => onAdmit(seat)}
+        >
+            {busy ? 'Confirmando...' : 'Dar entrada'}
+        </Button>
+    );
+}
+
 /**
  * Mapa de cadeiras da portaria: mostra quem já entrou, quem comprou e ainda
  * não chegou, e o que está livre. Atualiza sozinho enquanto está aberto.
@@ -54,16 +89,66 @@ export function CheckinSeatMap({
     mapUrl,
     sessionId,
     refreshKey,
+    admitUrl,
+    onAdmitted,
 }: {
     mapUrl: string;
     sessionId: number;
     /** Muda a cada entrada confirmada, para o mapa recarregar na hora. */
     refreshKey: number;
+    admitUrl: string;
+    onAdmitted: (progress: { checkedIn: number; total: number }) => void;
 }) {
     const [seats, setSeats] = useState<CheckinSeat[] | null>(null);
     const [error, setError] = useState(false);
-    const [picked, setPicked] = useState<CheckinSeat | null>(null);
+    const [pickedId, setPickedId] = useState<number | null>(null);
     const [filter, setFilter] = useState<CheckinSeatState | null>(null);
+    const [admitting, setAdmitting] = useState<number | null>(null);
+    // Quem entrou por aqui continua na lista "falta entrar" com "Entrou ✓",
+    // para a lista não pular enquanto a portaria vai dando entrada em vários.
+    const [justIn, setJustIn] = useState<number[]>([]);
+    const picked = seats?.find((s) => s.id === pickedId) ?? null;
+
+    /** Admite direto do mapa, sem recarregar: o assento vira verde na hora. */
+    async function admit(seat: CheckinSeat) {
+        if (!seat.ticketId || admitting !== null) {
+            return;
+        }
+
+        setAdmitting(seat.id);
+
+        try {
+            const res = await api.post<{
+                result: string;
+                reason: string | null;
+                progress: { checkedIn: number; total: number };
+            }>(admitUrl, { session_id: sessionId, ticket_id: seat.ticketId });
+
+            if (res.result === 'ok') {
+                const done = (s: CheckinSeat): CheckinSeat =>
+                    s.id === seat.id ? { ...s, state: 'in' } : s;
+                setSeats((prev) => prev?.map(done) ?? prev);
+                setJustIn((ids) => [...ids, seat.id]);
+                navigator.vibrate?.(60);
+            } else {
+                veludoToast.error(
+                    'Entrada não liberada',
+                    res.reason ?? undefined,
+                );
+            }
+
+            onAdmitted(res.progress);
+        } catch (e) {
+            veludoToast.error(
+                'Erro',
+                e instanceof ApiError
+                    ? e.message
+                    : 'Falha ao confirmar a entrada.',
+            );
+        } finally {
+            setAdmitting(null);
+        }
+    }
 
     const load = useCallback(async () => {
         if (!sessionId) {
@@ -83,7 +168,8 @@ export function CheckinSeatMap({
 
     useEffect(() => {
         setSeats(null);
-        setPicked(null);
+        setPickedId(null);
+        setJustIn([]);
     }, [sessionId]);
 
     useEffect(() => {
@@ -128,7 +214,7 @@ export function CheckinSeatMap({
     const pendingList = useMemo(
         () =>
             (seats ?? [])
-                .filter((s) => s.state === 'pending')
+                .filter((s) => s.state === 'pending' || justIn.includes(s.id))
                 .sort(
                     (a, b) =>
                         a.row.localeCompare(b.row, 'pt-BR', {
@@ -138,7 +224,7 @@ export function CheckinSeatMap({
                             numeric: true,
                         }),
                 ),
-        [seats],
+        [seats, justIn],
     );
 
     return (
@@ -236,7 +322,7 @@ export function CheckinSeatMap({
                                             ? { strokeWidth: 2.5 }
                                             : undefined
                                     }
-                                    onClick={() => setPicked(s)}
+                                    onClick={() => setPickedId(s.id)}
                                 >
                                     <title>{`Fila ${s.row}, ${s.number}: ${LABEL[s.state]}`}</title>
                                 </rect>
@@ -247,16 +333,23 @@ export function CheckinSeatMap({
             )}
 
             {picked && (
-                <div className="rounded-btn border border-border bg-bg px-3 py-2 font-body text-sm">
-                    <p className="text-foreground">
-                        {picked.sector} · Fila {picked.row}, assento{' '}
-                        {picked.number}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        {LABEL[picked.state]}
-                        {picked.holder ? ` · ${picked.holder}` : ''}
-                        {picked.code ? ` · ${picked.code}` : ''}
-                    </p>
+                <div className="flex items-center justify-between gap-3 rounded-btn border border-border bg-bg px-3 py-2 font-body text-sm">
+                    <div className="min-w-0">
+                        <p className="text-foreground">
+                            {picked.sector} · Fila {picked.row}, assento{' '}
+                            {picked.number}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            {LABEL[picked.state]}
+                            {picked.holder ? ` · ${picked.holder}` : ''}
+                            {picked.code ? ` · ${picked.code}` : ''}
+                        </p>
+                    </div>
+                    <AdmitButton
+                        seat={picked}
+                        busy={admitting === picked.id}
+                        onAdmit={(x) => void admit(x)}
+                    />
                 </div>
             )}
 
@@ -265,14 +358,21 @@ export function CheckinSeatMap({
                     {pendingList.map((s) => (
                         <li
                             key={s.id}
-                            className="flex justify-between gap-3 rounded-btn border border-border bg-bg px-3 py-1.5 font-body text-xs"
+                            className="flex items-center justify-between gap-3 rounded-btn border border-border bg-bg px-3 py-1.5 font-body text-xs"
                         >
-                            <span className="text-foreground">
-                                Fila {s.row}, {s.number}
-                            </span>
-                            <span className="truncate text-muted-foreground">
-                                {s.holder ?? 'Sem nome'}
-                            </span>
+                            <div className="min-w-0">
+                                <p className="text-foreground">
+                                    Fila {s.row}, {s.number}
+                                </p>
+                                <p className="truncate text-muted-foreground">
+                                    {s.holder ?? 'Sem nome'}
+                                </p>
+                            </div>
+                            <AdmitButton
+                                seat={s}
+                                busy={admitting === s.id}
+                                onAdmit={(x) => void admit(x)}
+                            />
                         </li>
                     ))}
                 </ul>
