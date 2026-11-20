@@ -66,6 +66,7 @@ class CheckInLookupTest extends TestCase
         $res->assertOk();
         $seats = collect($res->json('seats'));
         $this->assertSame('pending', $seats->firstWhere('id', $ticket->session_seat_id)['state']);
+        $this->assertSame($ticket->id, $seats->firstWhere('id', $ticket->session_seat_id)['ticketId']);
 
         $ticket->update(['status' => Ticket::STATUS_USED]);
 
