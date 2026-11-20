@@ -41,6 +41,28 @@ class AdminAccessAndTeamTest extends TestCase
         $this->actingAs($staff, 'painel')->get(route('admin.team'))->assertForbidden();
     }
 
+    /** Staff que abre o link de outra tela do painel entra e cai no check-in, nao num 403. */
+    public function test_staff_login_from_restricted_link_lands_on_check_in(): void
+    {
+        PanelUser::factory()->staff()->create(['email' => 'portaria@kena.test', 'password' => 'senha-secreta']);
+
+        $this->get(route('admin.team'))->assertRedirect(route('painel.login'));
+
+        $this->post(route('painel.login.store'), ['email' => 'portaria@kena.test', 'password' => 'senha-secreta'])
+            ->assertRedirect(route('admin.checkin'));
+    }
+
+    /** Organizador continua voltando para a tela que tentou abrir. */
+    public function test_organizer_login_keeps_intended_url(): void
+    {
+        PanelUser::factory()->create(['email' => 'org@kena.test', 'password' => 'senha-secreta']);
+
+        $this->get(route('admin.team'));
+
+        $this->post(route('painel.login.store'), ['email' => 'org@kena.test', 'password' => 'senha-secreta'])
+            ->assertRedirect(route('admin.team'));
+    }
+
     public function test_organizer_reaches_team_page(): void
     {
         $this->actingAs($this->organizer(), 'painel')->get(route('admin.team'))->assertOk();
