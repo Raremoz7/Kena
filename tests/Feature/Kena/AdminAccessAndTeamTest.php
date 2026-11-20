@@ -35,10 +35,10 @@ class AdminAccessAndTeamTest extends TestCase
         $staff = $this->staff();
 
         $this->actingAs($staff, 'painel')->get(route('admin.checkin'))->assertOk();
-        $this->actingAs($staff, 'painel')->get(route('admin.events'))->assertForbidden();
-        $this->actingAs($staff, 'painel')->get(route('admin.coupons'))->assertForbidden();
-        $this->actingAs($staff, 'painel')->get(route('admin.settings'))->assertForbidden();
-        $this->actingAs($staff, 'painel')->get(route('admin.team'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.events'))->assertRedirect(route('admin.checkin'));
+        $this->actingAs($staff, 'painel')->get(route('admin.coupons'))->assertRedirect(route('admin.checkin'));
+        $this->actingAs($staff, 'painel')->get(route('admin.settings'))->assertRedirect(route('admin.checkin'));
+        $this->actingAs($staff, 'painel')->get(route('admin.team'))->assertRedirect(route('admin.checkin'));
     }
 
     /** Staff que abre o link de outra tela do painel entra e cai no check-in, nao num 403. */

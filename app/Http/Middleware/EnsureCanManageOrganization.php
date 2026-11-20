@@ -16,6 +16,13 @@ class EnsureCanManageOrganization
     {
         $user = $request->user('painel');
 
+        if ($user && ! $user->canManageOrganization() && $request->isMethod('GET') && ! $request->expectsJson()) {
+            // Staff que abre o link de uma tela de organizador (ex.: alguém
+            // mandou o link da Equipe) vai para o check-in, não para um 403
+            // que parece erro de acesso.
+            return redirect()->route('admin.checkin');
+        }
+
         if (! $user || ! $user->canManageOrganization()) {
             abort(403, 'Ação restrita a organizadores.');
         }

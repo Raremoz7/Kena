@@ -41,7 +41,7 @@ class BuyersPanelTest extends TestCase
         $staff = PanelUser::factory()->staff()->create();
         $buyer = User::factory()->create();
 
-        $this->actingAs($staff, 'painel')->get(route('admin.buyers'))->assertForbidden();
+        $this->actingAs($staff, 'painel')->get(route('admin.buyers'))->assertRedirect(route('admin.checkin'));
         $this->actingAs($staff, 'painel')->delete(route('admin.buyers.unlink-cpf', $buyer))->assertForbidden();
         $this->assertNotNull($buyer->fresh()->cpf);
     }
