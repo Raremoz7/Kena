@@ -8,6 +8,7 @@ import { Icon } from '@/components/atoms/Icon';
 import { Input } from '@/components/atoms/Input';
 import { Price } from '@/components/atoms/Price';
 import { Tag } from '@/components/atoms/Tag';
+import { cn } from '@/lib/utils';
 import type { EventStatus, VenueInfo } from '@/lib/veludo/types';
 
 interface ListedEvent {
@@ -16,6 +17,7 @@ interface ListedEvent {
     title: string;
     kicker: string;
     status: EventStatus;
+    ended: boolean;
     venue: VenueInfo;
     dateLabel: string;
     timeLabel: string;
@@ -44,11 +46,15 @@ function EventCardSkeleton() {
 
 function EventCard({ event }: { event: ListedEvent }) {
     const soldOut = event.status.tone === 'danger';
+    const ended = event.ended;
 
     return (
         <Link
             href={`/e/${event.slug}`}
-            className="group block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent/50"
+            className={cn(
+                'group block overflow-hidden rounded-card border border-border bg-surface transition-colors hover:border-accent/50',
+                ended && 'opacity-70',
+            )}
         >
             {/* Na lista, o banner é só a foto: o degradê fica no topo da página do evento. */}
             <div className="relative h-40 overflow-hidden bg-surface-2">
@@ -77,9 +83,9 @@ function EventCard({ event }: { event: ListedEvent }) {
                 </p>
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
                     <span className="font-body text-xs text-faint">
-                        {soldOut ? 'Esgotado' : 'a partir de'}
+                        {ended ? 'Evento realizado' : soldOut ? 'Esgotado' : 'a partir de'}
                     </span>
-                    {!soldOut && <Price value={event.priceFrom} className="text-lg text-foreground" />}
+                    {!soldOut && !ended && <Price value={event.priceFrom} className="text-lg text-foreground" />}
                 </div>
             </div>
         </Link>

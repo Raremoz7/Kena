@@ -34,7 +34,8 @@ final class CatalogPresenter
             'slug' => $event->slug,
             'title' => $event->title,
             'kicker' => $event->kicker,
-            'status' => self::status($event->status),
+            'status' => self::status($event->status, self::hasEnded($event)),
+            'ended' => self::hasEnded($event),
             'venue' => self::venue($event),
             'dateLabel' => $session ? self::dateLabel($session->starts_at) : '',
             'timeLabel' => $session ? self::timeLabel($session->starts_at) : '',
@@ -58,7 +59,7 @@ final class CatalogPresenter
             'title' => $event->title,
             'kicker' => $event->kicker,
             'description' => $event->description,
-            'status' => self::status($event->status),
+            'status' => self::status($event->status, self::hasEnded($event)),
             'venue' => self::venue($event),
             'dateLabel' => $session ? self::dateLabel($session->starts_at) : '',
             'timeLabel' => $session ? self::timeLabel($session->starts_at) : '',
@@ -227,9 +228,28 @@ final class CatalogPresenter
         ];
     }
 
-    /** @return array{tone: string, label: string} */
-    private static function status(string $status): array
+    /**
+     * Evento publicado que já aconteceu: tem sessão não cancelada e nenhuma
+     * delas vendável (todas no passado). Espera `sessions` carregado.
+     */
+    public static function hasEnded(Event $event): bool
     {
+        if (! in_array($event->status, ['on_sale', 'sold_out'], true)) {
+            return false;
+        }
+
+        $live = $event->sessions->where('status', '!=', 'cancelled');
+
+        return $live->isNotEmpty() && $live->every(fn (EventSession $s): bool => $s->starts_at->isPast());
+    }
+
+    /** @return array{tone: string, label: string} */
+    private static function status(string $status, bool $ended = false): array
+    {
+        if ($ended) {
+            return ['tone' => 'neutral', 'label' => 'Encerrado'];
+        }
+
         return match ($status) {
             'sold_out' => ['tone' => 'danger', 'label' => 'Esgotado'],
             'draft' => ['tone' => 'neutral', 'label' => 'Em breve'],
