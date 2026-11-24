@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\PhotoGallery;
 use App\Models\User;
 use App\Services\LotSnapshot;
 use App\Services\SeatReservationService;
@@ -37,7 +38,9 @@ class BuyerController extends Controller
                         ->orWhereHas('venue', fn ($v) => $v->where('name', 'like', "%{$q}%")->orWhere('city', 'like', "%{$q}%"));
                 });
             })
-            // Ordem determinística: sem ela a paginação repete/pula eventos entre páginas.
+            // Próximos eventos primeiro, encerrados no fim; depois id, para a
+            // paginação ser determinística (sem ele repete/pula eventos).
+            ->orderByRaw('exists (select 1 from event_sessions es where es.event_id = events.id and es.status != ? and es.starts_at > ?) desc', ['cancelled', now()])
             ->orderBy('id')
             ->paginate(self::EVENTS_PER_PAGE)
             ->withQueryString()
@@ -61,6 +64,17 @@ class BuyerController extends Controller
 
         // Só sessões vendáveis alimentam o mapa/CTA da página.
         $session = $event->sessions->first(fn (EventSession $s): bool => $s->isSellable());
+
+        // Evento que já aconteceu continua acessível (links antigos, lista), só sem venda.
+        if ($session === null && CatalogPresenter::hasEnded($event)) {
+            $hasGallery = PhotoGallery::where('event_id', $event->id)->where('status', 'published')->exists();
+
+            return Inertia::render('buyer/event-ended', [
+                'event' => CatalogPresenter::detail($event),
+                'photosUrl' => $hasGallery ? route('photos.show', ['slug' => $event->slug]) : null,
+            ]);
+        }
+
         abort_if($session === null, 404);
 
         $sessions = CatalogPresenter::sessionsList($event);
