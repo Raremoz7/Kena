@@ -6,6 +6,7 @@ use App\Models\CheckIn;
 use App\Models\Coupon;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\MercadoPagoAccount;
 use App\Models\Order;
 use App\Models\Organization;
 use App\Models\PanelUser;
@@ -209,6 +210,11 @@ class MultiTenantIsolationTest extends TestCase
 
     public function test_service_catalog_lists_every_organization_publicly(): void
     {
+        config(['kena.mercadopago.oauth.enabled' => true]);
+        MercadoPagoAccount::create([
+            'organization_id' => $this->b->id, 'mp_user_id' => '2', 'access_token' => 'x', 'connected_at' => now(),
+        ]);
+
         $this->get('/eventos')->assertOk()->assertSee('Espetaculo Secreto B');
     }
 

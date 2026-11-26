@@ -33,6 +33,14 @@ class MultiTenantPublicSiteTest extends TestCase
         $this->b = Organization::create(['name' => 'Teatro B', 'slug' => 'teatro-b']);
         $this->sessionB = CurrentOrganization::run($this->b->id, fn (): EventSession => $this->makeSession(1));
         $this->sessionB->event->update(['title' => 'Espetaculo do B']);
+
+        // Outra organização só vende com a própria conta do Mercado Pago.
+        config(['kena.mercadopago.oauth.enabled' => true]);
+        foreach ([Organization::DEFAULT_ID => '1', $this->b->id => '2'] as $organizationId => $mpUserId) {
+            MercadoPagoAccount::create([
+                'organization_id' => $organizationId, 'mp_user_id' => $mpUserId, 'access_token' => 'x'.$mpUserId, 'connected_at' => now(),
+            ]);
+        }
     }
 
     public function test_catalog_lists_every_active_organization_and_hides_suspended(): void
@@ -48,10 +56,7 @@ class MultiTenantPublicSiteTest extends TestCase
 
     public function test_with_oauth_organization_without_mercado_pago_is_hidden(): void
     {
-        config(['kena.mercadopago.oauth.enabled' => true]);
-        MercadoPagoAccount::create([
-            'organization_id' => Organization::DEFAULT_ID, 'mp_user_id' => '1', 'access_token' => 'x', 'connected_at' => now(),
-        ]);
+        MercadoPagoAccount::withoutGlobalScopes()->where('organization_id', $this->b->id)->delete();
 
         $this->get('/eventos')->assertSee('Espetaculo da Principal')->assertDontSee('Espetaculo do B');
     }

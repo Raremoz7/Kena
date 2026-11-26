@@ -66,7 +66,8 @@ class Organization extends Model
 
     /**
      * Pode vender: não suspensa e, com o OAuth ligado, com conta do Mercado
-     * Pago conectada (a venda cai direto na conta dela).
+     * Pago conectada (a venda cai direto na conta dela). Com o OAuth desligado,
+     * só a organização principal vende: a credencial salva é da conta dela.
      */
     public function canSell(): bool
     {
@@ -75,7 +76,7 @@ class Organization extends Model
         }
 
         if (! MercadoPagoOAuth::enabled()) {
-            return true;
+            return $this->id === self::DEFAULT_ID;
         }
         $account = MercadoPagoAccount::forOrganization($this->id);
 
@@ -92,16 +93,20 @@ class Organization extends Model
     {
         $query->where('status', self::STATUS_ACTIVE);
 
-        if (MercadoPagoOAuth::enabled()) {
-            $query->whereExists(fn ($q) => $q->selectRaw('1')
-                ->from('mercadopago_accounts')
-                ->whereColumn('mercadopago_accounts.organization_id', 'organizations.id')
-                ->whereNull('mercadopago_accounts.disconnected_at')
-                // Vencida e sem renovação não recebe: sai da vitrine.
-                ->where(fn ($u) => $u->whereNull('mercadopago_accounts.refresh_failed_at')
-                    ->orWhereNull('mercadopago_accounts.expires_at')
-                    ->orWhere('mercadopago_accounts.expires_at', '>', now())));
+        if (! MercadoPagoOAuth::enabled()) {
+            $query->whereKey(self::DEFAULT_ID);
+
+            return;
         }
+
+        $query->whereExists(fn ($q) => $q->selectRaw('1')
+            ->from('mercadopago_accounts')
+            ->whereColumn('mercadopago_accounts.organization_id', 'organizations.id')
+            ->whereNull('mercadopago_accounts.disconnected_at')
+            // Vencida e sem renovação não recebe: sai da vitrine.
+            ->where(fn ($u) => $u->whereNull('mercadopago_accounts.refresh_failed_at')
+                ->orWhereNull('mercadopago_accounts.expires_at')
+                ->orWhere('mercadopago_accounts.expires_at', '>', now())));
     }
 
     /** Taxa das fotos desta organização (separada da do ingresso) ou a padrão. */

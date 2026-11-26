@@ -149,7 +149,9 @@ class ReviewPolishTest extends TestCase
 
     public function test_organizer_page_shows_contact(): void
     {
-        config(['kena.mercadopago.oauth.enabled' => false]);
+        // Outra organização só aparece no site com a própria conta do Mercado Pago.
+        config(['kena.mercadopago.oauth.enabled' => true]);
+        $this->account();
         $this->b->update(['contact_email' => 'oi@b.test']);
 
         $this->get('/o/teatro-b')->assertInertia(fn (Assert $p) => $p->where('organization.email', 'oi@b.test'));

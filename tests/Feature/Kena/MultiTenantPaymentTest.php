@@ -107,12 +107,14 @@ class MultiTenantPaymentTest extends TestCase
         app(PaymentService::class)->pay($order->reservation()->firstOrFail(), ['method' => 'pix']);
     }
 
-    public function test_without_oauth_every_organization_uses_the_platform_credentials(): void
+    public function test_without_oauth_only_the_principal_organization_uses_the_saved_credentials(): void
     {
         config(['kena.mercadopago.oauth.enabled' => false, 'kena.mercadopago.access_token' => 'TEST-PLATAFORMA']);
 
-        $this->assertTrue($this->sessionB->fresh()?->isSellable());
-        $this->assertSame('TEST-PLATAFORMA', MercadoPagoSettings::accessToken($this->b->id));
+        // A credencial salva é da conta da organização principal: B não vende com ela.
+        $this->assertFalse($this->sessionB->fresh()?->isSellable());
+        $this->assertNull(MercadoPagoSettings::accessToken($this->b->id));
+        $this->assertSame('TEST-PLATAFORMA', MercadoPagoSettings::accessToken(Organization::DEFAULT_ID));
     }
 
     public function test_one_mercado_pago_account_cannot_serve_two_organizations(): void

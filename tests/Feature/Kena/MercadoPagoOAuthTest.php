@@ -80,7 +80,7 @@ class MercadoPagoOAuthTest extends TestCase
 
         $this->actingAs(PanelUser::factory()->staff()->create(), 'painel')
             ->get('/painel/config/mercadopago/conectar')
-            ->assertForbidden();
+            ->assertRedirect(route('admin.checkin'));
     }
 
     public function test_connect_redirects_to_mercado_pago_with_state_and_pkce(): void

@@ -12,8 +12,10 @@ use App\Services\Payments\MercadoPagoOAuth;
  * Credenciais efetivas do Mercado Pago.
  *
  * OAuth desligado (padrão): o que foi salvo no painel (Setting, encriptado) tem
- * prioridade; cai para config/.env quando não há valor salvo. Vale para todas
- * as organizações (a venda cai na conta da plataforma).
+ * prioridade; cai para config/.env quando não há valor salvo. Essa credencial é
+ * da conta do Mercado Pago da organização principal (a de antes do multi-tenant)
+ * e vale SÓ para ela: outra organização não recebe token, senão a venda dela
+ * cairia na conta de outra pessoa.
  * OAuth ligado: vale a conta conectada da organização dona do evento; sem
  * conta, não há credencial.
  *
@@ -30,7 +32,13 @@ final class MercadoPagoSettings
             return $account !== null ? app(MercadoPagoOAuth::class)->freshToken($account) : null;
         }
 
-        return self::resolve('mp_access_token', 'access_token');
+        return self::ownsLegacyCredentials($organizationId) ? self::resolve('mp_access_token', 'access_token') : null;
+    }
+
+    /** Com OAuth desligado, só a organização principal usa a credencial salva. */
+    public static function ownsLegacyCredentials(?int $organizationId = null): bool
+    {
+        return ($organizationId ?? CurrentOrganization::id() ?? Organization::DEFAULT_ID) === Organization::DEFAULT_ID;
     }
 
     /**
@@ -58,7 +66,9 @@ final class MercadoPagoSettings
             }
         }
 
-        return self::accessToken();
+        // OAuth desligado: todo pagamento já criado usou a credencial salva
+        // (só a organização principal vende assim), então consulta e estorno nela.
+        return MercadoPagoOAuth::enabled() ? self::accessToken() : self::resolve('mp_access_token', 'access_token');
     }
 
     /** Para telas: há token? Nunca dispara a renovação (que pode falhar). */
@@ -70,7 +80,7 @@ final class MercadoPagoSettings
             return $account !== null && $account->isUsable();
         }
 
-        return filled(self::resolve('mp_access_token', 'access_token'));
+        return self::ownsLegacyCredentials($organizationId) && filled(self::resolve('mp_access_token', 'access_token'));
     }
 
     /** Há alguma credencial para operar (reconciliação em segundo plano)? */
@@ -93,7 +103,7 @@ final class MercadoPagoSettings
             return MercadoPagoAccount::forOrganization($organizationId)?->public_key;
         }
 
-        return self::resolve('mp_public_key', 'public_key');
+        return self::ownsLegacyCredentials($organizationId) ? self::resolve('mp_public_key', 'public_key') : null;
     }
 
     public static function webhookSecret(): ?string
