@@ -66,14 +66,21 @@ class LegacyCredentialsTest extends TestCase
         ));
     }
 
-    public function test_principal_organization_takes_the_first_organizer_name(): void
+    public function test_principal_organization_takes_the_configured_owner_name(): void
     {
         DB::table('organizations')->where('id', Organization::DEFAULT_ID)
             ->update(['name' => Organization::DEFAULT_NAME, 'slug' => 'principal', 'contact_email' => null]);
-        PanelUser::factory()->create(['name' => 'Vitória Souza', 'email' => 'Vitoria@Exemplo.test', 'role' => PanelUser::ROLE_ORGANIZER, 'organization_id' => Organization::DEFAULT_ID]);
+        // O organizador mais antigo não é a dona: vale o e-mail configurado.
         PanelUser::factory()->create(['name' => 'Outra Pessoa', 'role' => PanelUser::ROLE_ORGANIZER, 'organization_id' => Organization::DEFAULT_ID]);
+        PanelUser::factory()->create(['name' => 'Vitória Souza', 'email' => 'Vitoria@Exemplo.test', 'role' => PanelUser::ROLE_ORGANIZER, 'organization_id' => Organization::DEFAULT_ID]);
 
         $migration = require database_path('migrations/2026_11_27_000001_name_principal_organization.php');
+
+        // Sem a variável, não mexe.
+        $migration->up();
+        $this->assertSame(Organization::DEFAULT_NAME, Organization::findOrFail(Organization::DEFAULT_ID)->name);
+
+        config(['kena.principal_owner_email' => ' vitoria@exemplo.test ']);
         $migration->up();
 
         $principal = Organization::findOrFail(Organization::DEFAULT_ID);

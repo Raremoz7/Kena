@@ -91,6 +91,12 @@ return [
         'enabled' => (bool) env('KENA_ORGANIZER_SIGNUP_ENABLED', false),
     ],
 
+    /**
+     * E-mail da conta do painel dona da organização principal (id 1, com os
+     * dados de antes do multi-tenant). Usado uma vez, na migration que dá nome a ela.
+     */
+    'principal_owner_email' => env('KENA_PRINCIPAL_OWNER_EMAIL'),
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),

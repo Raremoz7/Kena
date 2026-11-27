@@ -7,9 +7,9 @@ use Illuminate\Support\Str;
 
 /**
  * A organização principal (id 1, com todos os dados de antes do multi-tenant)
- * é a da organizadora que já usa o sistema: ganha o nome e o e-mail da primeira
- * conta de organizador do painel. Só troca o nome provisório; se alguém já
- * renomeou, não mexe. Não apaga nem move nenhum dado.
+ * é a da organizadora que já usa o sistema: ganha o nome e o e-mail da conta de
+ * organizador indicada em KENA_PRINCIPAL_OWNER_EMAIL. Sem a variável, ou se
+ * alguém já renomeou, não mexe. Não apaga nem move nenhum dado.
  */
 return new class extends Migration
 {
@@ -20,10 +20,15 @@ return new class extends Migration
             return;
         }
 
+        $email = mb_strtolower(trim((string) config('kena.principal_owner_email')));
+        if ($email === '') {
+            return;
+        }
+
         $owner = DB::table('panel_users')
             ->where('organization_id', Organization::DEFAULT_ID)
             ->where('role', 'organizer')
-            ->orderBy('id')
+            ->whereRaw('lower(email) = ?', [$email])
             ->first();
         if ($owner === null) {
             return;
