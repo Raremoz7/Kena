@@ -4,7 +4,7 @@ namespace Tests\Feature\Kena;
 
 use App\Mail\TicketsIssuedMail;
 use App\Models\Order;
-use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\User;
@@ -23,9 +23,9 @@ class SettingsPanelTest extends TestCase
 
     public function test_saving_mail_settings_persists_and_applies_to_mailer(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PlatformAdmin::factory()->create();
 
-        $this->actingAs($organizer, 'painel')->post('/painel/config', [
+        $this->actingAs($organizer, 'admin')->post('/admin/config', [
             'mail_host' => 'smtp.test.com',
             'mail_port' => 587,
             'mail_username' => 'u@test.com',
@@ -46,12 +46,12 @@ class SettingsPanelTest extends TestCase
 
     public function test_settings_page_exposes_checklist_and_webhook_url(): void
     {
-        $organizer = PanelUser::factory()->create();
+        $organizer = PlatformAdmin::factory()->create();
 
-        $this->actingAs($organizer, 'painel')
-            ->get(route('admin.settings'))
+        $this->actingAs($organizer, 'admin')
+            ->get(route('super.settings'))
             ->assertInertia(fn (Assert $p) => $p
-                ->component('admin/settings')
+                ->component('super/settings')
                 ->has('setup.mpAccessToken')
                 ->has('setup.mail')
                 ->has('mail.host')
@@ -69,10 +69,10 @@ class SettingsPanelTest extends TestCase
     public function test_organizer_can_send_test_email(): void
     {
         Mail::fake();
-        $organizer = PanelUser::factory()->create(['email' => 'op@test.com']);
+        $organizer = PlatformAdmin::factory()->create(['email' => 'op@test.com']);
 
-        $this->actingAs($organizer, 'painel')
-            ->postJson(route('admin.settings.test-mail'))
+        $this->actingAs($organizer, 'admin')
+            ->postJson(route('super.settings.test-mail'))
             ->assertOk()
             ->assertJson(['message' => 'E-mail de teste enviado para op@test.com.']);
 
@@ -113,7 +113,7 @@ class SettingsPanelTest extends TestCase
         $buyer = User::factory()->create();
 
         // Chamada JSON sem login do painel: 401 (visita normal redireciona ao login).
-        $this->actingAs($buyer)->postJson(route('admin.settings.test-mail'))->assertUnauthorized();
-        $this->actingAs($buyer)->post(route('admin.settings.test-mail'))->assertRedirect(route('painel.login'));
+        $this->actingAs($buyer)->postJson(route('super.settings.test-mail'))->assertUnauthorized();
+        $this->actingAs($buyer)->post(route('super.settings.test-mail'))->assertRedirect(route('super.login'));
     }
 }

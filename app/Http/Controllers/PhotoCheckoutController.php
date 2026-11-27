@@ -126,7 +126,7 @@ class PhotoCheckoutController extends Controller
             'priceSummary' => self::priceSummary($order),
             'payUrl' => route('photos.checkout.pay', $order->reference),
             'statusUrl' => route('photos.checkout.status', $order->reference),
-            'mpPublicKey' => MercadoPagoSettings::publicKey(),
+            'mpPublicKey' => MercadoPagoSettings::publicKey($order->organization_id),
             'needsDocument' => blank($order->user->cpf),
             // Pix vivo ao recarregar: restaura o QR e o polling.
             'pendingPayment' => $order->status === Order::STATUS_PENDING && $order->payment !== null

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OrderPhoto extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return BelongsTo<Order, $this> */
@@ -31,5 +34,10 @@ class OrderPhoto extends Model
     public function photo(): BelongsTo
     {
         return $this->belongsTo(Photo::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

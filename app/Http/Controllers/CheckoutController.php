@@ -74,7 +74,7 @@ class CheckoutController extends Controller
             'statusUrl' => route('checkout.status', $reservation),
             'releaseUrl' => route('reservations.release', $reservation),
             'extendUrl' => route('checkout.extend', $reservation),
-            'mpPublicKey' => MercadoPagoSettings::publicKey(),
+            'mpPublicKey' => MercadoPagoSettings::publicKey($reservation->session->event->organization_id),
             'pendingPayment' => $pendingPayment,
             'appliedCoupon' => $appliedCoupon?->code,
             // Comprador sem CPF cadastrado precisa informar no checkout —

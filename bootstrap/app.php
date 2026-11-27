@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,12 +27,27 @@ return Application::configure(basePath: dirname(__DIR__))
             'can-organize' => EnsureCanManageOrganization::class,
         ]);
 
+        // Multi-tenant: a organização do painel precisa estar definida ANTES de
+        // resolver {event}, {order} etc. da URL, senão o filtro não vale no
+        // route model binding e um id de outro organizador abriria a página.
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureCanManage::class);
+
         // Sem sessão de painel, /painel/* vai para o login do painel — nunca
         // para o /login do comprador, que é outro guard.
         $middleware->redirectGuestsTo(
-            fn (Request $request) => $request->is('painel', 'painel/*')
-                ? route('painel.login')
-                : route('login'),
+            fn (Request $request) => match (true) {
+                $request->is('painel', 'painel/*') => route('painel.login'),
+                $request->is('admin', 'admin/*') => route('super.login'),
+                default => route('login'),
+            },
+        );
+        // Logado e voltando ao login: cada área volta para a própria casa.
+        $middleware->redirectUsersTo(
+            fn (Request $request) => match (true) {
+                $request->is('admin/*') => route('super.dashboard'),
+                $request->is('painel/*', 'organizador/*') => route('painel'),
+                default => '/',
+            },
         );
 
         // Webhooks externos não enviam token CSRF.

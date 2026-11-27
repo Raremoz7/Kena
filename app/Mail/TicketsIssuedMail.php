@@ -42,6 +42,8 @@ class TicketsIssuedMail extends Mailable implements ShouldQueue
                 'order' => $this->order,
                 'event' => $session->event,
                 'venue' => $session->event->venue,
+                'organizerName' => $session->event->organization?->name,
+                'organizerEmail' => $session->event->organization?->contact_email,
                 'sessionLabel' => CatalogPresenter::sessionLabel($session),
                 'ticketsUrl' => $this->preview
                     ? route('tickets.index')

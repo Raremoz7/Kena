@@ -13,7 +13,11 @@ use App\Models\PhotoGallery;
 class PhotoPricing
 {
     /**
-     * @return array{qty: int, unit_price_cents: int, base_price_cents: int, subtotal_cents: int, discount_cents: int, total_cents: int}
+     * Taxa da plataforma nas fotos: INTERNA, sobre o valor das fotos já com o
+     * desconto do pacote (separada da do ingresso). Não soma no total do
+     * comprador: sai do que o organizador recebe.
+     *
+     * @return array{qty: int, unit_price_cents: int, base_price_cents: int, subtotal_cents: int, discount_cents: int, fee_cents: int, total_cents: int}
      */
     public function quote(PhotoGallery $gallery, int $qty): array
     {
@@ -30,6 +34,11 @@ class PhotoPricing
             }
         }
 
+        $photos = $qty * $unit;
+        $gallery->loadMissing('event.organization');
+        $percent = $gallery->event->organization?->photoFeePercent() ?? (float) config('kena.photo_fee_percent', 6);
+        $fee = (int) round($photos * $percent / 100);
+
         return [
             'qty' => $qty,
             'unit_price_cents' => $unit,
@@ -37,7 +46,8 @@ class PhotoPricing
             // Subtotal a preço avulso e o desconto do pacote: o comprador vê a economia.
             'subtotal_cents' => $qty * $base,
             'discount_cents' => max(0, $qty * ($base - $unit)),
-            'total_cents' => $qty * $unit,
+            'fee_cents' => $fee,
+            'total_cents' => $photos,
         ];
     }
 }

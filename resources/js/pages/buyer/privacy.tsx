@@ -1,3 +1,5 @@
+// MINUTA: atualizada para o modelo com vários organizadores e para as fotos.
+// Precisa de revisão jurídica antes de ir para produção.
 import {
     LegalSection,
     LegalShell,
@@ -8,6 +10,7 @@ import type { LegalPageProps } from '@/components/organisms/LegalPage';
 export default function Privacy({
     company,
     support,
+    dpo,
     updatedAt,
 }: LegalPageProps) {
     return (
@@ -18,9 +21,13 @@ export default function Privacy({
                 <p>
                     Esta política explica quais dados pessoais o Kena coleta,
                     por que e como você pode exercer seus direitos conforme a
-                    Lei Geral de Proteção de Dados (Lei 13.709/2018). O
-                    controlador dos dados é {company.name}
-                    {company.document ? ` (${company.document})` : ''}.
+                    Lei Geral de Proteção de Dados (Lei 13.709/2018). O Kena é
+                    operado por {company.name}
+                    {company.document ? ` (${company.document})` : ''}, que é
+                    controladora dos dados da sua conta e das compras feitas na
+                    plataforma. O organizador de cada evento recebe os dados
+                    necessários para realizar o evento e responde pelo uso que
+                    faz deles.
                 </p>
             }
         >
@@ -53,6 +60,17 @@ export default function Privacy({
                         status do pagamento.
                     </li>
                     <li>
+                        <strong className="text-foreground">
+                            Fotos do evento:
+                        </strong>{' '}
+                        quando o organizador publica uma galeria, as fotos podem
+                        trazer a sua imagem. O fotógrafo pode marcar o nome das
+                        pessoas nas fotos, e o Kena usa essa marcação para
+                        montar o filtro por rosto (um recorte do rosto e o
+                        nome). Pedidos de retirada guardam o nome do
+                        responsável, o contato e o nome da criança.
+                    </li>
+                    <li>
                         <strong className="text-foreground">Navegação:</strong>{' '}
                         endereço IP e cookies necessários para manter sua sessão
                         e a segurança do site. Não usamos cookies de
@@ -75,6 +93,10 @@ export default function Privacy({
                         Enviar avisos sobre a sua compra: confirmação, lembrete,
                         alterações e cancelamento do evento.
                     </li>
+                    <li>
+                        Mostrar e vender as fotos do evento e permitir que cada
+                        família encontre as suas pelo filtro por rosto.
+                    </li>
                     <li>Cumprir obrigações legais e fiscais.</li>
                 </ul>
                 <p>
@@ -89,14 +111,18 @@ export default function Privacy({
                         <strong className="text-foreground">
                             Organizador do evento:
                         </strong>{' '}
-                        nome dos portadores e lista de ingressos, para a
-                        organização e o controle de entrada.
+                        nome e e-mail dos titulares, assentos, pedidos e
+                        registro de entrada, para a organização, o atendimento e
+                        o controle de entrada do evento que você comprou. Cada
+                        organizador só vê os dados dos próprios eventos.
                     </li>
                     <li>
                         <strong className="text-foreground">
                             Mercado Pago:
                         </strong>{' '}
-                        processamento dos pagamentos.
+                        processamento dos pagamentos, na conta do organizador do
+                        evento. Os dados do pagador (nome, e-mail e CPF) são
+                        enviados ao Mercado Pago para a cobrança.
                     </li>
                     <li>
                         <strong className="text-foreground">Brevo:</strong>{' '}
@@ -127,7 +153,41 @@ export default function Privacy({
                     sobre compartilhamento e revogação de consentimento. Você
                     também pode excluir sua conta em Configurações. Para
                     qualquer pedido, fale com a gente:{' '}
-                    <SupportContact support={support} />.
+                    <SupportContact support={support} />. Pedidos sobre o uso
+                    que um organizador faz dos seus dados também podem ser
+                    feitos diretamente a ele, pelo contato na página do evento.
+                </p>
+                <p>
+                    Responsáveis podem pedir a retirada de uma criança do filtro
+                    por rosto direto na galeria de fotos.
+                </p>
+            </LegalSection>
+
+            <LegalSection title="Encarregado de dados">
+                <p>
+                    {dpo.name ? (
+                        <>
+                            O encarregado pelo tratamento de dados pessoais é{' '}
+                            {dpo.name}
+                            {dpo.email ? (
+                                <>
+                                    , pelo e-mail{' '}
+                                    <a
+                                        href={`mailto:${dpo.email}`}
+                                        className="text-foreground underline underline-offset-2"
+                                    >
+                                        {dpo.email}
+                                    </a>
+                                </>
+                            ) : null}
+                            .
+                        </>
+                    ) : (
+                        <>
+                            Para assuntos de dados pessoais, fale com a gente:{' '}
+                            <SupportContact support={support} />.
+                        </>
+                    )}
                 </p>
             </LegalSection>
 

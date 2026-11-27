@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\User;
 
 return [
@@ -50,6 +51,13 @@ return [
             'driver' => 'session',
             'provider' => 'panel_users',
         ],
+
+        // Super admin da plataforma (Somo): /admin. Conta separada, fora de
+        // qualquer organização.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'platform_admins',
+        ],
     ],
 
     /*
@@ -78,6 +86,11 @@ return [
         'panel_users' => [
             'driver' => 'eloquent',
             'model' => PanelUser::class,
+        ],
+
+        'platform_admins' => [
+            'driver' => 'eloquent',
+            'model' => PlatformAdmin::class,
         ],
 
         // 'users' => [
@@ -111,6 +124,23 @@ return [
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,
+        ],
+
+        // "Esqueci minha senha" do painel (organizador/staff).
+        'panel_users' => [
+            'provider' => 'panel_users',
+            'table' => 'panel_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Convite de organizador criado pelo super admin: mesmo fluxo de criar
+        // senha, com prazo maior (7 dias).
+        'panel_invites' => [
+            'provider' => 'panel_users',
+            'table' => 'panel_invite_tokens',
+            'expire' => 10080,
+            'throttle' => 0,
         ],
     ],
 

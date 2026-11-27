@@ -11,8 +11,17 @@ return [
      */
     'max_tickets_per_buyer' => (int) env('KENA_MAX_TICKETS_PER_BUYER', 8),
 
-    /** Taxa de serviço (% sobre subtotal já com desconto). */
-    'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 10),
+    /**
+     * Taxa da plataforma nos ingressos (% sobre o valor pago, já com desconto).
+     * Interna: não soma no preço do comprador; sai do que o organizador recebe.
+     */
+    'service_fee_percent' => (float) env('KENA_SERVICE_FEE_PERCENT', 6),
+
+    /**
+     * Taxa da plataforma nas fotos (% sobre o valor das fotos), independente da
+     * do ingresso e também interna. Cada organização pode ter a sua (/admin).
+     */
+    'photo_fee_percent' => (float) env('KENA_PHOTO_FEE_PERCENT', 6),
 
     /** Prazo (horas antes da sessão) até quando o comprador pode pedir reembolso sozinho. */
     'refund_deadline_hours' => (int) env('KENA_REFUND_DEADLINE_HOURS', 48),
@@ -34,6 +43,27 @@ return [
         'webhook_secret' => env('MP_WEBHOOK_SECRET'),
         'pix_expiration_minutes' => (int) env('MP_PIX_EXPIRATION_MINUTES', 30),
         'statement_descriptor' => env('MP_STATEMENT_DESCRIPTOR', 'KENA INGRESSOS'),
+
+        /**
+         * "Conectar com Mercado Pago" (OAuth): a venda cai na conta do
+         * organizador e a taxa de serviço vai para a plataforma como
+         * application_fee. DESLIGADO por padrão: ligar só com aprovação formal.
+         * Ligado, o token e a Public Key digitados no painel/.env deixam de valer.
+         */
+        'oauth' => [
+            'enabled' => (bool) env('KENA_MP_OAUTH_ENABLED', false),
+            'client_id' => env('MP_OAUTH_CLIENT_ID'),
+            'client_secret' => env('MP_OAUTH_CLIENT_SECRET'),
+            // Vazio = rota do callback do painel (precisa estar cadastrada igual na aplicação do MP).
+            'redirect_uri' => env('MP_OAUTH_REDIRECT_URI'),
+            'auth_url' => env('MP_OAUTH_AUTH_URL', 'https://auth.mercadopago.com/authorization'),
+            // Exige "PKCE" habilitado nos detalhes da aplicação do MP.
+            'pkce' => (bool) env('MP_OAUTH_PKCE', true),
+            // true = credenciais de teste (sandbox) na troca do code.
+            'test_token' => (bool) env('MP_OAUTH_TEST_TOKEN', false),
+            // Renova o token quando faltar menos que isso para vencer (validade: 180 dias).
+            'refresh_before_days' => (int) env('MP_OAUTH_REFRESH_BEFORE_DAYS', 30),
+        ],
     ],
 
     /**
@@ -53,6 +83,20 @@ return [
         ],
     ],
 
+    /**
+     * Cadastro aberto de organizadores (multi-tenant). DESLIGADO por padrão:
+     * ligar só com aprovação formal. Também exige o OAuth do Mercado Pago ligado.
+     */
+    'organizer_signup' => [
+        'enabled' => (bool) env('KENA_ORGANIZER_SIGNUP_ENABLED', false),
+    ],
+
+    /**
+     * E-mail da conta do painel dona da organização principal (id 1, com os
+     * dados de antes do multi-tenant). Usado uma vez, na migration que dá nome a ela.
+     */
+    'principal_owner_email' => env('KENA_PRINCIPAL_OWNER_EMAIL'),
+
     /** Canal de atendimento exibido em Ajuda, Termos e Privacidade. */
     'support' => [
         'email' => env('KENA_SUPPORT_EMAIL'),
@@ -63,6 +107,12 @@ return [
     'legal' => [
         'name' => env('KENA_LEGAL_NAME', 'Somo'),
         'document' => env('KENA_LEGAL_DOCUMENT'), // CNPJ ou CPF
+        // Endereço físico do fornecedor: o Decreto 7.962/2013 (comércio
+        // eletrônico) pede nome, CNPJ/CPF e endereço em local de destaque.
+        'address' => env('KENA_LEGAL_ADDRESS'),
+        // Encarregado de dados (LGPD art. 41): identidade e contato públicos.
+        'dpo_name' => env('KENA_DPO_NAME'),
+        'dpo_email' => env('KENA_DPO_EMAIL'),
         'updated_at' => env('KENA_LEGAL_UPDATED_AT', '22/10/2026'),
     ],
 ];

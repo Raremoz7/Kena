@@ -108,6 +108,11 @@ const groups: AdminNavGroup[] = [
                 icon: 'settings',
                 organizerOnly: true,
             },
+            {
+                label: 'Minha conta',
+                href: '/painel/conta',
+                icon: 'user',
+            },
         ],
     },
 ];
@@ -162,6 +167,7 @@ export function AdminUserCard({ onNavigate }: { onNavigate?: () => void }) {
                 </p>
                 <p className="truncate font-body text-xs text-faint">
                     {user.role === 'organizer' ? 'Organizador' : 'Equipe'}
+                    {user.organizationName && ` · ${user.organizationName}`}
                 </p>
             </div>
             <Link

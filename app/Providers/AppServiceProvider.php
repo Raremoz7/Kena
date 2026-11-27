@@ -58,17 +58,21 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function invalidateSessionOptionsCache(): void
     {
-        $forget = static function (): void {
-            SessionOptionsCache::forget();
+        // O cache é por organização: invalida só o da organização do evento.
+        $forSession = static function (EventSession $session): void {
+            SessionOptionsCache::forget(Event::withoutGlobalScopes()->whereKey($session->event_id)->value('organization_id'));
+        };
+        $forEvent = static function (Event $event): void {
+            SessionOptionsCache::forget($event->organization_id);
         };
 
-        EventSession::saved($forget);
-        EventSession::deleted($forget);
+        EventSession::saved($forSession);
+        EventSession::deleted($forSession);
 
         // Event::deleted é necessário à parte: apagar o evento remove as sessões
         // por cascade no banco, o que não dispara EventSession::deleted.
-        Event::saved($forget);
-        Event::deleted($forget);
+        Event::saved($forEvent);
+        Event::deleted($forEvent);
     }
 
     /**

@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button';
-import { Icon  } from '@/components/atoms/Icon';
-import type {IconName} from '@/components/atoms/Icon';
+import { Icon } from '@/components/atoms/Icon';
+import type { IconName } from '@/components/atoms/Icon';
 import { LotBanner } from '@/components/molecules/LotBanner';
 import type { LotInfo } from '@/components/molecules/LotBanner';
 import { EventHero } from '@/components/organisms/EventHero';
@@ -20,14 +20,24 @@ interface SessionOption {
     seatsUrl: string;
 }
 
-function InfoCard({ icon, label, value }: { icon: IconName; label: string; value: string }) {
+function InfoCard({
+    icon,
+    label,
+    value,
+}: {
+    icon: IconName;
+    label: string;
+    value: string;
+}) {
     return (
         <div className="rounded-[10px] border border-border bg-surface p-4">
             <div className="flex items-center gap-2 text-faint">
                 <Icon name={icon} size={16} />
                 <span className="kicker">{label}</span>
             </div>
-            <p className="mt-2 font-body text-sm font-medium text-foreground">{value}</p>
+            <p className="mt-2 font-body text-sm font-medium text-foreground">
+                {value}
+            </p>
         </div>
     );
 }
@@ -83,7 +93,9 @@ export default function EventPage({
             <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
                 <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
                     <div>
-                        <h2 className="kicker text-faint">Sobre o espetáculo</h2>
+                        <h2 className="kicker text-faint">
+                            Sobre o espetáculo
+                        </h2>
                         <p className="mt-3 max-w-prose font-body text-[15px] leading-relaxed text-muted-foreground">
                             {event.description}
                         </p>
@@ -94,8 +106,36 @@ export default function EventPage({
                                 label="Data"
                                 value={`${event.dateLabel} · ${event.timeLabel}`}
                             />
-                            <InfoCard icon="clock" label="Duração" value={event.durationLabel} />
+                            <InfoCard
+                                icon="clock"
+                                label="Duração"
+                                value={event.durationLabel}
+                            />
                         </div>
+
+                        {event.organizer && (
+                            <p className="mt-6 font-body text-sm text-muted-foreground">
+                                Organização:{' '}
+                                <Link
+                                    href={event.organizer.url}
+                                    className="font-medium text-accent-text underline-offset-4 hover:underline"
+                                >
+                                    {event.organizer.name}
+                                </Link>
+                                {event.organizer.email && (
+                                    <>
+                                        {' '}
+                                        · Dúvidas e reembolsos:{' '}
+                                        <a
+                                            href={`mailto:${event.organizer.email}`}
+                                            className="text-accent-text underline-offset-4 hover:underline"
+                                        >
+                                            {event.organizer.email}
+                                        </a>
+                                    </>
+                                )}
+                            </p>
+                        )}
                     </div>
 
                     <aside className="lg:sticky lg:top-20 lg:self-start">
@@ -111,7 +151,9 @@ export default function EventPage({
                 <section id="assentos" className="mt-12 scroll-mt-20">
                     {multi ? (
                         <>
-                            <h2 className="kicker text-faint">Escolha a sessão</h2>
+                            <h2 className="kicker text-faint">
+                                Escolha a sessão
+                            </h2>
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
                                 {event.venue.name}, {event.venue.city}
                             </p>
@@ -125,10 +167,15 @@ export default function EventPage({
                                             className="flex items-center justify-between gap-4 rounded-card border border-border bg-surface p-4"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <Icon name="calendar" size={18} className="text-accent" />
+                                                <Icon
+                                                    name="calendar"
+                                                    size={18}
+                                                    className="text-accent"
+                                                />
                                                 <div>
                                                     <p className="font-body text-sm font-medium text-foreground">
-                                                        {s.dateLabel} · {s.timeLabel}
+                                                        {s.dateLabel} ·{' '}
+                                                        {s.timeLabel}
                                                     </p>
                                                     <p className="font-body text-xs text-faint">
                                                         {soldOut
@@ -138,12 +185,17 @@ export default function EventPage({
                                                 </div>
                                             </div>
                                             {soldOut ? (
-                                                <span className="font-body text-xs text-faint">Esgotado</span>
+                                                <span className="font-body text-xs text-faint">
+                                                    Esgotado
+                                                </span>
                                             ) : (
                                                 <Button asChild size="sm">
                                                     <Link href={s.seatsUrl}>
                                                         Escolher assentos
-                                                        <Icon name="arrow-right" size={16} />
+                                                        <Icon
+                                                            name="arrow-right"
+                                                            size={16}
+                                                        />
                                                     </Link>
                                                 </Button>
                                             )}
@@ -154,9 +206,12 @@ export default function EventPage({
                         </>
                     ) : (
                         <>
-                            <h2 className="kicker text-faint">Escolha seus assentos</h2>
+                            <h2 className="kicker text-faint">
+                                Escolha seus assentos
+                            </h2>
                             <p className="mt-2 max-w-prose font-body text-sm text-muted-foreground">
-                                {sessionLabel} · {event.venue.name}, {event.venue.city}
+                                {sessionLabel} · {event.venue.name},{' '}
+                                {event.venue.city}
                             </p>
                             <LotBanner lot={lot} courtesyOnly={courtesyOnly} className="mt-3" />
                             {shownSeatMap ? (

@@ -12,12 +12,36 @@ export type PanelUser = {
     name: string;
     email: string;
     role: 'organizer' | 'staff';
+    organizationName: string | null;
 };
 
-/** Comprador e painel são independentes: os dois podem ser nulos ao mesmo tempo. */
+/** Super admin da plataforma (/admin): conta separada da do painel. */
+export type SuperAdmin = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+/** Comprador, painel e super admin são independentes: podem ser nulos ao mesmo tempo. */
 export type Auth = {
     user: User | null;
     panelUser: PanelUser | null;
+    superAdmin: SuperAdmin | null;
+};
+
+/** Algo impede a organização de vender (aviso fixo no painel). */
+export type OrganizationAlert = {
+    kind: 'warning' | 'danger';
+    message: string;
+    actionUrl: string | null;
+    actionLabel: string | null;
+};
+
+/** Super admin "dentro" do painel de um organizador. */
+export type Impersonation = {
+    adminName: string;
+    organizationName: string;
+    stopUrl: string;
 };
 
 /* @chisel-passkeys */

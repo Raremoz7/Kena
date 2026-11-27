@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,8 @@ use Illuminate\Support\Carbon;
  */
 class EventSession extends Model
 {
+    use ScopedThroughParent;
+
     protected $table = 'event_sessions';
 
     protected $guarded = [];
@@ -56,14 +59,18 @@ class EventSession extends Model
         return $this->hasMany(SessionSeat::class, 'session_id');
     }
 
-    /** Sessão vendável: evento publicado, sessão não cancelada e ainda no futuro. */
+    /**
+     * Sessão vendável: evento publicado, sessão não cancelada, ainda no futuro
+     * e organizador apto a vender (não suspenso e, com OAuth, com conta conectada).
+     */
     public function isSellable(): bool
     {
-        $this->loadMissing('event');
+        $this->loadMissing('event.organization');
 
         return $this->status !== 'cancelled'
             && $this->starts_at->isFuture()
-            && in_array($this->event->status, ['on_sale', 'sold_out'], true);
+            && in_array($this->event->status, ['on_sale', 'sold_out'], true)
+            && ($this->event->organization === null || $this->event->organization->canSell());
     }
 
     /** Transferência bloqueada quando faltam <= 24h para a sessão. */
@@ -76,5 +83,10 @@ class EventSession extends Model
     public function refundLocksAt(): CarbonInterface
     {
         return $this->starts_at->copy()->subHours((int) config('kena.refund_deadline_hours', 48));
+    }
+
+    public function organizationParent(): string
+    {
+        return 'event';
     }
 }

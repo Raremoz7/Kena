@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -18,10 +19,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $pix_copy_paste
  * @property Carbon|null $pix_expires_at
  * @property array<string, mixed>|null $payload
+ * @property int|null $mercadopago_account_id
  * @property-read Order $order
+ * @property-read MercadoPagoAccount|null $mercadopagoAccount
  */
 class Payment extends Model
 {
+    use ScopedThroughParent;
+
     public const METHOD_CARD = 'card';
 
     public const METHOD_PIX = 'pix';
@@ -54,5 +59,20 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Conta do Mercado Pago (OAuth) que criou o pagamento.
+     *
+     * @return BelongsTo<MercadoPagoAccount, $this>
+     */
+    public function mercadopagoAccount(): BelongsTo
+    {
+        return $this->belongsTo(MercadoPagoAccount::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

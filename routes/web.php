@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\BuyerController as AdminBuyerController;
 use App\Http\Controllers\Admin\CheckInController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourtesyController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\LotController;
+use App\Http\Controllers\Admin\MercadoPagoConnectController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PhotoGalleryController as AdminPhotoGalleryController;
 use App\Http\Controllers\Admin\SeatController;
@@ -23,12 +25,21 @@ use App\Http\Controllers\EmailCodeController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\MyPhotosController;
+use App\Http\Controllers\Painel\OrganizerSignupController;
 use App\Http\Controllers\Painel\PanelLoginController;
+use App\Http\Controllers\Painel\PasswordResetController as PanelPasswordResetController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\PhotoCheckoutController;
 use App\Http\Controllers\PhotoGalleryController;
 use App\Http\Controllers\PhotoImageController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\SuperAdmin\AuditLogController as SuperAdminAuditLogController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\EventController as SuperAdminEventController;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
+use App\Http\Controllers\SuperAdmin\LoginController as SuperAdminLoginController;
+use App\Http\Controllers\SuperAdmin\OrderController as SuperAdminOrderController;
+use App\Http\Controllers\SuperAdmin\OrganizationController as SuperAdminOrganizationController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -38,9 +49,11 @@ Route::get('/', [BuyerController::class, 'events'])->name('home');
 Route::get('/eventos', [BuyerController::class, 'events'])->name('events.index');
 Route::get('/ajuda', [LegalController::class, 'help'])->name('help');
 Route::get('/termos', [LegalController::class, 'terms'])->name('terms');
+Route::get('/termos/organizadores', [LegalController::class, 'organizerTerms'])->name('terms.organizers');
 Route::get('/privacidade', [LegalController::class, 'privacy'])->name('privacy');
 Route::redirect('/agenda', '/eventos');
 Route::get('/e/{slug}', [BuyerController::class, 'event'])->name('events.show');
+Route::get('/o/{slug}', [BuyerController::class, 'organizer'])->name('organizers.show');
 Route::get('/e/{slug}/sessoes/{session}', [BuyerController::class, 'seats'])->name('sessions.seats');
 
 // Fotos do espetáculo à venda
@@ -141,12 +154,70 @@ Route::middleware('guest:painel')->group(function () {
     Route::post('/painel/login', [PanelLoginController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('painel.login.store');
+    // Esqueci minha senha (painel).
+    Route::get('/painel/esqueci-senha', [PanelPasswordResetController::class, 'request'])->name('painel.password.request');
+    Route::post('/painel/esqueci-senha', [PanelPasswordResetController::class, 'send'])
+        ->middleware('throttle:5,1')
+        ->name('painel.password.email');
+    Route::get('/painel/redefinir-senha/{token}', [PanelPasswordResetController::class, 'edit'])->name('painel.password.reset');
+    Route::post('/painel/redefinir-senha', [PanelPasswordResetController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('painel.password.update');
 });
 Route::post('/painel/logout', [PanelLoginController::class, 'destroy'])->name('painel.logout');
 
+// Cadastro aberto de organizador (404 enquanto KENA_ORGANIZER_SIGNUP_ENABLED estiver desligado).
+Route::middleware('guest:painel')->group(function () {
+    Route::get('/organizador/cadastro', [OrganizerSignupController::class, 'show'])->name('organizador.cadastro');
+    Route::post('/organizador/cadastro', [OrganizerSignupController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('organizador.cadastro.store');
+});
+Route::get('/organizador/verificar/{panelUser}', [OrganizerSignupController::class, 'verify'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('organizador.verificar');
+
+// Super admin da plataforma (Somo): conta e login próprios, fora de qualquer
+// organização. Vê todos os organizadores; não passa pelo filtro do painel.
+Route::middleware('guest:admin')->group(function () {
+    Route::get('/admin/login', [SuperAdminLoginController::class, 'show'])->name('super.login');
+    Route::post('/admin/login', [SuperAdminLoginController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('super.login.store');
+});
+Route::post('/admin/logout', [SuperAdminLoginController::class, 'destroy'])->name('super.logout');
+
+// auth.session: trocar a senha encerra as outras sessões abertas dessa conta.
+Route::middleware(['auth:admin', 'auth.session'])->prefix('admin')->name('super.')->group(function () {
+    Route::get('/', SuperAdminDashboardController::class)->name('dashboard');
+    Route::get('/organizacoes', [SuperAdminOrganizationController::class, 'index'])->name('organizations');
+    Route::post('/organizacoes', [SuperAdminOrganizationController::class, 'store'])->name('organizations.store');
+    Route::get('/registro', [SuperAdminAuditLogController::class, 'index'])->name('audit');
+    Route::post('/organizacoes/{organization}/suspender', [SuperAdminOrganizationController::class, 'suspend'])->name('organizations.suspend');
+    Route::post('/organizacoes/{organization}/reativar', [SuperAdminOrganizationController::class, 'reactivate'])->name('organizations.reactivate');
+    Route::put('/organizacoes/{organization}/taxa', [SuperAdminOrganizationController::class, 'fee'])->name('organizations.fee');
+    Route::post('/organizacoes/{organization}/entrar', [ImpersonationController::class, 'start'])->name('organizations.impersonate');
+    Route::get('/eventos', [SuperAdminEventController::class, 'index'])->name('events');
+    Route::get('/pedidos', [SuperAdminOrderController::class, 'index'])->name('orders');
+    Route::get('/config', [SettingsController::class, 'showPlatform'])->name('settings');
+    Route::post('/config', [SettingsController::class, 'updatePlatform'])->name('settings.update');
+    Route::post('/config/testar-email', [SettingsController::class, 'testMail'])->name('settings.test-mail');
+    Route::post('/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('settings.test-mp');
+});
+
 // Painel — shell acessível a organizer/staff. Staff só alcança o check-in.
-Route::middleware(['auth:painel', 'can-manage'])->group(function () {
+// auth.session: trocar ou redefinir a senha encerra as outras sessões abertas
+// dessa conta (outros navegadores e "lembrar de mim").
+Route::middleware(['auth:painel', 'auth.session', 'can-manage'])->group(function () {
     Route::get('/painel', [AdminController::class, 'overview'])->name('painel');
+    // Minha conta (organizador e staff): nome e senha.
+    Route::get('/painel/conta', [AccountController::class, 'show'])->name('admin.account');
+    Route::put('/painel/conta', [AccountController::class, 'update'])->name('admin.account.update');
+    Route::put('/painel/conta/senha', [AccountController::class, 'password'])
+        ->middleware('throttle:10,1')
+        ->name('admin.account.password');
+    // Super admin "dentro" de um organizador: volta para o /admin.
+    Route::post('/painel/sair-do-modo-admin', [ImpersonationController::class, 'stop'])->name('painel.impersonation.stop');
 
     // Check-in scanner (staff + organizer)
     Route::get('/painel/checkin', [CheckInController::class, 'show'])->name('admin.checkin');
@@ -230,8 +301,12 @@ Route::middleware(['auth:painel', 'can-manage'])->group(function () {
 
         Route::get('/painel/config', [SettingsController::class, 'show'])->name('admin.settings');
         Route::post('/painel/config', [SettingsController::class, 'update'])->name('admin.settings.update');
-        Route::post('/painel/config/testar-email', [SettingsController::class, 'testMail'])->name('admin.settings.test-mail');
         Route::post('/painel/config/testar-mercadopago', [SettingsController::class, 'testMercadoPago'])->name('admin.settings.test-mp');
+        // Conectar com Mercado Pago (OAuth). 404 enquanto KENA_MP_OAUTH_ENABLED estiver desligado.
+        Route::get('/painel/config/mercadopago/conectar', [MercadoPagoConnectController::class, 'connect'])->name('admin.settings.mp.connect');
+        Route::get('/painel/config/mercadopago/callback', [MercadoPagoConnectController::class, 'callback'])->name('admin.settings.mp.callback');
+        Route::post('/painel/config/mercadopago/desconectar', [MercadoPagoConnectController::class, 'disconnect'])->name('admin.settings.mp.disconnect');
+
     });
 });
 

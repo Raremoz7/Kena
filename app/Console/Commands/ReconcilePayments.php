@@ -21,7 +21,7 @@ class ReconcilePayments extends Command
 
     public function handle(PaymentService $payments, PaymentGateway $gateway): int
     {
-        if (blank(MercadoPagoSettings::accessToken())) {
+        if (! MercadoPagoSettings::anyCredentials()) {
             $this->info('Sem credenciais do Mercado Pago — nada a reconciliar.');
 
             return self::SUCCESS;

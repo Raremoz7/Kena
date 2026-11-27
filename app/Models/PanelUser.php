@@ -2,25 +2,33 @@
 
 namespace App\Models;
 
+use App\Mail\PanelPasswordResetMail;
+use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\PanelUserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Conta do painel — organizador ou staff de check-in. Vive fora de `users`,
  * que e so do comprador: guard proprio, sessao propria, sem ponte entre os dois.
  *
+ * @property int $id
  * @property string $name
  * @property string $email
  * @property string $role
+ * @property Carbon|null $email_verified_at
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'organization_id', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class PanelUser extends Authenticatable
 {
+    use BelongsToOrganization;
+
     /** @use HasFactory<PanelUserFactory> */
     use HasFactory, Notifiable;
 
@@ -46,6 +54,16 @@ class PanelUser extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'email_verified_at' => 'datetime',
         ];
+    }
+
+    /** Link do "esqueci minha senha" do painel (não o do comprador). */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $url = route('painel.password.reset', ['token' => $token, 'email' => $this->email]);
+        $ttl = (int) config('auth.passwords.panel_users.expire', 60);
+
+        Mail::to($this->email)->send(new PanelPasswordResetMail((string) $this->name, $url, $ttl));
     }
 }

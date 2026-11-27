@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class OrderItem extends Model
 {
+    use ScopedThroughParent;
+
     protected $guarded = [];
 
     /** @return BelongsTo<Order, $this> */
@@ -29,5 +32,10 @@ class OrderItem extends Model
     public function sessionSeat(): BelongsTo
     {
         return $this->belongsTo(SessionSeat::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

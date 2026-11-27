@@ -2,22 +2,108 @@
 
 namespace App\Support;
 
+use App\Models\MercadoPagoAccount;
+use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\Setting;
+use App\Services\Payments\MercadoPagoOAuth;
 
 /**
- * Credenciais efetivas do Mercado Pago: o que foi salvo no painel (Setting,
- * encriptado) tem prioridade; cai para config/.env quando não há valor salvo.
+ * Credenciais efetivas do Mercado Pago.
+ *
+ * OAuth desligado (padrão): o que foi salvo no painel (Setting, encriptado) tem
+ * prioridade; cai para config/.env quando não há valor salvo. Essa credencial é
+ * da conta do Mercado Pago da organização principal (a de antes do multi-tenant)
+ * e vale SÓ para ela: outra organização não recebe token, senão a venda dela
+ * cairia na conta de outra pessoa.
+ * OAuth ligado: vale a conta conectada da organização dona do evento; sem
+ * conta, não há credencial.
+ *
+ * $organizationId null = organização do painel ou, fora dele, a principal.
  */
 final class MercadoPagoSettings
 {
-    public static function accessToken(): ?string
+    /** Token para vendas novas da organização. */
+    public static function accessToken(?int $organizationId = null): ?string
     {
-        return self::resolve('mp_access_token', 'access_token');
+        if (MercadoPagoOAuth::enabled()) {
+            $account = MercadoPagoAccount::forOrganization($organizationId);
+
+            return $account !== null ? app(MercadoPagoOAuth::class)->freshToken($account) : null;
+        }
+
+        return self::ownsLegacyCredentials($organizationId) ? self::resolve('mp_access_token', 'access_token') : null;
     }
 
-    public static function publicKey(): ?string
+    /** Com OAuth desligado, só a organização principal usa a credencial salva. */
+    public static function ownsLegacyCredentials(?int $organizationId = null): bool
     {
-        return self::resolve('mp_public_key', 'public_key');
+        return ($organizationId ?? CurrentOrganization::id() ?? Organization::DEFAULT_ID) === Organization::DEFAULT_ID;
+    }
+
+    /**
+     * Token para operar um pagamento já criado (consulta, estorno, cancelamento):
+     * o da conta que o criou, mesmo que ela não seja mais a conectada.
+     */
+    public static function accessTokenForPayment(string $gatewayPaymentId): ?string
+    {
+        if (MercadoPagoOAuth::enabled() && $gatewayPaymentId !== '') {
+            $payment = Payment::withoutGlobalScopes()
+                ->where('gateway_payment_id', $gatewayPaymentId)
+                ->first();
+
+            if ($payment !== null && $payment->mercadopago_account_id !== null) {
+                $account = MercadoPagoAccount::withoutGlobalScopes()->find($payment->mercadopago_account_id);
+
+                return $account !== null ? app(MercadoPagoOAuth::class)->freshToken($account) : null;
+            }
+
+            // Venda de antes de ligar o OAuth: foi criada com a credencial da
+            // plataforma, então consulta e estorno continuam nela (não na conta
+            // que o organizador conectou depois).
+            if ($payment !== null) {
+                return self::resolve('mp_access_token', 'access_token');
+            }
+        }
+
+        // OAuth desligado: todo pagamento já criado usou a credencial salva
+        // (só a organização principal vende assim), então consulta e estorno nela.
+        return MercadoPagoOAuth::enabled() ? self::accessToken() : self::resolve('mp_access_token', 'access_token');
+    }
+
+    /** Para telas: há token? Nunca dispara a renovação (que pode falhar). */
+    public static function hasAccessToken(?int $organizationId = null): bool
+    {
+        if (MercadoPagoOAuth::enabled()) {
+            $account = MercadoPagoAccount::forOrganization($organizationId);
+
+            return $account !== null && $account->isUsable();
+        }
+
+        return self::ownsLegacyCredentials($organizationId) && filled(self::resolve('mp_access_token', 'access_token'));
+    }
+
+    /** Há alguma credencial para operar (reconciliação em segundo plano)? */
+    public static function anyCredentials(): bool
+    {
+        return MercadoPagoOAuth::enabled()
+            ? MercadoPagoAccount::withoutGlobalScopes()->exists()
+            : filled(self::resolve('mp_access_token', 'access_token'));
+    }
+
+    /** Conta que recebe as vendas novas da organização (null com OAuth desligado). */
+    public static function currentAccountId(?int $organizationId = null): ?int
+    {
+        return MercadoPagoOAuth::enabled() ? MercadoPagoAccount::forOrganization($organizationId)?->id : null;
+    }
+
+    public static function publicKey(?int $organizationId = null): ?string
+    {
+        if (MercadoPagoOAuth::enabled()) {
+            return MercadoPagoAccount::forOrganization($organizationId)?->public_key;
+        }
+
+        return self::ownsLegacyCredentials($organizationId) ? self::resolve('mp_public_key', 'public_key') : null;
     }
 
     public static function webhookSecret(): ?string
@@ -25,13 +111,23 @@ final class MercadoPagoSettings
         return self::resolve('mp_webhook_secret', 'webhook_secret');
     }
 
-    public static function statementDescriptor(): string
+    /** Nome na fatura do cartão: o da organização ou, sem ele, o global. */
+    public static function statementDescriptor(?int $organizationId = null): string
     {
-        return self::resolve('mp_statement_descriptor', 'statement_descriptor') ?? 'KENA INGRESSOS';
+        $own = self::organization($organizationId)?->statement_descriptor;
+
+        return filled($own)
+            ? (string) $own
+            : (self::resolve('mp_statement_descriptor', 'statement_descriptor') ?? 'KENA INGRESSOS');
     }
 
-    public static function pixExpirationMinutes(): int
+    public static function pixExpirationMinutes(?int $organizationId = null): int
     {
+        $own = self::organization($organizationId)?->pix_expiration_minutes;
+        if ($own !== null && $own > 0) {
+            return $own;
+        }
+
         $saved = Setting::get('mp_pix_expiration');
 
         return (int) ($saved !== null && $saved !== '' ? $saved : config('kena.mercadopago.pix_expiration_minutes', 30));
@@ -40,6 +136,13 @@ final class MercadoPagoSettings
     public static function baseUrl(): string
     {
         return (string) config('kena.mercadopago.base_url', 'https://api.mercadopago.com');
+    }
+
+    private static function organization(?int $organizationId): ?Organization
+    {
+        $id = $organizationId ?? CurrentOrganization::id();
+
+        return $id !== null ? Organization::find($id) : null;
     }
 
     private static function resolve(string $settingKey, string $configKey): ?string

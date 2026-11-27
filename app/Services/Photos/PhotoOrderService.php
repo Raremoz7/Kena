@@ -89,7 +89,7 @@ class PhotoOrderService
                 'reference' => Codes::orderReference(),
                 'subtotal_cents' => $quote['subtotal_cents'],
                 'discount_cents' => $quote['discount_cents'],
-                'fee_cents' => 0,
+                'fee_cents' => $quote['fee_cents'],
                 'total_cents' => $quote['total_cents'],
                 'status' => Order::STATUS_PENDING,
             ]);

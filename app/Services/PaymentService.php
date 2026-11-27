@@ -6,6 +6,7 @@ use App\Exceptions\PaymentException;
 use App\Mail\OrderCancelledMail;
 use App\Mail\RefundConfirmedMail;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -15,6 +16,7 @@ use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\PaymentResult;
 use App\Services\Photos\PhotoOrderService;
 use App\Services\Photos\PhotoPricing;
+use App\Support\MercadoPagoSettings;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +49,7 @@ class PaymentService
         if ($reservation->session->status === 'cancelled') {
             throw new PaymentException('Esta sessão foi cancelada e não aceita mais pagamentos.');
         }
+        $this->ensureOrganizationCanSell($reservation->session->event->organization ?? null);
 
         $coupon = $this->coupons->resolveForReservation($input['coupon_code'] ?? null, $reservation);
         $order = $this->orders->createFromReservation($reservation, $coupon);
@@ -98,6 +101,7 @@ class PaymentService
         if (! $order->isPhotos()) {
             throw new PaymentException('Pedido inválido.');
         }
+        $this->ensureOrganizationCanSell($order->organization);
 
         $order = DB::transaction(function () use ($order): Order {
             $fresh = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -117,6 +121,7 @@ class PaymentService
                     'status' => Order::STATUS_PENDING,
                     'subtotal_cents' => $quote['subtotal_cents'],
                     'discount_cents' => $quote['discount_cents'],
+                    'fee_cents' => $quote['fee_cents'],
                     'total_cents' => $quote['total_cents'],
                 ]);
                 $fresh->photoItems()->update(['unit_price_cents' => $quote['unit_price_cents']]);
@@ -142,6 +147,16 @@ class PaymentService
             ->get();
 
         return $this->charge($order, $input, $pendingPayments, null);
+    }
+
+    /** Organizador suspenso ou sem conta do Mercado Pago (com OAuth) não recebe pagamentos. */
+    private function ensureOrganizationCanSell(?Organization $organization): void
+    {
+        if ($organization !== null && ! $organization->canSell()) {
+            throw new PaymentException($organization->isSuspended()
+                ? 'As vendas deste organizador estão suspensas.'
+                : 'Este organizador ainda não está recebendo pagamentos.');
+        }
     }
 
     /**
@@ -204,6 +219,8 @@ class PaymentService
         $payment = Payment::create([
             'order_id' => $order->id,
             'gateway' => 'mercadopago',
+            // Conta conectada por OAuth que recebeu a venda (null com OAuth desligado).
+            'mercadopago_account_id' => MercadoPagoSettings::currentAccountId($order->organization_id),
             'method' => $method,
             'status' => $result->status,
             'amount_cents' => $order->total_cents,

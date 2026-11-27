@@ -115,9 +115,7 @@ export default function PhotoGalleryLockedPage({
 
                     <div className="my-6 flex items-center gap-3">
                         <span className="h-px flex-1 bg-border" />
-                        <span className="font-body text-xs text-faint">
-                            ou
-                        </span>
+                        <span className="font-body text-xs text-faint">ou</span>
                         <span className="h-px flex-1 bg-border" />
                     </div>
 
@@ -145,8 +143,8 @@ export default function PhotoGalleryLockedPage({
                                     <span className="font-semibold break-all text-foreground">
                                         {account}
                                     </span>{' '}
-                                    não tem ingresso pago deste espetáculo. Tente
-                                    com a conta usada na compra.
+                                    não tem ingresso pago deste espetáculo.
+                                    Tente com a conta usada na compra.
                                 </p>
                             )}
                             <Link

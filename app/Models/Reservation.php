@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,8 @@ use Illuminate\Support\Carbon;
  */
 class Reservation extends Model
 {
+    use ScopedThroughParent;
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_EXPIRED = 'expired';
@@ -70,5 +73,10 @@ class Reservation extends Model
             ->where('expires_at', '>', now())
             ->latest('id')
             ->first();
+    }
+
+    public function organizationParent(): string
+    {
+        return 'session';
     }
 }

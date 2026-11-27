@@ -32,7 +32,7 @@ class MercadoPagoGateway implements PaymentGateway
             // Débito (debelo, debvisa, debmaster…) é sempre à vista: parcela recusa no MP.
             'installments' => self::isDebit($paymentMethodId) ? 1 : max(1, $installments),
             'description' => 'Kena · '.$order->reference,
-            'statement_descriptor' => MercadoPagoSettings::statementDescriptor(),
+            'statement_descriptor' => MercadoPagoSettings::statementDescriptor($order->organization_id),
             'external_reference' => $order->reference,
             // Ingresso com assento: aprova/recusa na hora em vez de segurar o
             // lugar num cartão "in_process".
@@ -46,15 +46,16 @@ class MercadoPagoGateway implements PaymentGateway
         if (($url = $this->notificationUrl()) !== null) {
             $body['notification_url'] = $url;
         }
+        $body += $this->applicationFee($order);
 
-        $data = $this->post('/v1/payments', $body, $order->reference.'-card');
+        $data = $this->post('/v1/payments', $body, $order->reference.'-card', $order->organization_id);
 
         return $this->toResult($data, 'card');
     }
 
     public function createPix(Order $order, string $payerEmail, ?string $payerDoc): PaymentResult
     {
-        $minutes = MercadoPagoSettings::pixExpirationMinutes();
+        $minutes = MercadoPagoSettings::pixExpirationMinutes($order->organization_id);
 
         $body = [
             'transaction_amount' => $this->amount($order),
@@ -69,17 +70,18 @@ class MercadoPagoGateway implements PaymentGateway
         if (($url = $this->notificationUrl()) !== null) {
             $body['notification_url'] = $url;
         }
+        $body += $this->applicationFee($order);
 
         // A chave inclui o CPF: corrigir o CPF e tentar de novo não pode cair
         // na resposta guardada da tentativa anterior.
-        $data = $this->post('/v1/payments', $body, $order->reference.'-pix-'.substr(sha1((string) $payerDoc), 0, 8));
+        $data = $this->post('/v1/payments', $body, $order->reference.'-pix-'.substr(sha1((string) $payerDoc), 0, 8), $order->organization_id);
 
         return $this->toResult($data, 'pix');
     }
 
     public function fetchPayment(string $gatewayPaymentId): PaymentResult
     {
-        $response = $this->client()->get('/v1/payments/'.$gatewayPaymentId);
+        $response = $this->client($gatewayPaymentId)->get('/v1/payments/'.$gatewayPaymentId);
         if ($response->failed()) {
             throw new PaymentException('Falha ao consultar pagamento no Mercado Pago: '.$response->status());
         }
@@ -95,7 +97,7 @@ class MercadoPagoGateway implements PaymentGateway
     {
         $body = $amountCents !== null ? ['amount' => round($amountCents / 100, 2)] : [];
 
-        $response = $this->client()
+        $response = $this->client($gatewayPaymentId)
             ->withHeaders(['X-Idempotency-Key' => $idempotencyKey ?? 'refund-'.$gatewayPaymentId.'-'.($amountCents ?? 'full')])
             ->post('/v1/payments/'.$gatewayPaymentId.'/refunds', $body);
 
@@ -106,7 +108,7 @@ class MercadoPagoGateway implements PaymentGateway
 
     public function cancelPayment(string $gatewayPaymentId): bool
     {
-        $response = $this->client()
+        $response = $this->client($gatewayPaymentId)
             ->withHeaders(['X-Idempotency-Key' => 'cancel-'.$gatewayPaymentId])
             ->put('/v1/payments/'.$gatewayPaymentId, ['status' => 'cancelled']);
 
@@ -121,6 +123,22 @@ class MercadoPagoGateway implements PaymentGateway
     private function amount(Order $order): float
     {
         return round($order->total_cents / 100, 2);
+    }
+
+    /**
+     * Com OAuth a venda cai na conta do organizador; a taxa de serviço do
+     * pedido fica com a plataforma como application_fee (Checkout Transparente
+     * em marketplace). Sem OAuth, a conta já é a da plataforma: nada a separar.
+     *
+     * @return array<string, float>
+     */
+    private function applicationFee(Order $order): array
+    {
+        if (! MercadoPagoOAuth::enabled() || $order->fee_cents <= 0) {
+            return [];
+        }
+
+        return ['application_fee' => round($order->fee_cents / 100, 2)];
     }
 
     /** @return array<string, mixed> */
@@ -220,9 +238,9 @@ class MercadoPagoGateway implements PaymentGateway
      * @param  array<string, mixed>  $body
      * @return array<string, mixed>
      */
-    private function post(string $path, array $body, string $idempotencyKey): array
+    private function post(string $path, array $body, string $idempotencyKey, ?int $organizationId): array
     {
-        $response = $this->client()
+        $response = $this->client(null, $organizationId)
             ->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
             ->post($path, $body);
 
@@ -298,11 +316,19 @@ class MercadoPagoGateway implements PaymentGateway
         };
     }
 
-    private function client(): PendingRequest
+    /**
+     * Sem id: conta das vendas novas da organização dona do pedido.
+     * Com id: conta que criou aquele pagamento.
+     */
+    private function client(?string $gatewayPaymentId = null, ?int $organizationId = null): PendingRequest
     {
-        $token = MercadoPagoSettings::accessToken();
+        $token = $gatewayPaymentId !== null
+            ? MercadoPagoSettings::accessTokenForPayment($gatewayPaymentId)
+            : MercadoPagoSettings::accessToken($organizationId);
         if ($token === null || $token === '') {
-            throw new PaymentException('Access token do Mercado Pago não configurado (painel ou .env).');
+            throw new PaymentException(MercadoPagoOAuth::enabled()
+                ? 'Este organizador ainda não conectou a conta do Mercado Pago.'
+                : 'Access token do Mercado Pago não configurado (painel ou .env).');
         }
 
         return Http::baseUrl(MercadoPagoSettings::baseUrl())

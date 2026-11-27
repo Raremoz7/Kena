@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\User;
+use App\Support\CurrentOrganization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +29,7 @@ class BuyerController extends Controller
         $search = trim((string) $request->query('busca', ''));
         $digits = (string) preg_replace('/\D/', '', $search);
 
-        $buyers = User::query()
+        $buyers = self::ofCurrentOrganization()
             ->when($search !== '', function (Builder $q) use ($search, $digits): void {
                 if (strlen($digits) === 11) {
                     $q->where('cpf', $digits);
@@ -61,6 +63,8 @@ class BuyerController extends Controller
     /** Tira o CPF da conta, liberando o número para outro cadastro. Não apaga nada. */
     public function unlinkCpf(User $user): RedirectResponse
     {
+        abort_unless(self::ofCurrentOrganization()->whereKey($user->id)->exists(), 404);
+
         if (blank($user->cpf)) {
             return back()->with('status', 'Essa conta já está sem CPF.');
         }
@@ -76,6 +80,24 @@ class BuyerController extends Controller
         ]);
 
         return back()->with('status', "CPF desvinculado da conta de {$user->name}.");
+    }
+
+    /**
+     * Conta de comprador é da plataforma, não de um organizador: um organizador
+     * novo só vê quem já fez pedido com ele (Order filtra pela organização).
+     * A organização principal continua vendo todas as contas, como antes do
+     * multi-tenant (inclusive as sem pedido, que é onde costuma ficar o CPF
+     * preso em conta errada). Quando o OAuth for ligado e outros organizadores
+     * venderem, essa visão completa deve ir para o /admin.
+     *
+     * @return Builder<User>
+     */
+    private static function ofCurrentOrganization(): Builder
+    {
+        $query = User::query();
+        $id = CurrentOrganization::id();
+
+        return $id !== null && $id !== Organization::DEFAULT_ID ? $query->whereHas('orders') : $query;
     }
 
     /** Só os 3 últimos dígitos: 52998224725 -> •••.•••.••7-25. */

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedThroughParent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -27,6 +28,8 @@ use Illuminate\Support\Carbon;
  */
 class Ticket extends Model
 {
+    use ScopedThroughParent;
+
     public const STATUS_VALID = 'valid';
 
     public const STATUS_USED = 'used';
@@ -63,5 +66,10 @@ class Ticket extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function organizationParent(): string
+    {
+        return 'order';
     }
 }

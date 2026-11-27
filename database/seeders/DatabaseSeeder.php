@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\PanelUser;
+use App\Models\PlatformAdmin;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -43,7 +44,15 @@ class DatabaseSeeder extends Seeder
                 'name' => config('kena.admin.name', 'Administrador'),
                 'password' => $password,
                 'role' => PanelUser::ROLE_ORGANIZER,
+                'email_verified_at' => now(),
             ],
+        );
+
+        // Super admin da plataforma (/admin): conta separada, mesmas credenciais
+        // iniciais. Troque depois com `php artisan kena:super-admin email`.
+        PlatformAdmin::updateOrCreate(
+            ['email' => $email],
+            ['name' => config('kena.admin.name', 'Administrador'), 'password' => $password],
         );
     }
 
@@ -64,6 +73,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Produção Kena',
                 'password' => 'veludo123',
+                'email_verified_at' => now(),
                 'role' => PanelUser::ROLE_ORGANIZER,
             ],
         );
@@ -73,6 +83,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Portaria Kena',
                 'password' => 'veludo123',
+                'email_verified_at' => now(),
                 'role' => PanelUser::ROLE_STAFF,
             ],
         );

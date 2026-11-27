@@ -152,7 +152,10 @@ export default function PhotoCheckoutPage({
         }
 
         if (res.pix) {
-            setPix({ qrBase64: res.pix.qrBase64, copyPaste: res.pix.copyPaste });
+            setPix({
+                qrBase64: res.pix.qrBase64,
+                copyPaste: res.pix.copyPaste,
+            });
             setAwaitingPayment(true);
             veludoToast.info(
                 'Pix gerado',
@@ -487,7 +490,10 @@ export default function PhotoCheckoutPage({
                                             onClick={() => setStep('method')}
                                             className="mt-4 inline-flex items-center gap-1 font-body text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                                         >
-                                            <Icon name="chevron-left" size={14} />{' '}
+                                            <Icon
+                                                name="chevron-left"
+                                                size={14}
+                                            />{' '}
                                             Trocar forma de pagamento
                                         </button>
                                     )}
@@ -556,7 +562,10 @@ export default function PhotoCheckoutPage({
                                     ) : (
                                         <>
                                             {ctaLabel}
-                                            <Icon name="arrow-right" size={18} />
+                                            <Icon
+                                                name="arrow-right"
+                                                size={18}
+                                            />
                                         </>
                                     )}
                                 </Button>

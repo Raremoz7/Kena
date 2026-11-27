@@ -56,4 +56,36 @@ class LegalPagesTest extends TestCase
             ->where('support.email', null)
             ->where('support.whatsapp', null));
     }
+
+    public function test_organizer_terms_are_public_and_show_platform_fees(): void
+    {
+        config(['kena.service_fee_percent' => 6, 'kena.photo_fee_percent' => 8]);
+
+        $this->get('/termos/organizadores')->assertOk()->assertInertia(fn (AssertableInertia $p) => $p
+            ->component('buyer/organizer-terms')
+            ->where('fees.tickets', fn ($v): bool => (float) $v === 6.0)
+            ->where('fees.photos', fn ($v): bool => (float) $v === 8.0));
+    }
+
+    public function test_supplier_identification_and_dpo_come_from_config(): void
+    {
+        config([
+            'kena.legal.name' => 'Somo Tecnologia',
+            'kena.legal.document' => '00.000.000/0001-00',
+            'kena.legal.address' => 'Rua Exemplo, 100, Brasília/DF',
+            'kena.legal.dpo_name' => 'Fulana de Tal',
+            'kena.legal.dpo_email' => 'dpo@exemplo.test',
+        ]);
+
+        // Rodapé de qualquer página do comprador (Decreto 7.962/2013).
+        $this->get('/eventos')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('company.name', 'Somo Tecnologia')
+            ->where('company.document', '00.000.000/0001-00')
+            ->where('company.address', 'Rua Exemplo, 100, Brasília/DF'));
+
+        // Encarregado na Privacidade (LGPD art. 41).
+        $this->get('/privacidade')->assertInertia(fn (AssertableInertia $p) => $p
+            ->where('dpo.name', 'Fulana de Tal')
+            ->where('dpo.email', 'dpo@exemplo.test'));
+    }
 }

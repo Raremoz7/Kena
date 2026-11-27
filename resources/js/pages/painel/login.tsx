@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/atoms/Button';
 import { Checkbox } from '@/components/atoms/Checkbox';
 import { Input } from '@/components/atoms/Input';
@@ -8,15 +8,31 @@ import { FormField } from '@/components/molecules/FormField';
 import PasswordInput from '@/components/password-input';
 
 /**
- * Entrada do painel — e-mail e senha, guard próprio. Sem Google, passkey,
- * magic link ou criar conta: conta de painel nasce pelo /painel/equipe.
+ * Entrada do painel — e-mail e senha, guard próprio. Sem Google, passkey ou
+ * magic link. Conta nasce pelo /painel/equipe ou, com o cadastro aberto
+ * ligado, por /organizador/cadastro.
  */
-export default function PainelLogin() {
+export default function PainelLogin({
+    signupEnabled = false,
+    status = null,
+}: {
+    signupEnabled?: boolean;
+    status?: string | null;
+}) {
     return (
         <>
             <Head title="Entrar no painel" />
 
             <div className="flex flex-col gap-6">
+                {status && (
+                    <p
+                        role="status"
+                        className="rounded-card border border-success bg-success/5 p-3 font-body text-sm text-foreground"
+                    >
+                        {status}
+                    </p>
+                )}
+
                 <Form
                     action="/painel/login"
                     method="post"
@@ -38,7 +54,7 @@ export default function PainelLogin() {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
-                                    placeholder="voce@somo.tec.br"
+                                    placeholder="voce@suaprodutora.com.br"
                                 />
                             </FormField>
 
@@ -46,6 +62,14 @@ export default function PainelLogin() {
                                 label="Senha"
                                 htmlFor="password"
                                 error={errors.password}
+                                action={
+                                    <Link
+                                        href="/painel/esqueci-senha"
+                                        className="font-body text-xs text-accent-text underline-offset-4 hover:underline"
+                                    >
+                                        Esqueci minha senha
+                                    </Link>
+                                }
                             >
                                 <PasswordInput
                                     id="password"
@@ -80,6 +104,18 @@ export default function PainelLogin() {
                         </div>
                     )}
                 </Form>
+
+                {signupEnabled && (
+                    <p className="text-center font-body text-sm text-muted-foreground">
+                        Quer vender ingressos?{' '}
+                        <Link
+                            href="/organizador/cadastro"
+                            className="font-medium text-accent-text underline-offset-4 hover:underline"
+                        >
+                            Crie sua conta de organizador
+                        </Link>
+                    </p>
+                )}
             </div>
         </>
     );
@@ -87,5 +123,5 @@ export default function PainelLogin() {
 
 PainelLogin.layout = {
     title: 'Painel Kena',
-    description: 'Acesso restrito à equipe',
+    description: 'Acesso para organizadores e equipes de evento',
 };
